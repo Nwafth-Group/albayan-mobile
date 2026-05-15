@@ -8,11 +8,16 @@ class AppTheme {
       useMaterial3: true,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: ColorScheme.light(
+
+      // Updated ColorScheme to match the new palette
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
+        onPrimary: Colors.white,
+        secondary: AppColors.accent,
+        onSecondary: Colors.white,
         error: AppColors.error,
-        background: AppColors.background,
+        surface: AppColors.cardColor, // Using the cream #FFF5EB
+        onSurface: AppColors.textPrimary,
       ),
 
       // App Bar Theme
@@ -20,58 +25,58 @@ class AppTheme {
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppColors.textDark),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: TextStyle(
           fontSize: AppDimensions.fontSizeXLarge,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
       ),
 
-      // Text Theme
+      // Text Theme - Mapping to Primary/Secondary/Light text colors
       textTheme: TextTheme(
-        displayLarge: TextStyle(
+        displayLarge: const TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
-        displayMedium: TextStyle(
+        displayMedium: const TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         displaySmall: TextStyle(
           fontSize: AppDimensions.fontSizeXXLarge,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         headlineMedium: TextStyle(
           fontSize: AppDimensions.fontSizeXLarge,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
-        headlineSmall: TextStyle(
+        headlineSmall: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         titleLarge: TextStyle(
           fontSize: AppDimensions.fontSizeLarge,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         titleMedium: TextStyle(
           fontSize: AppDimensions.fontSizeMedium,
           fontWeight: FontWeight.w500,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         bodyLarge: TextStyle(
           fontSize: AppDimensions.fontSizeLarge,
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
         ),
         bodyMedium: TextStyle(
           fontSize: AppDimensions.fontSizeMedium,
-          color: AppColors.textDark,
+          color: AppColors.textSecondary,
         ),
         bodySmall: TextStyle(
           fontSize: AppDimensions.fontSizeSmall,
@@ -83,7 +88,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
+          foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.paddingLarge,
@@ -137,11 +142,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppColors.surfaceVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppColors.surfaceVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -160,18 +165,18 @@ class AppTheme {
           fontSize: AppDimensions.fontSizeMedium,
         ),
         labelStyle: TextStyle(
-          color: AppColors.textDark,
+          color: AppColors.textPrimary,
           fontSize: AppDimensions.fontSizeMedium,
         ),
       ),
 
-      // Card Theme
+      // Card Theme using the soft beige/cream from the image
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
         ),
-        color: AppColors.white,
+        color: AppColors.cardColor,
       ),
 
       // Bottom Navigation Bar Theme
@@ -192,14 +197,14 @@ class AppTheme {
 
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         elevation: 4,
       ),
 
       // Divider Theme
-      dividerTheme: DividerThemeData(
-        color: Colors.grey.shade300,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.surfaceVariant,
         space: 1,
         thickness: 1,
       ),

@@ -70,7 +70,7 @@ class CustomStatusDialog extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.5, // Line height for readability
-                color: AppColors.textDark, // Using the dark grey color
+                color: AppColors.textPrimary, // Using the dark grey color
               ),
             ),
 
@@ -109,7 +109,7 @@ class CustomStatusDialog extends StatelessWidget {
                 child: TextButton(
                   onPressed: secondaryButtonOnTap ?? () => Navigator.pop(context),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.textDark,
+                    foregroundColor: AppColors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                       side: BorderSide(color: Colors.black)

@@ -85,10 +85,8 @@ class ApiService {
   Future<Map<String, dynamic>> get(String endpoint, {Map<String, dynamic>? queryParameters, Map<String, dynamic>? data}) async {
     try {
       final token = SharedPrefHelper.getToken();
-      if (token != null) {
-        _dio.options.headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await _dio.get(endpoint, queryParameters: queryParameters, data: data);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+          final response = await _dio.get(endpoint, queryParameters: queryParameters, data: data);
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -98,10 +96,8 @@ class ApiService {
   Future<Map<String, dynamic>> post(String endpoint, {dynamic data}) async {
     try {
       final token = SharedPrefHelper.getToken();
-      if (token != null) {
-        _dio.options.headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await _dio.post(endpoint, data: data);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+          final response = await _dio.post(endpoint, data: data);
       return response.data;
     } on DioException catch (e) {
       final message = _handleError(e);
@@ -113,10 +109,8 @@ class ApiService {
   Future<Map<String, dynamic>> put(String endpoint, {dynamic data}) async {
     try {
       final token = SharedPrefHelper.getToken();
-      if (token != null) {
-        _dio.options.headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await _dio.put(endpoint, data: data);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+          final response = await _dio.put(endpoint, data: data);
       return response.data;
     } on DioException catch (e) {
       developer.log('PUT Error: ${e.response}', name: 'API');
@@ -129,10 +123,8 @@ class ApiService {
   Future<Map<String, dynamic>> patch(String endpoint, {dynamic data}) async {
     try {
       final token = SharedPrefHelper.getToken();
-      if (token != null) {
-        _dio.options.headers['Authorization'] = 'Bearer $token';
-      }
-      final response = await _dio.patch(endpoint, data: data);
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+          final response = await _dio.patch(endpoint, data: data);
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);

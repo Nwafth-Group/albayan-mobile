@@ -1,7 +1,5 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
-import '../fatures/auth/data/models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class SharedPrefHelper {
@@ -32,18 +30,18 @@ class SharedPrefHelper {
     return _prefs.getString(_lng);
   }
 
-  static Future<void> saveUser(UserModel user) async {
-    await _prefs.setString(_userKey, jsonEncode(user.toJson()));
-    await _prefs.setBool(_isLoggedInKey, true);
-  }
-
-  static Future<UserModel?> getUser() async {
-    final userData = _prefs.getString(_userKey);
-    if (userData != null) {
-      return UserModel.fromJson(jsonDecode(userData));
-    }
-    return null;
-  }
+  // static Future<void> saveUser(UserModel user) async {
+  //   await _prefs.setString(_userKey, jsonEncode(user.toJson()));
+  //   await _prefs.setBool(_isLoggedInKey, true);
+  // }
+  //
+  // static Future<UserModel?> getUser() async {
+  //   final userData = _prefs.getString(_userKey);
+  //   if (userData != null) {
+  //     return UserModel.fromJson(jsonDecode(userData));
+  //   }
+  //   return null;
+  // }
 
   static Future<bool> isLoggedIn() async {
     return _prefs.getBool(_isLoggedInKey) ?? false;
