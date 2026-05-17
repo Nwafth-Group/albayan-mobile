@@ -1,3 +1,4 @@
+import 'package:albayan/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -40,9 +41,9 @@ class CustomTextField extends StatelessWidget {
 
   OutlineInputBorder _border(Color color, {double width = 1}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(
-        color: color,
+        color: AppColors.accentLight,
         width: width,
       ),
     );
@@ -81,8 +82,8 @@ class CustomTextField extends StatelessWidget {
 
         // ✅ FOCUSED + ERROR (important)
         focusedErrorBorder: _border(Colors.red, width: border),
-        labelStyle: const TextStyle(color: Colors.black),
-        hintStyle: TextStyle(color: Colors.grey.shade400),
+        labelStyle: const TextStyle(color: Colors.black,fontSize: 14),
+        hintStyle: TextStyle(color: Colors.grey.shade400,fontSize: 14),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
