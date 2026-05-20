@@ -1,258 +1,600 @@
-
 // ============================================
 // FILE: lib/fatures/auth/screens/register_screen.dart
 // ============================================
 
+import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../utils/constants.dart';
+import '../../../utils/api_client.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_text_form_field.dart';
+import '../data/models/country_model.dart';
 import 'otp_screen.dart';
 import 'terms_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
+// ─────────────────────────────────────────────────────────────
+// Entry point
+// ─────────────────────────────────────────────────────────────
+class RegisterScreen extends StatelessWidget {
   const RegisterScreen({Key? key}) : super(key: key);
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AuthCubit(
+        AuthRemoteDataSource(ApiService()),
+      )..fetchCountries(),
+      child: const _RegisterBody(),
+    );
+  }
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
+// ─────────────────────────────────────────────────────────────
+// Main body
+// ─────────────────────────────────────────────────────────────
+class _RegisterBody extends StatefulWidget {
+  const _RegisterBody();
+
+  @override
+  State<_RegisterBody> createState() => _RegisterBodyState();
+}
+
+class _RegisterBodyState extends State<_RegisterBody>
     with SingleTickerProviderStateMixin {
-  // Tab: 0 = Email, 1 = Mobile
   int _selectedTab = 0;
 
   final _formKey = GlobalKey<FormState>();
 
-  // Email tab controllers
-  final _firstNameController   = TextEditingController();
-  final _lastNameController    = TextEditingController();
-  final _emailController       = TextEditingController();
-  final _passwordController    = TextEditingController();
-  final _confirmPassController = TextEditingController();
+  final _firstNameCtrl   = TextEditingController();
+  final _lastNameCtrl    = TextEditingController();
+  final _emailCtrl       = TextEditingController();
+  final _passwordCtrl    = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
 
-  // Mobile tab controllers
-  final _firstNameMobController = TextEditingController();
-  final _lastNameMobController  = TextEditingController();
-  final _phoneController        = TextEditingController();
+  final _firstNameMobCtrl = TextEditingController();
+  final _lastNameMobCtrl  = TextEditingController();
+  final _phoneCtrl        = TextEditingController();
 
-  // Shared
-  String? _selectedCountry;
+  CountryModel? _selectedCountry;
   bool _agreeTerms      = false;
   bool _obscurePassword = true;
   bool _obscureConfirm  = true;
-  bool _isLoading       = false;
 
-  late AnimationController _animationController;
-  late Animation<double>   _fadeAnimation;
+  late AnimationController _animCtrl;
+  late Animation<double>   _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _animCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 300),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _animationController.forward();
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOut);
+    _animCtrl.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPassController.dispose();
-    _firstNameMobController.dispose();
-    _lastNameMobController.dispose();
-    _phoneController.dispose();
+    _animCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmPassCtrl.dispose();
+    _firstNameMobCtrl.dispose();
+    _lastNameMobCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
   void _switchTab(int index) {
     if (_selectedTab == index) return;
     setState(() => _selectedTab = index);
-    _animationController.forward(from: 0);
+    _animCtrl.forward(from: 0);
   }
 
   void _onSignUp() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_agreeTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.validationAgreeTerms.tr()),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppStrings.validationAgreeTerms.tr()),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+    if (_selectedCountry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(AppStrings.validationCountryRequired.tr()),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
       return;
     }
 
-    setState(() => _isLoading = true);
+    final cubit  = context.read<AuthCubit>();
+    final locale = context.locale.languageCode;
 
-    // TODO: Dispatch register cubit event
-    // On success navigate to OTP screen
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+    if (_selectedTab == 0) {
+      cubit.registerWithEmail(
+        firstName:            _firstNameCtrl.text.trim(),
+        lastName:             _lastNameCtrl.text.trim(),
+        email:                _emailCtrl.text.trim(),
+        countryId:            _selectedCountry!.id,
+        password:             _passwordCtrl.text,
+        passwordConfirmation: _confirmPassCtrl.text,
+        termsAccepted:        _agreeTerms,
+        defaultLanguage:      locale,
+      );
+    } else {
+      // Combine country code + number, e.g. "+962" + "790404479" = "+962790404479"
+      final code   = _selectedCountry!.phoneCode;
+      final number = _phoneCtrl.text.trim();
+      cubit.registerWithMobile(
+        firstName:       _firstNameMobCtrl.text.trim(),
+        lastName:        _lastNameMobCtrl.text.trim(),
+        mobileNumber:    '$code$number',
+        countryId:       _selectedCountry!.id,
+        termsAccepted:   _agreeTerms,
+        defaultLanguage: locale,
+      );
+    }
+  }
 
-      final isEmail   = _selectedTab == 0;
-      final recipient = isEmail
-          ? _emailController.text.trim()
-          : _phoneController.text.trim();
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        // ── Auto-select Saudi Arabia once countries load ───────
+        if (state is CountriesLoaded && _selectedCountry == null) {
+          final saudi = state.countries.firstWhere(
+                (c) => c.nameEn.toLowerCase().contains('saudi'),
+            orElse: () => state.countries.first,
+          );
+          setState(() => _selectedCountry = saudi);
+        }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(
-            recipient: recipient,
-            isEmail: isEmail,
+        if (state is RegisterSuccess) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: OtpScreen(
+                  recipient: state.recipient,
+                  isEmail:   state.isEmail,
+                ),
+              ),
+            ),
+          );
+        } else if (state is RegisterError) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(state.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(backgroundColor: AppColors.background, elevation: 0),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Image.asset(
+                      AppImages.logo,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const _LogoPlaceholder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _TabSwitcher(selected: _selectedTab, onTap: _switchTab),
+                  const SizedBox(height: 24),
+                  Text(AppStrings.registerTitle.tr(),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text(AppStrings.registerSubtitle.tr(),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 24),
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: _selectedTab == 0
+                        ? _EmailForm(
+                      firstNameController:   _firstNameCtrl,
+                      lastNameController:    _lastNameCtrl,
+                      emailController:       _emailCtrl,
+                      passwordController:    _passwordCtrl,
+                      confirmPassController: _confirmPassCtrl,
+                      selectedCountry:       _selectedCountry,
+                      obscurePassword:       _obscurePassword,
+                      obscureConfirm:        _obscureConfirm,
+                      onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onToggleConfirm:  () => setState(() => _obscureConfirm  = !_obscureConfirm),
+                      onCountryChanged: (c) => setState(() => _selectedCountry = c),
+                    )
+                        : _MobileForm(
+                      firstNameController: _firstNameMobCtrl,
+                      lastNameController:  _lastNameMobCtrl,
+                      phoneController:     _phoneCtrl,
+                      selectedCountry:     _selectedCountry,
+                      onCountryChanged: (c) => setState(() => _selectedCountry = c),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _TermsCheckbox(
+                    value: _agreeTerms,
+                    onChanged: (v) => setState(() => _agreeTerms = v ?? false),
+                    onTermsTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const TermsScreen())),
+                  ),
+                  const SizedBox(height: 24),
+                  BlocBuilder<AuthCubit, AuthState>(
+                    buildWhen: (_, s) =>
+                    s is RegisterLoading || s is RegisterSuccess || s is RegisterError,
+                    builder: (context, state) => SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: CustomButton(
+                        text: AppStrings.btnSignUp.tr(),
+                        isLoading: state is RegisterLoading,
+                        onPressed: _onSignUp,
+                        backgroundColor: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  _OrDivider(label: AppStrings.orSignUpWith.tr()),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SocialButton(
+                          icon: Image.asset(AppImages.appleIcon, height: 22, fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.apple, size: 22)),
+                          label: AppStrings.continueWithApple.tr(),
+                          onTap: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _SocialButton(
+                          icon: Image.asset(AppImages.googleIcon, height: 22, fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 22)),
+                          label: AppStrings.continueWithGoogle.tr(),
+                          onTap: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Country Picker — tappable field that opens a search dialog
+// ─────────────────────────────────────────────────────────────
+class _CountryDropdown extends StatelessWidget {
+  final CountryModel? value;
+  final ValueChanged<CountryModel?> onChanged;
+
+  const _CountryDropdown({required this.value, required this.onChanged});
+
+  Future<void> _openDialog(BuildContext context, List<CountryModel> countries) async {
+    final picked = await showDialog<CountryModel>(
+      context: context,
+      builder: (_) => _CountrySearchDialog(countries: countries, selected: value),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.locale.languageCode;
+
+    return BlocBuilder<AuthCubit, AuthState>(
+      buildWhen: (_, s) =>
+      s is CountriesLoading || s is CountriesLoaded || s is CountriesError,
+      builder: (context, state) {
+        // ── Loading ────────────────────────────────────────────
+        if (state is CountriesLoading) {
+          return _shell(child: const Center(
+            child: SizedBox(
+              width: 20, height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            ),
+          ));
+        }
+
+        // ── Error ──────────────────────────────────────────────
+        if (state is CountriesError) {
+          return _shell(child: Row(
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(state.message,
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
+                  overflow: TextOverflow.ellipsis)),
+              TextButton(
+                onPressed: () => context.read<AuthCubit>().fetchCountries(),
+                child: Text(AppStrings.retry.tr(),
+                    style: const TextStyle(color: AppColors.primary, fontSize: 12)),
+              ),
+            ],
+          ));
+        }
+
+        // ── Loaded ─────────────────────────────────────────────
+        final countries = state is CountriesLoaded ? state.countries : <CountryModel>[];
+
+        return FormField<CountryModel>(
+          initialValue: value,
+          validator: (_) => value == null ? AppStrings.validationCountryRequired.tr() : null,
+          builder: (field) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () => _openDialog(context, countries),
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: field.hasError ? AppColors.error : AppColors.accentLight,
+                        width: field.hasError ? 1.0 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Flag
+                        if (value != null) ...[
+                          ClipOval(
+                            child: Image.network(
+                              value!.image,
+                              width: 26, height: 26, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.flag_outlined, size: 22, color: AppColors.textLight),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ] else ...[
+                          const Icon(Icons.language_outlined, color: AppColors.primary, size: 22),
+                          const SizedBox(width: 10),
+                        ],
+                        // Name
+                        Expanded(
+                          child: Text(
+                            value != null
+                                ? value!.displayName(locale)
+                                : AppStrings.hintCountry.tr(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: value != null ? AppColors.textPrimary : Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
+                        // Phone code
+                        if (value != null) ...[
+                          Text(value!.phoneCode,
+                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          const SizedBox(width: 6),
+                        ],
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.primary, size: 22),
+                      ],
+                    ),
+                  ),
+                ),
+                if (field.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 16),
+                    child: Text(field.errorText!,
+                        style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _shell({required Widget child}) => Container(
+    height: 50,
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: Colors.grey.shade300, width: 0.5),
+    ),
+    child: child,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Country Search Dialog
+// ─────────────────────────────────────────────────────────────
+class _CountrySearchDialog extends StatefulWidget {
+  final List<CountryModel> countries;
+  final CountryModel? selected;
+
+  const _CountrySearchDialog({required this.countries, this.selected});
+
+  @override
+  State<_CountrySearchDialog> createState() => _CountrySearchDialogState();
+}
+
+class _CountrySearchDialogState extends State<_CountrySearchDialog> {
+  final _searchCtrl = TextEditingController();
+  List<CountryModel> _filtered = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.countries;
+    _searchCtrl.addListener(_onSearch);
+  }
+
+  void _onSearch() {
+    final q = _searchCtrl.text.toLowerCase();
+    setState(() {
+      _filtered = q.isEmpty
+          ? widget.countries
+          : widget.countries
+          .where((c) =>
+      c.nameEn.toLowerCase().contains(q) ||
+          c.nameAr.contains(q) ||
+          c.phoneCode.contains(q))
+          .toList();
     });
   }
 
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Image.asset(
-                    AppImages.logo,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const _LogoPlaceholder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
+    final locale = context.locale.languageCode;
+    final mq     = MediaQuery.of(context);
 
-                // ── Tab Switcher ──────────────────────────────────
-                _TabSwitcher(
-                  selected: _selectedTab,
-                  onTap: _switchTab,
-                ),
-                const SizedBox(height: 24),
+    // Total usable height = screen − keyboard − top/bottom dialog margins
+    final availableHeight = mq.size.height - mq.viewInsets.bottom - 80;
 
-                // ── Heading ───────────────────────────────────────
-                Text(
-                  AppStrings.registerTitle.tr(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  AppStrings.registerSubtitle.tr(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // ── Animated Form ─────────────────────────────────
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: _selectedTab == 0
-                      ? _EmailForm(
-                    firstNameController:   _firstNameController,
-                    lastNameController:    _lastNameController,
-                    emailController:       _emailController,
-                    passwordController:    _passwordController,
-                    confirmPassController: _confirmPassController,
-                    selectedCountry:       _selectedCountry,
-                    obscurePassword:       _obscurePassword,
-                    obscureConfirm:        _obscureConfirm,
-                    onTogglePassword: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                    onToggleConfirm: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm),
-                    onCountryChanged: (v) =>
-                        setState(() => _selectedCountry = v),
-                  )
-                      : _MobileForm(
-                    firstNameController: _firstNameMobController,
-                    lastNameController:  _lastNameMobController,
-                    phoneController:     _phoneController,
-                    selectedCountry:     _selectedCountry,
-                    onCountryChanged: (v) =>
-                        setState(() => _selectedCountry = v),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Terms checkbox ────────────────────────────────
-                _TermsCheckbox(
-                  value: _agreeTerms,
-                  onChanged: (v) => setState(() => _agreeTerms = v ?? false),
-                  onTermsTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const TermsScreen()),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // ── Sign Up Button ────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: CustomButton(
-                    text: AppStrings.btnSignUp.tr(),
-                    isLoading: _isLoading,
-                    onPressed: _onSignUp,
-                    backgroundColor: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // ── Or sign up with ───────────────────────────────
-                _OrDivider(label: AppStrings.orSignUpWith.tr()),
-                const SizedBox(height: 20),
-
-                // ── Social Buttons ────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SocialButton(
-                        icon: Image.asset(AppImages.appleIcon,
-                            height: 22, fit: BoxFit.contain),
-                        label: AppStrings.continueWithApple.tr(),
-                        onTap: () {},
-                      ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: EdgeInsets.fromLTRB(16, 40, 16, mq.viewInsets.bottom + 16),
+      // ── Hard cap the whole dialog to available height ─────────
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: availableHeight),
+        child: Column(
+          // No mainAxisSize.min — let Column fill the constrained box
+          // so Flexible/Expanded children work correctly
+          children: [
+            // ── Header (fixed) ───────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.selectCountry.tr(),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _SocialButton(
-                        icon: Image.asset(AppImages.googleIcon,
-                            height: 22, fit: BoxFit.contain),
-                        label: AppStrings.continueWithGoogle.tr(),
-                        onTap: () {},
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.close,
+                        color: AppColors.textLight, size: 22),
+                  ),
+                ],
+              ),
             ),
-          ),
+
+            // ── Search field (fixed) ─────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: AppStrings.searchCountry.tr(),
+                  hintStyle:
+                  TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  prefixIcon: const Icon(Icons.search,
+                      color: AppColors.textLight, size: 20),
+                  filled: true,
+                  fillColor: AppColors.cardColor,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(50),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ── List (flexible — takes remaining space) ──────────
+            Flexible(
+              child: _filtered.isEmpty
+                  ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(AppStrings.noResults.tr(),
+                      style: const TextStyle(color: AppColors.textLight)),
+                ),
+              )
+                  : ListView.builder(
+                itemCount: _filtered.length,
+                itemBuilder: (context, i) {
+                  final c          = _filtered[i];
+                  final isSelected = widget.selected?.id == c.id;
+                  return ListTile(
+                    onTap: () => Navigator.pop(context, c),
+                    selected: isSelected,
+                    selectedTileColor: AppColors.cardColor,
+                    leading: ClipOval(
+                      child: Image.network(
+                        c.image,
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.flag_outlined,
+                            size: 32,
+                            color: AppColors.textLight),
+                      ),
+                    ),
+                    title: Text(
+                      c.displayName(locale),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    trailing: Text(c.phoneCode,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary)),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         ),
       ),
     );
@@ -260,82 +602,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 }
 
 // ─────────────────────────────────────────────────────────────
-// Tab Switcher
-// ─────────────────────────────────────────────────────────────
-class _TabSwitcher extends StatelessWidget {
-  final int selected;
-  final void Function(int) onTap;
-
-  const _TabSwitcher({required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primaryLight),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          _TabItem(
-            label: AppStrings.tabEmail.tr(),
-            isSelected: selected == 0,
-            onTap: () => onTap(0),
-          ),
-          _TabItem(
-            label: AppStrings.tabMobile.tr(),
-            isSelected: selected == 1,
-            onTap: () => onTap(1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TabItem extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _TabItem({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.accent,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Email Registration Form
+// Email Form
 // ─────────────────────────────────────────────────────────────
 class _EmailForm extends StatelessWidget {
   final TextEditingController firstNameController;
@@ -343,12 +610,12 @@ class _EmailForm extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final TextEditingController confirmPassController;
-  final String? selectedCountry;
+  final CountryModel? selectedCountry;
   final bool obscurePassword;
   final bool obscureConfirm;
   final VoidCallback onTogglePassword;
   final VoidCallback onToggleConfirm;
-  final ValueChanged<String?> onCountryChanged;
+  final ValueChanged<CountryModel?> onCountryChanged;
 
   const _EmailForm({
     required this.firstNameController,
@@ -369,140 +636,87 @@ class _EmailForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // First Name
         _FieldLabel(AppStrings.labelFirstName.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: firstNameController,
           hintText: AppStrings.hintFirstName.tr(),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.person_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 22)),
           validator: (v) => (v == null || v.trim().isEmpty)
-              ? AppStrings.validationFirstNameRequired.tr()
-              : null,
+              ? AppStrings.validationFirstNameRequired.tr() : null,
         ),
         const SizedBox(height: 16),
 
-        // Last Name
         _FieldLabel(AppStrings.labelLastName.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: lastNameController,
           hintText: AppStrings.hintLastName.tr(),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.person_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 22)),
           validator: (v) => (v == null || v.trim().isEmpty)
-              ? AppStrings.validationLastNameRequired.tr()
-              : null,
+              ? AppStrings.validationLastNameRequired.tr() : null,
         ),
         const SizedBox(height: 16),
 
-        // Email
         _FieldLabel(AppStrings.labelEmail.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: emailController,
           hintText: AppStrings.hintEmail.tr(),
           keyboardType: TextInputType.emailAddress,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.mail_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.mail_outline_rounded, color: AppColors.primary, size: 22)),
           validator: (v) {
-            if (v == null || v.isEmpty) {
-              return AppStrings.validationEmailRequired.tr();
-            }
-            if (!RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(v)) {
+            if (v == null || v.isEmpty) return AppStrings.validationEmailRequired.tr();
+            if (!RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(v))
               return AppStrings.validationEmailInvalid.tr();
-            }
             return null;
           },
         ),
         const SizedBox(height: 16),
 
-        // Country
         _FieldLabel(AppStrings.labelCountry.tr()),
         const SizedBox(height: 8),
-        _CountryDropdown(
-          value: selectedCountry,
-          onChanged: onCountryChanged,
-        ),
+        _CountryDropdown(value: selectedCountry, onChanged: onCountryChanged),
         const SizedBox(height: 16),
 
-        // Password
         _FieldLabel(AppStrings.labelPassword.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: passwordController,
           hintText: AppStrings.hintPassword.tr(),
           obscureText: obscurePassword,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.lock_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
-          suffixIcon: GestureDetector(
-            onTap: onTogglePassword,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppColors.textLight,
-                size: 22,
-              ),
-            ),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 22)),
+          suffixIcon: GestureDetector(onTap: onTogglePassword,
+              child: Padding(padding: const EdgeInsets.all(12),
+                  child: Icon(obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      color: AppColors.textLight, size: 22))),
           validator: (v) {
-            if (v == null || v.isEmpty) {
-              return AppStrings.validationPasswordRequired.tr();
-            }
+            if (v == null || v.isEmpty) return AppStrings.validationPasswordRequired.tr();
             if (v.length < 8) return AppStrings.validationPasswordMin.tr();
             return null;
           },
         ),
         const SizedBox(height: 16),
 
-        // Confirm Password
         _FieldLabel(AppStrings.labelConfirmPassword.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: confirmPassController,
           hintText: AppStrings.hintConfirmPassword.tr(),
           obscureText: obscureConfirm,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.lock_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
-          suffixIcon: GestureDetector(
-            onTap: onToggleConfirm,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                obscureConfirm
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppColors.textLight,
-                size: 22,
-              ),
-            ),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 22)),
+          suffixIcon: GestureDetector(onTap: onToggleConfirm,
+              child: Padding(padding: const EdgeInsets.all(12),
+                  child: Icon(obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      color: AppColors.textLight, size: 22))),
           validator: (v) {
-            if (v == null || v.isEmpty) {
-              return AppStrings.validationConfirmPasswordRequired.tr();
-            }
-            if (v != passwordController.text) {
-              return AppStrings.validationPasswordMismatch.tr();
-            }
+            if (v == null || v.isEmpty) return AppStrings.validationConfirmPasswordRequired.tr();
+            if (v != passwordController.text) return AppStrings.validationPasswordMismatch.tr();
             return null;
           },
         ),
@@ -512,14 +726,14 @@ class _EmailForm extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Mobile Registration Form
+// Mobile Form
 // ─────────────────────────────────────────────────────────────
 class _MobileForm extends StatelessWidget {
   final TextEditingController firstNameController;
   final TextEditingController lastNameController;
   final TextEditingController phoneController;
-  final String? selectedCountry;
-  final ValueChanged<String?> onCountryChanged;
+  final CountryModel? selectedCountry;
+  final ValueChanged<CountryModel?> onCountryChanged;
 
   const _MobileForm({
     required this.firstNameController,
@@ -534,71 +748,61 @@ class _MobileForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // First Name
         _FieldLabel(AppStrings.labelFirstName.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: firstNameController,
           hintText: AppStrings.hintFirstName.tr(),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.person_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 22)),
           validator: (v) => (v == null || v.trim().isEmpty)
-              ? AppStrings.validationFirstNameRequired.tr()
-              : null,
+              ? AppStrings.validationFirstNameRequired.tr() : null,
         ),
         const SizedBox(height: 16),
 
-        // Last Name
         _FieldLabel(AppStrings.labelLastName.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: lastNameController,
           hintText: AppStrings.hintLastName.tr(),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.person_outline_rounded,
-                color: AppColors.primary, size: 22),
-          ),
+          prefixIcon: const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 22)),
           validator: (v) => (v == null || v.trim().isEmpty)
-              ? AppStrings.validationLastNameRequired.tr()
-              : null,
+              ? AppStrings.validationLastNameRequired.tr() : null,
         ),
         const SizedBox(height: 16),
 
-        // Country
         _FieldLabel(AppStrings.labelCountry.tr()),
         const SizedBox(height: 8),
-        _CountryDropdown(
-          value: selectedCountry,
-          onChanged: onCountryChanged,
-        ),
+        _CountryDropdown(value: selectedCountry, onChanged: onCountryChanged),
         const SizedBox(height: 16),
 
-        // Mobile Phone
         _FieldLabel(AppStrings.labelMobilePhone.tr()),
         const SizedBox(height: 8),
         CustomTextField(
           controller: phoneController,
           hintText: AppStrings.hintMobilePhone.tr(),
           keyboardType: TextInputType.phone,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
-            child: Icon(Icons.phone_outlined,
-                color: AppColors.primary, size: 22),
-          ),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) {
-              return AppStrings.validationPhoneRequired.tr();
-            }
-            final cleaned = v.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-            if (!RegExp(r'^(07[0-9]{8}|(7[0-9]{8}))$').hasMatch(cleaned)) {
-              return AppStrings.validationPhoneInvalid.tr();
-            }
-            return null;
-          },
+          prefixIcon: selectedCountry != null
+              ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              ClipOval(
+                child: Image.network(selectedCountry!.image,
+                    width: 20, height: 20, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.phone_outlined, color: AppColors.primary, size: 20)),
+              ),
+              const SizedBox(width: 4),
+              Text(selectedCountry!.phoneCode,
+                  style: const TextStyle(fontSize: 13,
+                      color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+            ]),
+          )
+              : const Padding(padding: EdgeInsets.all(12),
+              child: Icon(Icons.phone_outlined, color: AppColors.primary, size: 22)),
+          validator: (v) => (v == null || v.trim().isEmpty)
+              ? AppStrings.validationPhoneRequired.tr() : null,
         ),
       ],
     );
@@ -606,68 +810,55 @@ class _MobileForm extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Country Dropdown
+// Tab Switcher
 // ─────────────────────────────────────────────────────────────
-class _CountryDropdown extends StatelessWidget {
-  final String? value;
-  final ValueChanged<String?> onChanged;
-
-  static const List<String> _countries = [
-    'Jordan',
-    'Saudi Arabia',
-    'United Arab Emirates',
-    'Kuwait',
-    'Qatar',
-    'Bahrain',
-    'Oman',
-    'Egypt',
-    'Lebanon',
-    'Iraq',
-  ];
-
-  const _CountryDropdown({required this.value, required this.onChanged});
+class _TabSwitcher extends StatelessWidget {
+  final int selected;
+  final void Function(int) onTap;
+  const _TabSwitcher({required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: AppStrings.hintCountry.tr(),
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-        prefixIcon: const Padding(
-          padding: EdgeInsets.all(12),
-          child: Icon(Icons.language_outlined,
-              color: AppColors.primary, size: 22),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 0.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(50),
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primaryLight),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(children: [
+        _TabItem(label: AppStrings.tabEmail.tr(),  isSelected: selected == 0, onTap: () => onTap(0)),
+        _TabItem(label: AppStrings.tabMobile.tr(), isSelected: selected == 1, onTap: () => onTap(1)),
+      ]),
+    );
+  }
+}
+
+class _TabItem extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _TabItem({required this.label, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(label,
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : AppColors.accent)),
         ),
       ),
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: AppColors.primary),
-      validator: (v) =>
-      v == null ? AppStrings.validationCountryRequired.tr() : null,
-      items: _countries
-          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-          .toList(),
     );
   }
 }
@@ -679,48 +870,29 @@ class _TermsCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;
   final VoidCallback onTermsTap;
-
-  const _TermsCheckbox({
-    required this.value,
-    required this.onChanged,
-    required this.onTermsTap,
-  });
+  const _TermsCheckbox({required this.value, required this.onChanged, required this.onTermsTap});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 20,
-          height: 20,
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      SizedBox(width: 20, height: 20,
           child: Checkbox(
-            value: value,
-            onChanged: onChanged,
+            value: value, onChanged: onChanged,
             activeColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             side: const BorderSide(color: AppColors.textLight),
-          ),
+          )),
+      const SizedBox(width: 8),
+      Expanded(
+        child: GestureDetector(
+          onTap: onTermsTap,
+          child: Text(AppStrings.agreeToTerms.tr(),
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.textSecondary)),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: GestureDetector(
-            onTap: onTermsTap,
-            child: Text(
-              AppStrings.agreeToTerms.tr(),
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                decoration: TextDecoration.underline,
-                decorationColor: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+      ),
+    ]);
   }
 }
 
@@ -733,19 +905,12 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-          ),
-        ),
-        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-      ],
-    );
+    return Row(children: [
+      Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade500))),
+      Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+    ]);
   }
 }
 
@@ -756,12 +921,7 @@ class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
   final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const _SocialButton({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -774,24 +934,14 @@ class _SocialButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          icon,
+          const SizedBox(width: 5),
+          Flexible(child: Text(label,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary),
+              overflow: TextOverflow.ellipsis)),
+        ]),
       ),
     );
   }
@@ -806,14 +956,8 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-    );
+    return Text(text,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary));
   }
 }
 
@@ -826,18 +970,10 @@ class _LogoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 90,
-      width: 160,
-      alignment: Alignment.center,
-      child: const Text(
-        'البيان',
-        style: TextStyle(
-          fontSize: 36,
-          fontWeight: FontWeight.bold,
-          color: AppColors.primary,
-          fontFamily: 'Rubik',
-        ),
-      ),
+      height: 90, width: 160, alignment: Alignment.center,
+      child: const Text('البيان',
+          style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold,
+              color: AppColors.primary, fontFamily: 'Rubik')),
     );
   }
 }

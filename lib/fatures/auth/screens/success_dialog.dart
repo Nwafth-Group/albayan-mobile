@@ -3,6 +3,7 @@
 // FILE: lib/fatures/auth/screens/success_dialog.dart
 // ============================================
 
+import 'package:albayan/fatures/home/screens/home_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/constants.dart';
@@ -60,8 +61,7 @@ class SuccessDialog extends StatelessWidget {
               child: CustomButton(
                 text: AppStrings.btnDone.tr(),
                 onPressed: () {
-                  // TODO: Navigate to home / login
-                  AppNavigator.popToRoot();
+                  AppNavigator.pushAndRemoveUntil(const HomeScreen());
                 },
                 backgroundColor: AppColors.primary,
               ),

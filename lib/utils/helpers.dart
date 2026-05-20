@@ -384,7 +384,7 @@ class Validators {
     );
 
     if (!jordanRegex.hasMatch(cleaned)) {
-      return 'رقم الهاتف غير صحيح (يجب أن يبدأ بـ 07)';
+      return 'رقم الهاتف غير صحيح';
     }
 
     return null;

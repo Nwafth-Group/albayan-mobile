@@ -1,7 +1,6 @@
 
 import 'dart:async';
-import 'package:albayan/fatures/auth/screens/login_screen.dart';
-import 'package:albayan/fatures/onboarding/onboarding_screen.dart';
+import 'package:albayan/fatures/onboarding/screens/select_language_screen.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const OnboardingScreen(),
+          builder: (_) => const SelectLanguageScreen(),
         ),
       );
     });

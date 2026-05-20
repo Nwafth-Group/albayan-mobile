@@ -3,12 +3,12 @@
 // FILE: lib/fatures/onboarding/onboarding_screen.dart
 // ============================================
 
+import 'package:albayan/fatures/auth/screens/login_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
-import '../../utils/app_navigator.dart';
-import '../../widgets/custom_button.dart';
-import '../auth/screens/login_screen.dart';
+import '../../../utils/constants.dart';
+import '../../../utils/app_navigator.dart';
+import '../../../widgets/custom_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);

@@ -1,17 +1,21 @@
 // ============================================
-// FILE: lib/fatures/auth/screens/otp_screen.dart
+// FILE: lib/features/auth/screens/otp_screen.dart
 // ============================================
 
 import 'dart:async';
-import 'package:albayan/fatures/auth/screens/success_dialog.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
+
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
+import 'success_dialog.dart';
 
 class OtpScreen extends StatefulWidget {
-  final String recipient; // email or phone
+  final String recipient;
   final bool isEmail;
 
   const OtpScreen({
@@ -27,10 +31,8 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final _pinController = TextEditingController();
   final _focusNode     = FocusNode();
-  bool _isLoading = false;
-  bool _hasError  = false;
+  bool _hasError       = false;
 
-  // Resend countdown
   static const int _resendSeconds = 57;
   int _secondsLeft = _resendSeconds;
   late Timer _timer;
@@ -47,7 +49,7 @@ class _OtpScreenState extends State<OtpScreen> {
       if (_secondsLeft == 0) {
         t.cancel();
       } else {
-        setState(() => _secondsLeft--);
+        if (mounted) setState(() => _secondsLeft--);
       }
     });
   }
@@ -57,8 +59,41 @@ class _OtpScreenState extends State<OtpScreen> {
     _timer.cancel();
     _pinController.clear();
     setState(() => _hasError = false);
-    // TODO: trigger resend via cubit
+
+    context.read<AuthCubit>().resendOtp(
+      email:        widget.isEmail ? widget.recipient : null,
+      mobileNumber: widget.isEmail ? null : widget.recipient,
+    );
+
     _startTimer();
+  }
+
+  void _onSubmit() {
+    if (_pinController.text.length < 5) {
+      setState(() => _hasError = true);
+      return;
+    }
+    setState(() => _hasError = false);
+
+    context.read<AuthCubit>().verifyOtp(
+      email:        widget.isEmail ? widget.recipient : null,
+      mobileNumber: widget.isEmail ? null : widget.recipient,
+      otpCode:      _pinController.text,
+    );
+  }
+
+  void _onNumpadTap(String digit) {
+    if (_pinController.text.length >= 5) return;
+    _pinController.text += digit;
+    setState(() => _hasError = false);
+    if (_pinController.text.length == 5) _onSubmit();
+  }
+
+  void _onBackspace() {
+    if (_pinController.text.isEmpty) return;
+    _pinController.text =
+        _pinController.text.substring(0, _pinController.text.length - 1);
+    setState(() {});
   }
 
   String get _maskedRecipient {
@@ -78,45 +113,10 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _onSubmit() {
-    if (_pinController.text.length < 5) {
-      setState(() => _hasError = true);
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _hasError  = false;
-    });
-
-    // TODO: dispatch verify cubit event
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      _showSuccessDialog();
-    });
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const SuccessDialog(),
-    );
-  }
-
-  // Called by our custom numpad
-  void _onNumpadTap(String digit) {
-    if (_pinController.text.length >= 5) return;
-    _pinController.text = _pinController.text + digit;
-    setState(() => _hasError = false);
-    if (_pinController.text.length == 5) _onSubmit();
-  }
-
-  void _onBackspace() {
-    if (_pinController.text.isEmpty) return;
-    _pinController.text =
-        _pinController.text.substring(0, _pinController.text.length - 1);
-    setState(() {});
+  String _formatTime(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   @override
@@ -129,15 +129,13 @@ class _OtpScreenState extends State<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ── Pinput themes ────────────────────────────────────────
     final defaultTheme = PinTheme(
       width: 56,
       height: 56,
       textStyle: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -145,179 +143,223 @@ class _OtpScreenState extends State<OtpScreen> {
       ),
     );
 
-    final focusedTheme = defaultTheme.copyDecorationWith(
-      border: Border.all(color: AppColors.primary, width: 2),
-    );
-
-    final submittedTheme = defaultTheme.copyDecorationWith(
-      border: Border.all(color: AppColors.primary, width: 1.5),
-      color: AppColors.cardColor,
-    );
-
-    final errorTheme = defaultTheme.copyDecorationWith(
-      border: Border.all(color: AppColors.error, width: 1.5),
-    );
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Scrollable content ────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      AppStrings.otpTitle.tr(),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Subtitle
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary),
-                        children: [
-                          TextSpan(
-                              text: '${AppStrings.otpSubtitle.tr()} '),
-                          TextSpan(
-                            text: _maskedRecipient,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const TextSpan(
-                              text:
-                              ' and completely verify your account.'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // ── Pinput field ──────────────────────────
-                    Pinput(
-                      length: 5,
-                      controller: _pinController,
-                      focusNode: _focusNode,
-                      // Disable system keyboard — driven by our numpad
-                      keyboardType: TextInputType.none,
-                      defaultPinTheme: defaultTheme,
-                      focusedPinTheme: focusedTheme,
-                      submittedPinTheme: submittedTheme,
-                      errorPinTheme: errorTheme,
-                      forceErrorState: _hasError,
-                      showCursor: true,
-                      cursor: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            width: 20,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ],
-                      ),
-                      onChanged: (_) => setState(() => _hasError = false),
-                      onCompleted: (_) => _onSubmit(),
-                    ),
-
-                    // Error text
-                    if (_hasError) ...[
-                      const SizedBox(height: 6),
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is OtpVerified) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const SuccessDialog(),
+          );
+        } else if (state is OtpError) {
+          setState(() => _hasError = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is OtpResendSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppStrings.otpResentSuccess.tr()),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is OtpResendError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(backgroundColor: AppColors.background, elevation: 0),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Scrollable content ──────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        AppStrings.validationOtpRequired.tr(),
+                        AppStrings.otpTitle.tr(),
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.error),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ],
+                      const SizedBox(height: 8),
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary),
+                          children: [
+                            TextSpan(
+                                text: '${AppStrings.otpSubtitle.tr()} '),
+                            TextSpan(
+                              text: _maskedRecipient,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
 
-                    const SizedBox(height: 20),
-
-                    // ── Resend ────────────────────────────────
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            AppStrings.otpCodeSent.tr(),
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: _resendOtp,
-                            child: Text(
-                              _secondsLeft > 0
-                                  ? '${AppStrings.otpResend.tr()} ${_formatTime(_secondsLeft)}'
-                                  : AppStrings.otpResendNow.tr(),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: _secondsLeft > 0
-                                    ? AppColors.textSecondary
-                                    : AppColors.primary,
+                      // Pinput
+                      Pinput(
+                        length: 5,
+                        controller: _pinController,
+                        focusNode: _focusNode,
+                        keyboardType: TextInputType.none,
+                        defaultPinTheme: defaultTheme,
+                        focusedPinTheme: defaultTheme.copyDecorationWith(
+                          border: Border.all(
+                              color: AppColors.primary, width: 2),
+                        ),
+                        submittedPinTheme: defaultTheme.copyDecorationWith(
+                          border: Border.all(
+                              color: AppColors.primary, width: 1.5),
+                          color: AppColors.cardColor,
+                        ),
+                        errorPinTheme: defaultTheme.copyDecorationWith(
+                          border: Border.all(
+                              color: AppColors.error, width: 1.5),
+                        ),
+                        forceErrorState: _hasError,
+                        showCursor: true,
+                        cursor: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              width: 20,
+                              height: 2,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        onChanged: (_) =>
+                            setState(() => _hasError = false),
+                        onCompleted: (_) => _onSubmit(),
                       ),
-                    ),
-                    const SizedBox(height: 28),
 
-                    // ── Submit button ─────────────────────────
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: CustomButton(
-                        text: AppStrings.btnSubmit.tr(),
-                        isLoading: _isLoading,
-                        onPressed: _onSubmit,
-                        backgroundColor: AppColors.primary,
+                      if (_hasError) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          AppStrings.validationOtpRequired.tr(),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.error),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      // Resend
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              AppStrings.otpCodeSent.tr(),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 4),
+                            BlocBuilder<AuthCubit, AuthState>(
+                              buildWhen: (_, s) =>
+                              s is OtpResendLoading ||
+                                  s is OtpResendSuccess ||
+                                  s is OtpResendError,
+                              builder: (context, state) {
+                                if (state is OtpResendLoading) {
+                                  return const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary),
+                                  );
+                                }
+                                return GestureDetector(
+                                  onTap: _resendOtp,
+                                  child: Text(
+                                    _secondsLeft > 0
+                                        ? '${AppStrings.otpResend.tr()} ${_formatTime(_secondsLeft)}'
+                                        : AppStrings.otpResendNow.tr(),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: _secondsLeft > 0
+                                          ? AppColors.textSecondary
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 28),
+
+                      // Submit button
+                      BlocBuilder<AuthCubit, AuthState>(
+                        buildWhen: (_, s) =>
+                        s is OtpLoading ||
+                            s is OtpVerified ||
+                            s is OtpError,
+                        builder: (context, state) {
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: CustomButton(
+                              text: AppStrings.btnSubmit.tr(),
+                              isLoading: state is OtpLoading,
+                              onPressed: _onSubmit,
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // ── Custom numpad pinned to bottom ────────────────
-            _CustomNumpad(
-              onTap: _onNumpadTap,
-              onBackspace: _onBackspace,
-            ),
-          ],
+              // ── Custom numpad ───────────────────────────────
+              _CustomNumpad(
+                onTap: _onNumpadTap,
+                onBackspace: _onBackspace,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
-  String _formatTime(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Custom Numpad
+// Custom Numpad (unchanged from original)
 // ─────────────────────────────────────────────────────────────
 class _CustomNumpad extends StatelessWidget {
   final void Function(String) onTap;
@@ -343,16 +385,12 @@ class _CustomNumpad extends StatelessWidget {
           for (int i = 0; i < row.length; i += 2) {
             final main = row[i];
             final sub  = row[i + 1];
-
             if (main == 'back') {
               cells.add(Expanded(
                 child: _NumKey(
                   onTap: onBackspace,
-                  child: const Icon(
-                    Icons.backspace_outlined,
-                    color: AppColors.textPrimary,
-                    size: 22,
-                  ),
+                  child: const Icon(Icons.backspace_outlined,
+                      color: AppColors.textPrimary, size: 22),
                 ),
               ));
             } else if (main.isEmpty) {
@@ -364,23 +402,17 @@ class _CustomNumpad extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        main,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (sub.isNotEmpty)
-                        Text(
-                          sub,
+                      Text(main,
                           style: const TextStyle(
-                            fontSize: 9,
-                            letterSpacing: 1.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary)),
+                      if (sub.isNotEmpty)
+                        Text(sub,
+                            style: const TextStyle(
+                                fontSize: 9,
+                                letterSpacing: 1.5,
+                                color: AppColors.textSecondary)),
                     ],
                   ),
                 ),

@@ -6,14 +6,20 @@ import 'package:flutter/material.dart';
 
 // API Constants
 class ApiConstants {
-  static String get baseUrl => 'http://3.68.184.228/api/v1';
+  static String get baseUrl => 'http://18.192.211.42/api/v1';
   static final navigatorKey = GlobalKey<NavigatorState>();
 
-  // Auth Endpoints
-  static const String login    = '/owner/auth/login';
-  static const String register = '/owner/auth/register';
-  static const String verifyOtp = '/owner/auth/verify-otp';
-  static const String resendOtp = '/owner/auth/resend-otp';
+  // Public
+  static const String getCountries = '/public/countries';
+  static const String getLanguages = '/public/languages';
+
+  // Auth
+  static const String login    = '/reader/auth/login';
+  static const String register = '/reader/auth/register';
+  static const String verifyOtp = '/reader/auth/verify-otp';
+  static const String resendOtp = '/reader/auth/resend-otp';
+  static const String logout    = '/reader/auth/logout';
+  static const String profile   = '/reader/auth/profile';
 }
 
 // App Colors
@@ -201,4 +207,13 @@ class AppStrings {
   static const String validationCountryRequired         = 'validation_country_required';
   static const String validationAgreeTerms              = 'validation_agree_terms';
   static const String validationOtpRequired             = 'validation_otp_required';
+  static const String retry         = 'retry';
+  static const String noResults     = 'noResults';
+  static const String selectCountry = 'selectCountry';
+  static const String searchCountry = 'searchCountry';
+  static const String otpResentSuccess= 'otpResentSuccess';
+  static const String createNewAccount = 'createNewAccount';
+  static const String selectLanguageTitle    = 'selectLanguageTitle';
+  static const String selectLanguageSubtitle = 'selectLanguageSubtitle';
+  static const String searchLanguage         = 'searchLanguage';
 }
