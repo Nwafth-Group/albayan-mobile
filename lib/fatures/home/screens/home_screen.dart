@@ -1,4 +1,6 @@
 
+import 'package:albayan/fatures/issues/screens/issues_screen.dart';
+import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:flutter/material.dart';
 
@@ -70,7 +72,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
 
-  final List<String> _categories = ['assets/images/art1.jpg', 'assets/images/art1.jpg', 'assets/images/art1.jpg', 'assets/images/art1.jpg', 'assets/images/art1.jpg', 'assets/images/art1.jpg'];
+  final List<String> _categories = [
+    'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300', // Poetry/Modern Book
+    'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300', // Classic Fiction
+    'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=300', // Open Educational Book
+    'https://images.unsplash.com/photo-1614849963640-9cc74b2a826f?auto=format&fit=crop&q=80&w=300', // Minimalist Book Cover
+    'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=300', // Vintage/Hardcover Book
+    'https://images.unsplash.com/photo-1495640388908-05fa85288e61?auto=format&fit=crop&q=80&w=300', // Novel/Paperback Stack
+  ];
 
   final List<IssueModel> _issues = [
     IssueModel(image: 'assets/images/issue1.jpg', title: 'Dark woods, 0904', date: 'May 3, 2025', price: '35.09 SAR'),
@@ -117,30 +126,33 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildFeaturedBanner()),
 
             // ── Category Chips ───────────────────────────────────
+            SliverToBoxAdapter(child: _buildSectionHeader('Corners',null)),
             SliverToBoxAdapter(child: _buildCategoryChips()),
 
             // ── Latest Issues ────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Latest Issues')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Latest Issues',() {
+              AppNavigator.push(const IssuesScreen());
+            },),),
             SliverToBoxAdapter(child: _buildLatestIssues()),
 
             // ── Articles ─────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Articles')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Articles',null)),
             SliverToBoxAdapter(child: _buildArticlesList()),
 
             // ── Writers & Authors ─────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Writers & Authors')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Writers & Authors',null)),
             SliverToBoxAdapter(child: _buildAuthors()),
 
             // ── Best Books ───────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Best Books in 2026')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Best Books in 2026',null)),
             SliverToBoxAdapter(child: _buildBestBooks()),
 
             // ── Fresh News ───────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Fresh News')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Fresh News',null)),
             SliverToBoxAdapter(child: _buildFreshNews()),
 
             // ── Recommendations ──────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Recommendation')),
+            SliverToBoxAdapter(child: _buildSectionHeader('Recommendation',null)),
             SliverToBoxAdapter(child: _buildRecommendations()),
 
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -334,19 +346,26 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Category Chips ────────────────────────────────────────────
   Widget _buildCategoryChips() {
     return SizedBox(
-      height: 80,
+      height: 75,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemCount: _categories.length,
         itemBuilder: (context, i) {
           return GestureDetector(
             onTap: () => setState(() => _selectedCategoryIndex = i),
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.surfaceVariant,
-              child: const Icon(Icons.school_outlined, size: 30, color: AppColors.textLight),
+            child: Container(
+              width: 75,
+              height: 75,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                image: DecorationImage(
+                  // Dynamically load the image from the URL list based on index
+                  image: NetworkImage(_categories[i]),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
           );
         },
@@ -355,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ── Section Header ────────────────────────────────────────────
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, onTap) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
       child: Row(
@@ -370,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: onTap,
             child: Text(
               'See All',
               style: TextStyle(

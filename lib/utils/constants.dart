@@ -20,6 +20,12 @@ class ApiConstants {
   static const String resendOtp = '/reader/auth/resend-otp';
   static const String logout    = '/reader/auth/logout';
   static const String profile   = '/reader/auth/profile';
+
+  // Issues Endpoints
+  static const String issues = '/public/issues';
+
+  // Corners Endpoints
+  static const String corners = '/public/corners';
 }
 
 // App Colors
@@ -66,6 +72,15 @@ class AppImages {
   static const String onboarding2       = 'assets/images/onboarding2.png';
   static const String onboarding3       = 'assets/images/onboarding3.png';
   static const String onboardingLogo       = 'assets/images/onboardingLogo2.png';
+
+  static const String search       = 'assets/icons/search.png';
+  static const String filter       = 'assets/icons/filter.png';
+  static const String calendar       = 'assets/icons/calendar.png';
+  static const String noData       = 'assets/images/no_data.png';
+
+  static const String favorate       = 'assets/icons/favorate.png';
+  static const String openBook       = 'assets/icons/open_book.png';
+  static const String taj       = 'assets/icons/taj.png';
 }
 
 // App Dimensions
@@ -216,4 +231,28 @@ class AppStrings {
   static const String selectLanguageTitle    = 'selectLanguageTitle';
   static const String selectLanguageSubtitle = 'selectLanguageSubtitle';
   static const String searchLanguage         = 'searchLanguage';
+  static const String issuesTitle        = 'issues_title';          // "Issues , {year}"
+  static const String searchHint         = 'search_hint';
+  static const String filterBy           = 'filter_by';
+  static const String date               = 'date';
+  static const String from               = 'from';
+  static const String to                 = 'to';
+  static const String reset              = 'reset';
+  static const String applyFilter        = 'apply_filter';
+  static const String noIssuesAvailable  = 'no_issues_available';   // "No Issues Available for {year}"
+  static const String checkBackLater     = 'check_back_later';
+  static const String somethingWentWrong = 'something_went_wrong';
+  static const String pleaseTryAgain     = 'please_try_again';
+  static const String free               = 'free';
+  static const String currencySar        = 'currency_sar';
+  static const String detailsPage    = 'details_page';
+  static const String shortWord      = 'short_word';
+  static const String issueIndex     = 'issue_index';
+  static const String editorialStaff = 'editorial_staff';
+  static const String read           = 'read';
+  static const String addToCart      = 'add_to_cart';
+  static const String gift           = 'gift';
+  static const String hijriSuffix    = 'hijri_suffix';
+  static const String articlesCountLabel = 'articles_count';
+  static const String noArticles         = 'no_articles';
 }

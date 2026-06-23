@@ -29,11 +29,14 @@ class CustomButton extends StatelessWidget {
       return OutlinedButton.icon(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(
-            color: Colors.grey, // 👈 your outline color
-            width: 0.2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-          overlayColor: AppColors.primary.withAlpha(5)
+          side: BorderSide(
+            color: AppColors.primary,
+            width: 1,
+          ),
+          overlayColor: AppColors.primary.withAlpha(5),
         ),
         icon: isLoading
             ? const SizedBox(
@@ -41,8 +44,11 @@ class CustomButton extends StatelessWidget {
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         )
-            : Icon(icon ?? Icons.check, color: textColor,),
-        label: Text(text, style: TextStyle(color: textColor),),
+            : null,
+        label: Text(
+          text,
+          style: TextStyle(color: textColor),
+        ),
       );
     }
 

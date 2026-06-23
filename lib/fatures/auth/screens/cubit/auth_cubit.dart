@@ -192,25 +192,32 @@ class AuthCubit extends Cubit<AuthState> {
       Map<String, dynamic> response, {
         String? mobileNumber,
       }) async {
-    final data   = response['data'] as Map<String, dynamic>?;
-    final status = data?['status'] as String?;
+    try {
+      final data = response['data'] as Map<String, dynamic>?;
 
-    // Mobile login → OTP required before token is issued
-    if (status == 'verification_required') {
-      emit(LoginOtpRequired(mobileNumber ?? ''));
-      return;
+      final verificationStatus = data?['status'];
+
+      if (verificationStatus == 'verification_required') {
+        emit(LoginOtpRequired(mobileNumber ?? ''));
+        return;
+      }
+
+      final token = data?['token'] as String?;
+      final userJson = data?['user'] as Map<String, dynamic>?;
+
+      if (token == null || userJson == null) {
+        emit(const LoginError('Invalid response from server.'));
+        return;
+      }
+
+      final user = UserModel.fromJson(userJson);
+
+      await SharedPrefHelper.saveToken(token);
+      await SharedPrefHelper.saveUser(user);
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      emit(LoginError(e.toString()));
     }
-
-    final token    = data?['token']   as String?;
-    final userJson = data?['user']    as Map<String, dynamic>?;
-
-    if (token == null || userJson == null) {
-      emit(const LoginError('Invalid response from server.'));
-      return;
-    }
-    final user = UserModel.fromJson(userJson);
-    await SharedPrefHelper.saveToken(token);
-    await SharedPrefHelper.saveUser(user);
-    emit(LoginSuccess(user));
   }
 }

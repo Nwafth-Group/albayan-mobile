@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'package:albayan/fatures/home/screens/home_screen.dart';
 import 'package:albayan/fatures/onboarding/screens/select_language_screen.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,8 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const SelectLanguageScreen(),
+          // builder: (_) => const SelectLanguageScreen(),
+            builder: (_) => const HomeScreen(),
         ),
       );
     });

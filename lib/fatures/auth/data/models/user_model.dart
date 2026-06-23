@@ -1,18 +1,17 @@
-
 // ============================================
-// FILE: lib/fatures/auth/data/models/user_model.dart
+// FILE: lib/features/auth/data/models/user_model.dart
 // ============================================
 
 class UserModel {
   final String id;
-  final String userNumber;
+  final String? userNumber;
   final String firstName;
   final String lastName;
-  final String name;
+  final String? name;
   final String? email;
   final String? mobileNumber;
   final String? bio;
-  final String countryId;
+  final String? countryId;
   final String type;
   final String defaultLanguage;
   final String status;
@@ -22,14 +21,14 @@ class UserModel {
 
   const UserModel({
     required this.id,
-    required this.userNumber,
+    this.userNumber,
     required this.firstName,
     required this.lastName,
-    required this.name,
+    this.name,
     this.email,
     this.mobileNumber,
     this.bio,
-    required this.countryId,
+    this.countryId,
     required this.type,
     required this.defaultLanguage,
     required this.status,
@@ -40,46 +39,100 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id:              json['id']              as String,
-      userNumber:      json['user_number']     as String,
-      firstName:       json['first_name']      as String,
-      lastName:        json['last_name']       as String,
-      name:            json['name']            as String,
-      email:           json['email']           as String?,
-      mobileNumber:    json['mobile_number']   as String?,
-      bio:             json['bio']             as String?,
-      countryId:       json['country_id']      as String,
-      type:            json['type']            as String,
-      defaultLanguage: json['default_language'] as String,
-      status:          json['status']          as String,
-      termsAccepted:   (json['terms_accepted'] == true ||
-          json['terms_accepted'] == 1),
-      lastLoginAt:     json['last_login_at']   as String?,
-      createdAt:       json['created_at']      as String,
+      id: json['id']?.toString() ?? '',
+      userNumber: json['user_number']?.toString(),
+      firstName: json['first_name']?.toString() ?? '',
+      lastName: json['last_name']?.toString() ?? '',
+      name: json['name']?.toString(),
+      email: json['email']?.toString(),
+      mobileNumber: json['mobile_number']?.toString(),
+      bio: json['bio']?.toString(),
+      countryId: json['country_id']?.toString(),
+      type: json['type']?.toString() ?? '',
+      defaultLanguage: json['default_language']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      termsAccepted:
+      json['terms_accepted'] == true ||
+          json['terms_accepted'] == 1 ||
+          json['terms_accepted'] == '1',
+      lastLoginAt: json['last_login_at']?.toString(),
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id':               id,
-    'user_number':      userNumber,
-    'first_name':       firstName,
-    'last_name':        lastName,
-    'name':             name,
-    'email':            email,
-    'mobile_number':    mobileNumber,
-    'bio':              bio,
-    'country_id':       countryId,
-    'type':             type,
+    'id': id,
+    'user_number': userNumber,
+    'first_name': firstName,
+    'last_name': lastName,
+    'name': name,
+    'email': email,
+    'mobile_number': mobileNumber,
+    'bio': bio,
+    'country_id': countryId,
+    'type': type,
     'default_language': defaultLanguage,
-    'status':           status,
-    'terms_accepted':   termsAccepted,
-    'last_login_at':    lastLoginAt,
-    'created_at':       createdAt,
+    'status': status,
+    'terms_accepted': termsAccepted,
+    'last_login_at': lastLoginAt,
+    'created_at': createdAt,
   };
 
-  /// Display name helper
-  String get displayName => name.isNotEmpty ? name : '$firstName $lastName';
+  /// Returns name if available, otherwise first + last name.
+  String get displayName {
+    if (name != null && name!.trim().isNotEmpty) {
+      return name!;
+    }
 
-  /// Whether the user verified via email
-  bool get hasEmail => email != null && email!.isNotEmpty;
+    final fullName = '$firstName $lastName'.trim();
+    return fullName.isNotEmpty ? fullName : 'User';
+  }
+
+  /// Whether the user has an email address.
+  bool get hasEmail => email != null && email!.trim().isNotEmpty;
+
+  /// Whether the user has a mobile number.
+  bool get hasMobileNumber =>
+      mobileNumber != null && mobileNumber!.trim().isNotEmpty;
+
+  UserModel copyWith({
+    String? id,
+    String? userNumber,
+    String? firstName,
+    String? lastName,
+    String? name,
+    String? email,
+    String? mobileNumber,
+    String? bio,
+    String? countryId,
+    String? type,
+    String? defaultLanguage,
+    String? status,
+    bool? termsAccepted,
+    String? lastLoginAt,
+    String? createdAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      userNumber: userNumber ?? this.userNumber,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      bio: bio ?? this.bio,
+      countryId: countryId ?? this.countryId,
+      type: type ?? this.type,
+      defaultLanguage: defaultLanguage ?? this.defaultLanguage,
+      status: status ?? this.status,
+      termsAccepted: termsAccepted ?? this.termsAccepted,
+      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UserModel(id: $id, displayName: $displayName, email: $email)';
+  }
 }

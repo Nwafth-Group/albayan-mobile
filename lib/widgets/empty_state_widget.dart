@@ -32,8 +32,8 @@ class EmptyStateWidget extends StatelessWidget {
             if(image!=null)
               ImageAsset(
                 image!,
-                height: 138,
-                width: 200,
+                height: 300,
+                width: 300,
               ),
             if(icon!=null)
             Icon(
@@ -41,7 +41,7 @@ class EmptyStateWidget extends StatelessWidget {
               size: 80,
               color: Colors.grey.shade300,
             ),
-            const SizedBox(height: AppDimensions.paddingLarge),
+            const SizedBox(height: AppDimensions.paddingxSmall),
             Text(
               message,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
