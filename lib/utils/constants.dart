@@ -26,6 +26,10 @@ class ApiConstants {
 
   // Corners Endpoints
   static const String corners = '/public/corners';
+
+  static const String articles = '/public/articles';
+
+  static const String authors = '/public/authors';
 }
 
 // App Colors
@@ -255,4 +259,39 @@ class AppStrings {
   static const String hijriSuffix    = 'hijri_suffix';
   static const String articlesCountLabel = 'articles_count';
   static const String noArticles         = 'no_articles';
+  static const String search             = 'search';
+  static const String filter             = 'filter';
+  static const String fromDate           = 'from_date';
+  static const String toDate             = 'to_date';
+  static const String apply              = 'apply';
+  static const String issueLabel         = 'issue_label';    // "Issue {number}"
+  static const String article            = 'article';
+  static const String aboutArticle       = 'about_article';
+  static const String reviews            = 'reviews';
+  static const String similarArticle     = 'similar_article';
+  static const String author             = 'author';
+  static const String visit              = 'visit';
+  static const String overviewOfArticle  = 'overview_of_article';
+  static const String category           = 'category';
+  static const String addRating          = 'add_rating';
+  static const String basedOnRatings     = 'based_on_ratings'; // "based on {count} ratings"
+  static const String noReviews          = 'no_reviews';
+  static const String rateYourExperience = 'rate_your_experience';
+  static const String rateExperienceDesc = 'rate_experience_desc';
+  static const String tellUs             = 'tell_us';
+  static const String cancel             = 'cancel';
+  static const String sendFeedback       = 'send_feedback';
+  static const String feedbackSent       = 'feedback_sent';
+  static const String rating   = 'rating';
+  static const String language = 'language';
+  static const String price    = 'price';
+  static const String authorDetails     = 'author_details';
+  static const String overview          = 'overview';
+  static const String articlesTab       = 'articles_tab';
+  static const String booksTab          = 'books_tab';
+  static const String collectionsCount  = 'collections_count'; // "{count} Collections"
+  static const String exploreLatestBooks= 'explore_latest_books';
+  static const String readNow           = 'read_now';
+  static const String noBooks           = 'no_books';
+
 }

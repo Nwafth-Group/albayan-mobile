@@ -4,6 +4,7 @@
 
 import 'dart:ui';
 
+import 'package:albayan/fatures/corners/screens/corner_screen.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/widgets/index_article_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -221,7 +222,9 @@ class _DetailsViewState extends State<_DetailsView> {
       itemBuilder: (_, i) => IndexArticleTile(
         item: detail.indexPreview[i],
         onTap: () {
-          // TODO: navigate to article details
+          AppNavigator.push(
+             CornerScreen(cornerId: detail.indexPreview[i].corner!.id),
+          );
         },
       ),
     );
