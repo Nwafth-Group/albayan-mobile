@@ -150,6 +150,65 @@ class ProfileError extends AuthState {
   List<Object?> get props => [message];
 }
 
+// ── Forgot Password: Request OTP ─────────────────────────────
+class ForgotPasswordLoading extends AuthState {
+  const ForgotPasswordLoading();
+}
+
+class ForgotPasswordOtpSent extends AuthState {
+  final String email;
+  const ForgotPasswordOtpSent(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}
+
+class ForgotPasswordError extends AuthState {
+  final String message;
+  const ForgotPasswordError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Forgot Password: Verify OTP ──────────────────────────────
+class ForgotPasswordOtpLoading extends AuthState {
+  const ForgotPasswordOtpLoading();
+}
+
+class ForgotPasswordOtpVerified extends AuthState {
+  final String resetToken;
+  const ForgotPasswordOtpVerified(this.resetToken);
+
+  @override
+  List<Object?> get props => [resetToken];
+}
+
+class ForgotPasswordOtpError extends AuthState {
+  final String message;
+  const ForgotPasswordOtpError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Reset Password ────────────────────────────────────────────
+class ResetPasswordLoading extends AuthState {
+  const ResetPasswordLoading();
+}
+
+class ResetPasswordSuccess extends AuthState {
+  const ResetPasswordSuccess();
+}
+
+class ResetPasswordError extends AuthState {
+  final String message;
+  const ResetPasswordError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 // ── Logout ────────────────────────────────────────────────────
 class LogoutLoading extends AuthState {
   const LogoutLoading();

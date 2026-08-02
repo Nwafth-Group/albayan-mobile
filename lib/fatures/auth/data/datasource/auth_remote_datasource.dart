@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/features/auth/data/datasources/auth_remote_datasource.dart
 // ============================================
@@ -103,6 +102,41 @@ class AuthRemoteDataSource {
       body['mobile_number'] = mobileNumber;
     }
     return _api.post(ApiConstants.resendOtp, data: body);
+  }
+
+  // ── Forgot Password: Request OTP ────────────────────────────────
+  Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    return _api.post(ApiConstants.forgotPassword, data: {
+      'email': email,
+    });
+  }
+
+  // ── Forgot Password: Verify OTP ─────────────────────────────────
+  Future<Map<String, dynamic>> verifyForgotPasswordOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    return _api.post(ApiConstants.verifyForgotPasswordOtp, data: {
+      'email':    email,
+      'otp_code': otpCode,
+    });
+  }
+
+  // ── Reset Password ───────────────────────────────────────────────
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String resetToken,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    return _api.post(ApiConstants.resetPassword, data: {
+      'email':                  email,
+      'reset_token':            resetToken,
+      'password':               password,
+      'password_confirmation':  passwordConfirmation,
+    });
   }
 
   // ── Get Profile ───────────────────────────────────────────────

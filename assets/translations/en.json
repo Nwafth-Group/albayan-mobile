@@ -99,6 +99,8 @@
   "labelLastName": "Last Name",
   "labelEmail": "Email",
   "labelCountry": "Country",
+  "selectCountry": "Select Country",
+  "searchCountry": "Search country",
   "labelPassword": "Password",
   "labelConfirmPassword": "Confirm Password",
   "labelMobilePhone": "Mobile Number",
@@ -195,5 +197,33 @@
   "articles_tab": "Articles", "books_tab": "Books",
   "collections_count": "{count} Collections",
   "explore_latest_books": "Explore the latest books published by this author",
-  "read_now": "Read Now", "no_books": "No books available"
+  "read_now": "Read Now", "no_books": "No books available",
+  "corners_title": "Corners",
+  "no_corners": "No corners available",
+  "nav_home": "Home",
+  "nav_library": "Library",
+  "nav_search": "Search",
+  "nav_cart": "Cart",
+  "nav_settings": "Settings",
+
+  "library_title": "My Library",
+  "library_empty_title": "Your library is empty",
+  "library_empty_subtitle": "Issues, articles, and books you save will appear here.",
+
+  "cart_title": "Cart",
+  "cart_empty_title": "Your cart is empty",
+  "cart_empty_subtitle": "Items you add to your cart will appear here.",
+
+  "search_title": "Search",
+  "search_empty_title": "Search Albayan",
+  "search_empty_subtitle": "Find issues, articles, books, and authors.",
+
+  "settings_title": "Settings",
+  "my_account": "My Account",
+  "logout": "Log Out",
+  "logout_confirm_title": "Log out?",
+  "logout_confirm_message": "Are you sure you want to log out of your account?",
+  "guest_mode_title": "You're browsing as a guest",
+  "guest_mode_subtitle": "Log in to sync your library, purchases, and preferences.",
+  "login": "Log In"
 }

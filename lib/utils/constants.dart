@@ -19,7 +19,12 @@ class ApiConstants {
   static const String verifyOtp = '/reader/auth/verify-otp';
   static const String resendOtp = '/reader/auth/resend-otp';
   static const String logout    = '/reader/auth/logout';
-  static const String profile   = '/reader/auth/profile';
+  static const String profile   = '/reader/profile';
+
+  // Forgot / Reset Password
+  static const String forgotPassword          = '/reader/auth/forgot-password';
+  static const String verifyForgotPasswordOtp = '/reader/auth/verify-forgot-password-otp';
+  static const String resetPassword           = '/reader/auth/reset-password';
 
   // Issues Endpoints
   static const String issues = '/public/issues';
@@ -85,6 +90,15 @@ class AppImages {
   static const String favorate       = 'assets/icons/favorate.png';
   static const String openBook       = 'assets/icons/open_book.png';
   static const String taj       = 'assets/icons/taj.png';
+
+  static const String home       = 'assets/icons/home.png';
+  static const String library       = 'assets/icons/library.png';
+  static const String search2       = 'assets/icons/search2.png';
+  static const String cart       = 'assets/icons/cart.png';
+  static const String setting       = 'assets/icons/setting.png';
+
+  static const String offers       = 'assets/icons/offers.png';
+  static const String notification       = 'assets/icons/notification.png';
 }
 
 // App Dimensions
@@ -293,5 +307,39 @@ class AppStrings {
   static const String exploreLatestBooks= 'explore_latest_books';
   static const String readNow           = 'read_now';
   static const String noBooks           = 'no_books';
+  static const String cornersTitle      = 'corners_title';
+  static const String noCorners         = 'no_corners';
+
+  // ── Main Tab Bar ──────────────────────────────────────────
+  static const String navHome     = 'nav_home';
+  static const String navLibrary  = 'nav_library';
+  static const String navSearch   = 'nav_search';
+  static const String navCart     = 'nav_cart';
+  static const String navSettings = 'nav_settings';
+
+  // ── Library ───────────────────────────────────────────────
+  static const String libraryTitle          = 'library_title';
+  static const String libraryEmptyTitle     = 'library_empty_title';
+  static const String libraryEmptySubtitle  = 'library_empty_subtitle';
+
+  // ── Cart ──────────────────────────────────────────────────
+  static const String cartTitle         = 'cart_title';
+  static const String cartEmptyTitle    = 'cart_empty_title';
+  static const String cartEmptySubtitle = 'cart_empty_subtitle';
+
+  // ── Search ────────────────────────────────────────────────
+  static const String searchTitle         = 'search_title';
+  static const String searchEmptyTitle    = 'search_empty_title';
+  static const String searchEmptySubtitle = 'search_empty_subtitle';
+
+  // ── Settings ──────────────────────────────────────────────
+  static const String settingsTitle       = 'settings_title';
+  static const String myAccount           = 'my_account';
+  static const String logout              = 'logout';
+  static const String logoutConfirmTitle  = 'logout_confirm_title';
+  static const String logoutConfirmMessage= 'logout_confirm_message';
+  static const String guestModeTitle      = 'guest_mode_title';
+  static const String guestModeSubtitle   = 'guest_mode_subtitle';
+  static const String login               = 'login';
 
 }

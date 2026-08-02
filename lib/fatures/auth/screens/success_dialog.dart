@@ -3,7 +3,7 @@
 // FILE: lib/fatures/auth/screens/success_dialog.dart
 // ============================================
 
-import 'package:albayan/fatures/home/screens/home_screen.dart';
+import 'package:albayan/fatures/main/screens/main_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/constants.dart';
@@ -11,7 +11,9 @@ import '../../../utils/app_navigator.dart';
 import '../../../widgets/custom_button.dart';
 
 class SuccessDialog extends StatelessWidget {
-  const SuccessDialog({Key? key}) : super(key: key);
+  final VoidCallback? onDone;
+
+  const SuccessDialog({Key? key, this.onDone}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,11 @@ class SuccessDialog extends StatelessWidget {
               child: CustomButton(
                 text: AppStrings.btnDone.tr(),
                 onPressed: () {
-                  AppNavigator.pushAndRemoveUntil(const HomeScreen());
+                  if (onDone != null) {
+                    onDone!();
+                  } else {
+                    AppNavigator.pushAndRemoveUntil(const MainScreen());
+                  }
                 },
                 backgroundColor: AppColors.primary,
               ),

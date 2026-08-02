@@ -1,5 +1,5 @@
 // ============================================
-// FILE: lib/features/auth/screens/otp_screen.dart
+// FILE: lib/fatures/auth/screens/forgot_password_otp_screen.dart
 // ============================================
 
 import 'dart:async';
@@ -12,23 +12,22 @@ import 'package:pinput/pinput.dart';
 
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
-import 'success_dialog.dart';
+import 'reset_password_screen.dart';
 
-class OtpScreen extends StatefulWidget {
-  final String recipient;
-  final bool isEmail;
+class ForgotPasswordOtpScreen extends StatefulWidget {
+  final String email;
 
-  const OtpScreen({
+  const ForgotPasswordOtpScreen({
     Key? key,
-    required this.recipient,
-    required this.isEmail,
+    required this.email,
   }) : super(key: key);
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  State<ForgotPasswordOtpScreen> createState() =>
+      _ForgotPasswordOtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
   final _pinController = TextEditingController();
   final _focusNode     = FocusNode();
   bool _hasError       = false;
@@ -64,10 +63,7 @@ class _OtpScreenState extends State<OtpScreen> {
       _isSubmitting = false;
     });
 
-    context.read<AuthCubit>().resendOtp(
-      email:        widget.isEmail ? widget.recipient : null,
-      mobileNumber: widget.isEmail ? null : widget.recipient,
-    );
+    context.read<AuthCubit>().forgotPassword(email: widget.email);
 
     _startTimer();
   }
@@ -86,10 +82,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
     setState(() => _hasError = false);
 
-    context.read<AuthCubit>().verifyOtp(
-      email:        widget.isEmail ? widget.recipient : null,
-      mobileNumber: widget.isEmail ? null : widget.recipient,
-      otpCode:      _pinController.text,
+    context.read<AuthCubit>().verifyForgotPasswordOtp(
+      email:   widget.email,
+      otpCode: _pinController.text,
     );
   }
 
@@ -107,21 +102,15 @@ class _OtpScreenState extends State<OtpScreen> {
     setState(() => _isSubmitting = false);
   }
 
-  String get _maskedRecipient {
-    if (widget.isEmail) {
-      final parts = widget.recipient.split('@');
-      if (parts.length != 2) return widget.recipient;
-      final name   = parts[0];
-      final domain = parts[1];
-      final masked = name.length <= 2
-          ? name
-          : '${name[0]}${'*' * (name.length - 2)}${name[name.length - 1]}';
-      return '$masked@$domain';
-    } else {
-      if (widget.recipient.length < 5) return widget.recipient;
-      return '${widget.recipient.substring(0, 3)}****'
-          '${widget.recipient.substring(widget.recipient.length - 3)}';
-    }
+  String get _maskedEmail {
+    final parts = widget.email.split('@');
+    if (parts.length != 2) return widget.email;
+    final name   = parts[0];
+    final domain = parts[1];
+    final masked = name.length <= 2
+        ? name
+        : '${name[0]}${'*' * (name.length - 2)}${name[name.length - 1]}';
+    return '$masked@$domain';
   }
 
   String _formatTime(int seconds) {
@@ -156,13 +145,20 @@ class _OtpScreenState extends State<OtpScreen> {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is OtpVerified) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const SuccessDialog(),
+        if (state is ForgotPasswordOtpVerified) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: ResetPasswordScreen(
+                  email:      widget.email,
+                  resetToken: state.resetToken,
+                ),
+              ),
+            ),
           );
-        } else if (state is OtpError) {
+        } else if (state is ForgotPasswordOtpError) {
           setState(() {
             _hasError     = true;
             _isSubmitting = false;
@@ -174,7 +170,7 @@ class _OtpScreenState extends State<OtpScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-        } else if (state is OtpResendSuccess) {
+        } else if (state is ForgotPasswordOtpSent) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppStrings.otpResentSuccess.tr()),
@@ -182,7 +178,7 @@ class _OtpScreenState extends State<OtpScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-        } else if (state is OtpResendError) {
+        } else if (state is ForgotPasswordError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -225,7 +221,7 @@ class _OtpScreenState extends State<OtpScreen> {
                             TextSpan(
                                 text: '${AppStrings.otpSubtitle.tr()} '),
                             TextSpan(
-                              text: _maskedRecipient,
+                              text: _maskedEmail,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary),
@@ -300,11 +296,11 @@ class _OtpScreenState extends State<OtpScreen> {
                             const SizedBox(height: 4),
                             BlocBuilder<AuthCubit, AuthState>(
                               buildWhen: (_, s) =>
-                              s is OtpResendLoading ||
-                                  s is OtpResendSuccess ||
-                                  s is OtpResendError,
+                              s is ForgotPasswordLoading ||
+                                  s is ForgotPasswordOtpSent ||
+                                  s is ForgotPasswordError,
                               builder: (context, state) {
-                                if (state is OtpResendLoading) {
+                                if (state is ForgotPasswordLoading) {
                                   return const SizedBox(
                                     height: 20,
                                     width: 20,
@@ -338,16 +334,16 @@ class _OtpScreenState extends State<OtpScreen> {
                       // Submit button
                       BlocBuilder<AuthCubit, AuthState>(
                         buildWhen: (_, s) =>
-                        s is OtpLoading ||
-                            s is OtpVerified ||
-                            s is OtpError,
+                        s is ForgotPasswordOtpLoading ||
+                            s is ForgotPasswordOtpVerified ||
+                            s is ForgotPasswordOtpError,
                         builder: (context, state) {
                           return SizedBox(
                             width: double.infinity,
                             height: 48,
                             child: CustomButton(
                               text: AppStrings.btnSubmit.tr(),
-                              isLoading: state is OtpLoading,
+                              isLoading: state is ForgotPasswordOtpLoading,
                               onPressed: _onSubmit,
                               backgroundColor: AppColors.primary,
                             ),
@@ -373,7 +369,7 @@ class _OtpScreenState extends State<OtpScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Custom Numpad (unchanged from original)
+// Custom Numpad (same layout as the register/login OTP screen)
 // ─────────────────────────────────────────────────────────────
 class _CustomNumpad extends StatelessWidget {
   final void Function(String) onTap;

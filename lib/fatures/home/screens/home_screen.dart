@@ -1,7 +1,15 @@
 
+import 'dart:async';
+import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:albayan/fatures/auth/data/models/user_model.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
+import 'package:albayan/fatures/corners/screens/corners_list_screen.dart';
 import 'package:albayan/fatures/issues/screens/issues_screen.dart';
+import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/utils/constants.dart';
+import 'package:albayan/utils/shared_pref_helper.dart';
 import 'package:flutter/material.dart';
 
 // ============================================
@@ -72,6 +80,43 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
 
+  // ── Profile ────────────────────────────────────────────────────
+  UserModel? _user;
+  late final AuthCubit _authCubit;
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _authCubit = AuthCubit(AuthRemoteDataSource(ApiService()));
+
+    // Show cached profile data instantly, then refresh from the API.
+    _user = SharedPrefHelper.getUser();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
+    if (!SharedPrefHelper.isLoggedIn()) return;
+
+    _authSub = _authCubit.stream.listen((state) {
+      if (!mounted) return;
+      if (state is ProfileLoaded) {
+        setState(() => _user = state.user);
+      }
+      // On ProfileError we silently keep whatever cached data we had —
+      // the home screen shouldn't block or show an error banner over this.
+    });
+
+    _authCubit.getProfile();
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    _authCubit.close();
+    super.dispose();
+  }
+
   final List<String> _categories = [
     'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300', // Poetry/Modern Book
     'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=300', // Classic Fiction
@@ -126,7 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildFeaturedBanner()),
 
             // ── Category Chips ───────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Corners',null)),
+            SliverToBoxAdapter(child: _buildSectionHeader('Corners', () {
+              AppNavigator.push(const CornersListScreen());
+            },),),
             SliverToBoxAdapter(child: _buildCategoryChips()),
 
             // ── Latest Issues ────────────────────────────────────
@@ -164,6 +211,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Header ────────────────────────────────────────────────────
   Widget _buildHeader() {
+    final isLoggedIn   = SharedPrefHelper.isLoggedIn();
+    final displayName  = _user?.displayName ?? (isLoggedIn ? 'Reader' : 'Guest');
+    final profileImage = _user?.profileImage;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
@@ -178,7 +229,16 @@ class _HomeScreenState extends State<HomeScreen> {
               border: Border.all(color: AppColors.surfaceVariant, width: 2),
             ),
             child: ClipOval(
-              child: Icon(Icons.person, color: AppColors.textSecondary, size: 26),
+              child: (profileImage != null && profileImage.isNotEmpty)
+                  ? Image.network(
+                profileImage,
+                width: 42,
+                height: 42,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(
+                    Icons.person, color: AppColors.textSecondary, size: 26),
+              )
+                  : Icon(Icons.person, color: AppColors.textSecondary, size: 26),
             ),
           ),
           const SizedBox(width: 10),
@@ -187,13 +247,39 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hello, Ahmed',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Hello, $displayName',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (_user?.haveSubscription == true) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentPale,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _user?.subscriptionStatus ?? 'Active',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
                   'Discover stories, knowledge and inspiration',
@@ -205,20 +291,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Cart
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.shopping_cart_outlined, color: AppColors.primary, size: 22),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+          // Offers
+          _HeaderIconButton(
+            icon: AppImages.offers,
+            fallbackIcon: Icons.local_offer_outlined,
+            onTap: () {},
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // Notification
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 22),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+          _HeaderIconButton(
+            icon: AppImages.notification,
+            fallbackIcon: Icons.notifications_outlined,
+            onTap: () {},
           ),
         ],
       ),
@@ -447,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Best Books ────────────────────────────────────────────────
   Widget _buildBestBooks() {
     return SizedBox(
-      height: 220,
+      height: 228,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -836,6 +920,48 @@ class _RecommendationCard extends StatelessWidget {
           Text(book.author, style: TextStyle(fontSize: 10, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
           Text('May 3, 2026', style: TextStyle(fontSize: 10, color: AppColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================
+// HEADER ICON BUTTON (Offers / Notification)
+// ============================================
+
+class _HeaderIconButton extends StatelessWidget {
+  final String icon;
+  final IconData fallbackIcon;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.fallbackIcon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.accentPale,
+        ),
+        alignment: Alignment.center,
+        child: Image.asset(
+          icon,
+          width: 20,
+          height: 20,
+          color: AppColors.primary,
+          colorBlendMode: BlendMode.srcIn,
+          errorBuilder: (_, __, ___) =>
+              Icon(fallbackIcon, color: AppColors.primary, size: 20),
+        ),
       ),
     );
   }

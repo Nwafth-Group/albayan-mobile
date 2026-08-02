@@ -155,6 +155,62 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // ── Forgot Password: Request OTP ────────────────────────────────
+  Future<void> forgotPassword({required String email}) async {
+    emit(const ForgotPasswordLoading());
+    try {
+      await _dataSource.forgotPassword(email: email);
+      emit(ForgotPasswordOtpSent(email));
+    } catch (e) {
+      emit(ForgotPasswordError(e.toString()));
+    }
+  }
+
+  // ── Forgot Password: Verify OTP ─────────────────────────────────
+  Future<void> verifyForgotPasswordOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    emit(const ForgotPasswordOtpLoading());
+    try {
+      final response = await _dataSource.verifyForgotPasswordOtp(
+        email:   email,
+        otpCode: otpCode,
+      );
+      final data       = response['data'] as Map<String, dynamic>?;
+      final resetToken = data?['reset_token'] as String?;
+
+      if (resetToken == null) {
+        emit(const ForgotPasswordOtpError('Invalid response from server.'));
+        return;
+      }
+      emit(ForgotPasswordOtpVerified(resetToken));
+    } catch (e) {
+      emit(ForgotPasswordOtpError(e.toString()));
+    }
+  }
+
+  // ── Reset Password ───────────────────────────────────────────────
+  Future<void> resetPassword({
+    required String email,
+    required String resetToken,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    emit(const ResetPasswordLoading());
+    try {
+      await _dataSource.resetPassword(
+        email:                 email,
+        resetToken:            resetToken,
+        password:              password,
+        passwordConfirmation:  passwordConfirmation,
+      );
+      emit(const ResetPasswordSuccess());
+    } catch (e) {
+      emit(ResetPasswordError(e.toString()));
+    }
+  }
+
   // ── Get Profile ───────────────────────────────────────────────
   Future<void> getProfile() async {
     emit(const ProfileLoading());

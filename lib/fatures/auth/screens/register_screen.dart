@@ -490,71 +490,75 @@ class _CountrySearchDialogState extends State<_CountrySearchDialog> {
       // ── Hard cap the whole dialog to available height ─────────
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: availableHeight),
-        child: Column(
-          // No mainAxisSize.min — let Column fill the constrained box
-          // so Flexible/Expanded children work correctly
-          children: [
-            // ── Header (fixed) ───────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppStrings.selectCountry.tr(),
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary),
+        child: CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
+            // ── Header ────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppStrings.selectCountry.tr(),
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary),
+                      ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close,
-                        color: AppColors.textLight, size: 22),
-                  ),
-                ],
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.close,
+                          color: AppColors.textLight, size: 22),
+                    ),
+                  ],
+                ),
               ),
             ),
 
-            // ── Search field (fixed) ─────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchCtrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: AppStrings.searchCountry.tr(),
-                  hintStyle:
-                  TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.textLight, size: 20),
-                  filled: true,
-                  fillColor: AppColors.cardColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(50),
-                    borderSide: BorderSide.none,
+            // ── Search field ──────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: AppStrings.searchCountry.tr(),
+                    hintStyle:
+                    TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.textLight, size: 20),
+                    filled: true,
+                    fillColor: AppColors.cardColor,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-            // ── List (flexible — takes remaining space) ──────────
-            Flexible(
-              child: _filtered.isEmpty
-                  ? Center(
+            // ── List (scrolls together with header/search) ────
+            _filtered.isEmpty
+                ? SliverToBoxAdapter(
+              child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Text(AppStrings.noResults.tr(),
                       style: const TextStyle(color: AppColors.textLight)),
                 ),
-              )
-                  : ListView.builder(
-                itemCount: _filtered.length,
-                itemBuilder: (context, i) {
+              ),
+            )
+                : SliverList(
+              delegate: SliverChildBuilderDelegate(
+                    (context, i) {
                   final c          = _filtered[i];
                   final isSelected = widget.selected?.id == c.id;
                   return ListTile(
@@ -591,9 +595,10 @@ class _CountrySearchDialogState extends State<_CountrySearchDialog> {
                             color: AppColors.textSecondary)),
                   );
                 },
+                childCount: _filtered.length,
               ),
             ),
-            const SizedBox(height: 12),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
           ],
         ),
       ),

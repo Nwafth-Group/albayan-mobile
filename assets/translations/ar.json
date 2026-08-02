@@ -98,6 +98,8 @@
   "labelLastName": "اسم العائلة",
   "labelEmail": "البريد الإلكتروني",
   "labelCountry": "الدولة",
+  "selectCountry": "اختر الدولة",
+  "searchCountry": "ابحث عن دولة",
   "labelPassword": "كلمة المرور",
   "labelConfirmPassword": "تأكيد كلمة المرور",
   "labelMobilePhone": "رقم الجوال",
@@ -194,5 +196,33 @@
   "articles_tab": "المقالات", "books_tab": "الكتب",
   "collections_count": "{count} عمل",
   "explore_latest_books": "استكشف أحدث الكتب المنشورة لهذا الكاتب",
-  "read_now": "اقرأ الآن", "no_books": "لا توجد كتب"
+  "read_now": "اقرأ الآن", "no_books": "لا توجد كتب",
+  "corners_title": "الأركان",
+  "no_corners": "لا توجد أركان متاحة",
+  "nav_home": "الرئيسية",
+  "nav_library": "مكتبتي",
+  "nav_search": "بحث",
+  "nav_cart": "السلة",
+  "nav_settings": "الإعدادات",
+
+  "library_title": "مكتبتي",
+  "library_empty_title": "مكتبتك فارغة",
+  "library_empty_subtitle": "ستظهر هنا الإصدارات والمقالات والكتب التي تحفظها.",
+
+  "cart_title": "السلة",
+  "cart_empty_title": "سلتك فارغة",
+  "cart_empty_subtitle": "ستظهر هنا العناصر التي تضيفها إلى سلتك.",
+
+  "search_title": "بحث",
+  "search_empty_title": "ابحث في البيان",
+  "search_empty_subtitle": "ابحث عن الإصدارات والمقالات والكتب والكتّاب.",
+
+  "settings_title": "الإعدادات",
+  "my_account": "حسابي",
+  "logout": "تسجيل الخروج",
+  "logout_confirm_title": "تسجيل الخروج؟",
+  "logout_confirm_message": "هل أنت متأكد أنك تريد تسجيل الخروج من حسابك؟",
+  "guest_mode_title": "أنت تتصفح كزائر",
+  "guest_mode_subtitle": "سجّل الدخول لمزامنة مكتبتك ومشترياتك وتفضيلاتك.",
+  "login": "تسجيل الدخول"
 }

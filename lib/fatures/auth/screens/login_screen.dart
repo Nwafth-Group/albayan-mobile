@@ -9,7 +9,7 @@ import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:albayan/fatures/auth/screens/forgot_password_screen.dart';
 import 'package:albayan/fatures/auth/screens/otp_screen.dart';
 import 'package:albayan/fatures/auth/screens/register_screen.dart';
-import 'package:albayan/fatures/home/screens/home_screen.dart';
+import 'package:albayan/fatures/main/screens/main_screen.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -121,7 +121,7 @@ class _LoginBodyState extends State<_LoginBody>
         }
 
         if (state is LoginSuccess) {
-          AppNavigator.pushAndRemoveUntil(const HomeScreen());
+          AppNavigator.pushAndRemoveUntil(const MainScreen());
         } else if (state is LoginOtpRequired) {
           // Mobile login needs OTP verification
           Navigator.push(
@@ -258,7 +258,7 @@ class _LoginBodyState extends State<_LoginBody>
                   const SizedBox(height: 12),
 
                   // Guest button
-                  _GuestButton(onTap: () => AppNavigator.pushAndRemoveUntil(const HomeScreen())),
+                  _GuestButton(onTap: () => AppNavigator.pushAndRemoveUntil(const MainScreen())),
                   const SizedBox(height: 24),
 
                   // Sign up link
@@ -715,63 +715,69 @@ class _CountrySearchDialogState extends State<_CountrySearchDialog> {
       EdgeInsets.fromLTRB(16, 40, 16, mq.viewInsets.bottom + 16),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: availableHeight),
-        child: Column(
-          children: [
+        child: CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
             // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(children: [
-                Expanded(
-                    child: Text(AppStrings.selectCountry.tr(),
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary))),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close,
-                      color: AppColors.textLight, size: 22),
-                ),
-              ]),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(children: [
+                  Expanded(
+                      child: Text(AppStrings.selectCountry.tr(),
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary))),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.close,
+                        color: AppColors.textLight, size: 22),
+                  ),
+                ]),
+              ),
             ),
             // Search
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchCtrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: AppStrings.searchCountry.tr(),
-                  hintStyle:
-                  TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                  prefixIcon: const Icon(Icons.search,
-                      color: AppColors.textLight, size: 20),
-                  filled: true,
-                  fillColor: AppColors.cardColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(50),
-                    borderSide: BorderSide.none,
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: AppStrings.searchCountry.tr(),
+                    hintStyle:
+                    TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.textLight, size: 20),
+                    filled: true,
+                    fillColor: AppColors.cardColor,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(50),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
             // List
-            Flexible(
-              child: _filtered.isEmpty
-                  ? Center(
+            _filtered.isEmpty
+                ? SliverToBoxAdapter(
+              child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Text(AppStrings.noResults.tr(),
                       style: const TextStyle(
                           color: AppColors.textLight)),
                 ),
-              )
-                  : ListView.builder(
-                itemCount: _filtered.length,
-                itemBuilder: (context, i) {
+              ),
+            )
+                : SliverList(
+              delegate: SliverChildBuilderDelegate(
+                    (context, i) {
                   final c = _filtered[i];
                   final isSelected = widget.selected?.id == c.id;
                   return ListTile(
@@ -802,9 +808,10 @@ class _CountrySearchDialogState extends State<_CountrySearchDialog> {
                             color: AppColors.textSecondary)),
                   );
                 },
+                childCount: _filtered.length,
               ),
             ),
-            const SizedBox(height: 12),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
           ],
         ),
       ),

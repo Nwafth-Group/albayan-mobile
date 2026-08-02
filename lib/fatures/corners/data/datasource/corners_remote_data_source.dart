@@ -9,8 +9,16 @@ import 'package:albayan/utils/constants.dart';
 import '../models/corner_articles_filter.dart';
 import '../models/corner_articles_response.dart';
 import '../models/corner_model.dart';
+import '../models/corners_list_response.dart';
 
 abstract class CornersRemoteDataSource {
+  /// GET /public/corners?search&per_page=
+  Future<CornersListResponse> getCorners({
+    required String search,
+    required int page,
+    int perPage = 15,
+  });
+
   /// GET /public/corners/{id}
   Future<CornerModel> getCorner(String id);
 
@@ -26,6 +34,28 @@ class CornersRemoteDataSourceImpl implements CornersRemoteDataSource {
   final ApiService _api;
 
   CornersRemoteDataSourceImpl(this._api);
+
+  @override
+  Future<CornersListResponse> getCorners({
+    required String search,
+    required int page,
+    int perPage = 15,
+  }) async {
+    final response = await _api.get(
+      ApiConstants.corners,
+      queryParameters: {
+        'search': search,
+        'per_page': perPage,
+        'page': page,
+      },
+    );
+
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return CornersListResponse.fromData(data);
+    }
+    return CornersListResponse.fromData(const {});
+  }
 
   @override
   Future<CornerModel> getCorner(String id) async {

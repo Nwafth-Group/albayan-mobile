@@ -7,10 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../fatures/auth/data/models/user_model.dart';
 
 class SharedPrefHelper {
-  static const String _tokenKey    = 'auth_token';
-  static const String _lngKey      = 'lng';
-  static const String _userKey     = 'user_data';
-  static const String _isLoggedIn  = 'is_logged_in';
+  static const String _tokenKey          = 'auth_token';
+  static const String _lngKey            = 'lng';
+  static const String _userKey           = 'user_data';
+  static const String _isLoggedIn        = 'is_logged_in';
+  static const String _hasLaunchedBefore = 'has_launched_before';
 
   static late SharedPreferences _prefs;
 
@@ -55,6 +56,15 @@ class SharedPrefHelper {
   // ── Auth state ────────────────────────────────────────────────
   static bool isLoggedIn() {
     return _prefs.getBool(_isLoggedIn) ?? false;
+  }
+
+  // ── First launch ──────────────────────────────────────────────
+  static bool hasLaunchedBefore() {
+    return _prefs.getBool(_hasLaunchedBefore) ?? false;
+  }
+
+  static Future<void> setLaunchedBefore() async {
+    await _prefs.setBool(_hasLaunchedBefore, true);
   }
 
   // ── Clear ─────────────────────────────────────────────────────
