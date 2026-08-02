@@ -482,11 +482,14 @@ class _CountrySearchDialogState extends State<_CountrySearchDialog> {
     final mq     = MediaQuery.of(context);
 
     // Total usable height = screen − keyboard − top/bottom dialog margins
-    final availableHeight = mq.size.height - mq.viewInsets.bottom - 80;
+    final availableHeight = mq.size.height - mq.viewInsets.bottom - 48;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: EdgeInsets.fromLTRB(16, 40, 16, mq.viewInsets.bottom + 16),
+      // NOTE: don't add mq.viewInsets.bottom here — Dialog already shifts
+      // its content above the keyboard internally. Adding it again here
+      // double-counts the keyboard height and crushes the dialog.
+      insetPadding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
       // ── Hard cap the whole dialog to available height ─────────
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: availableHeight),

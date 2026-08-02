@@ -309,6 +309,12 @@ class AppStrings {
   static const String noBooks           = 'no_books';
   static const String cornersTitle      = 'corners_title';
   static const String noCorners         = 'no_corners';
+  static const String articlesTitle     = 'articles_title';
+  static const String authorsTitle      = 'authors_title';
+  static const String noAuthors         = 'no_authors';
+  static const String authorTypeWriter  = 'author_type_writer';
+  static const String authorTypeAuthor  = 'author_type_author';
+  static const String booksCountLabel   = 'books_count_label';
 
   // ── Main Tab Bar ──────────────────────────────────────────
   static const String navHome     = 'nav_home';

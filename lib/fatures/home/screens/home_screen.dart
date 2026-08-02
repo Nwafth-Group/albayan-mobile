@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/data/models/user_model.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
+import 'package:albayan/fatures/articles/screens/articles_list_screen.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
+import 'package:albayan/fatures/authors/screens/authors_list_screen.dart';
 import 'package:albayan/fatures/corners/screens/corners_list_screen.dart';
 import 'package:albayan/fatures/issues/screens/issues_screen.dart';
 import 'package:albayan/utils/api_client.dart';
@@ -183,11 +185,15 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildLatestIssues()),
 
             // ── Articles ─────────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Articles',null)),
+            SliverToBoxAdapter(child: _buildSectionHeader('Articles', () {
+              AppNavigator.push(const ArticlesListScreen());
+            },),),
             SliverToBoxAdapter(child: _buildArticlesList()),
 
             // ── Writers & Authors ─────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Writers & Authors',null)),
+            SliverToBoxAdapter(child: _buildSectionHeader('Writers & Authors', () {
+              AppNavigator.push(const AuthorsListScreen());
+            },),),
             SliverToBoxAdapter(child: _buildAuthors()),
 
             // ── Best Books ───────────────────────────────────────

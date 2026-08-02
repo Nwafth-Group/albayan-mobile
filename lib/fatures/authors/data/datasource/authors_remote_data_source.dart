@@ -8,9 +8,16 @@ import 'package:albayan/utils/constants.dart';
 
 import '../models/author_articles_response.dart';
 import '../models/author_details_model.dart';
+import '../models/authors_list_response.dart';
 import '../models/book_model.dart';
 
 abstract class AuthorsRemoteDataSource {
+  /// GET /public/authors?search=
+  Future<AuthorsListResponse> getAuthors({
+    required String search,
+    required int page,
+  });
+
   Future<AuthorDetailsModel> getAuthor(String id);
 
   Future<AuthorArticlesResponse> getArticles({
@@ -26,6 +33,26 @@ class AuthorsRemoteDataSourceImpl implements AuthorsRemoteDataSource {
   final ApiService _api;
 
   AuthorsRemoteDataSourceImpl(this._api);
+
+  @override
+  Future<AuthorsListResponse> getAuthors({
+    required String search,
+    required int page,
+  }) async {
+    final response = await _api.get(
+      ApiConstants.authors,
+      queryParameters: {
+        'search': search,
+        'page': page,
+      },
+    );
+
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return AuthorsListResponse.fromData(data);
+    }
+    return AuthorsListResponse.fromData(const {});
+  }
 
   @override
   Future<AuthorDetailsModel> getAuthor(String id) async {

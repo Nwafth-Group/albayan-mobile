@@ -7,10 +7,18 @@ import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 
 import '../models/article_model.dart';
+import '../models/articles_filter.dart';
+import '../models/articles_list_response.dart';
 import '../models/comment_model.dart';
 import '../models/similar_articles_response.dart';
 
 abstract class ArticlesRemoteDataSource {
+  /// GET /public/articles?search&from_date&to_date&per_page=
+  Future<ArticlesListResponse> getArticles({
+    required ArticlesFilter filter,
+    required int page,
+  });
+
   Future<ArticleModel> getArticle(String id);
 
   Future<CommentsResponse> getComments({required String id, required int page});
@@ -34,6 +42,23 @@ class ArticlesRemoteDataSourceImpl implements ArticlesRemoteDataSource {
   final ApiService _api;
 
   ArticlesRemoteDataSourceImpl(this._api);
+
+  @override
+  Future<ArticlesListResponse> getArticles({
+    required ArticlesFilter filter,
+    required int page,
+  }) async {
+    final response = await _api.get(
+      ApiConstants.articles,
+      queryParameters: filter.toQuery(page: page),
+    );
+
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return ArticlesListResponse.fromData(data);
+    }
+    return ArticlesListResponse.fromData(const {});
+  }
 
   @override
   Future<ArticleModel> getArticle(String id) async {
