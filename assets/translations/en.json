@@ -236,5 +236,10 @@
   "discover_author_title": "Discover the author behind this book",
   "buy_now": "Buy Now",
   "do_you_find_helpful": "Do you find it helpful?",
-  "no_related_books": "No related books available"
+  "no_related_books": "No related books available",
+  "publisher_house": "Publisher House",
+  "about_publisher_house": "About Publisher house",
+  "discover_books_title": "Discover books published by this house",
+  "discover_btn": "Discover",
+  "no_publisher_books": "No books available"
 }

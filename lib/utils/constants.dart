@@ -38,6 +38,9 @@ class ApiConstants {
 
   // Books Endpoints
   static const String books = '/public/books';
+
+  // Publishers Endpoints
+  static const String publishers = '/public/publishers';
 }
 
 // App Colors
@@ -330,6 +333,11 @@ class AppStrings {
   static const String buyNow            = 'buy_now';
   static const String doYouFindHelpful  = 'do_you_find_helpful';
   static const String noRelatedBooks    = 'no_related_books';
+  static const String publisherHouse    = 'publisher_house';
+  static const String aboutPublisherHouse = 'about_publisher_house';
+  static const String discoverBooksTitle  = 'discover_books_title';
+  static const String discoverBtn         = 'discover_btn';
+  static const String noPublisherBooks    = 'no_publisher_books';
 
   // ── Main Tab Bar ──────────────────────────────────────────
   static const String navHome     = 'nav_home';

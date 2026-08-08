@@ -236,5 +236,10 @@
   "discover_author_title": "اكتشف الكاتب وراء هذا الكتاب",
   "buy_now": "اشترِ الآن",
   "do_you_find_helpful": "هل تجد هذا مفيدًا؟",
-  "no_related_books": "لا توجد كتب ذات صلة"
+  "no_related_books": "لا توجد كتب ذات صلة",
+  "publisher_house": "دار النشر",
+  "about_publisher_house": "عن دار النشر",
+  "discover_books_title": "اكتشف الكتب التي نشرتها هذه الدار",
+  "discover_btn": "اكتشف",
+  "no_publisher_books": "لا توجد كتب متاحة"
 }

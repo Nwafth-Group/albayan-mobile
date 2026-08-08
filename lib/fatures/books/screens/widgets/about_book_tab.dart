@@ -4,6 +4,7 @@
 // ============================================
 
 import 'package:albayan/fatures/authors/screens/author_screen.dart';
+import 'package:albayan/fatures/publishers/screens/publisher_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -57,9 +58,11 @@ class AboutBookTab extends StatelessWidget {
           _PersonRow(
             name: publisher.name,
             image: publisher.image,
-            onVisit: () {
-              // TODO: open publisher details once that screen exists.
-            },
+            onVisit: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PublisherScreen(publisherId: publisher.id),
+              ),
+            ),
           ),
           const SizedBox(height: AppDimensions.paddingLarge),
         ],
@@ -118,7 +121,7 @@ class AboutBookTab extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: book.version.media.length,
               separatorBuilder: (_, __) =>
-                  const SizedBox(width: AppDimensions.paddingSmall),
+              const SizedBox(width: AppDimensions.paddingSmall),
               itemBuilder: (context, i) {
                 final url = book.version.media[i];
                 return ClipRRect(
@@ -148,13 +151,13 @@ class AboutBookTab extends StatelessWidget {
   }
 
   Widget _sectionTitle(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: AppDimensions.fontSizeLarge,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: AppDimensions.fontSizeLarge,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textPrimary,
+    ),
+  );
 
   static const _bodyStyle = TextStyle(
     fontSize: AppDimensions.fontSizeMedium,
