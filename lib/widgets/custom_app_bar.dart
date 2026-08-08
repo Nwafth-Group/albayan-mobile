@@ -19,20 +19,22 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: color),
-        onPressed: () => AppNavigator.pop(),
-      ),
-      title: title.isNotEmpty?Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: color,
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: color),
+          onPressed: () => AppNavigator.pop(),
         ),
-      ):null, actions: actions
+        title: title.isNotEmpty?Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ):null, actions: actions
     );
   }
 

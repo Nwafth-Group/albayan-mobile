@@ -339,6 +339,61 @@ class AppStrings {
   static const String discoverBtn         = 'discover_btn';
   static const String noPublisherBooks    = 'no_publisher_books';
 
+  // ── Offers ────────────────────────────────────────────────
+  static const String offersTitle       = 'offers_title';
+  static const String tabAll            = 'tab_all';
+  static const String tabPackage        = 'tab_package';
+  static const String tabIssuesOffer    = 'tab_issues_offer';
+  static const String offerEndsInList   = 'offer_ends_in_list';
+  static const String offerEndsInDetail = 'offer_ends_in_detail';
+  static const String daysLabel         = 'days_label';
+  static const String hoursLabel        = 'hours_label';
+  static const String minutesLabel      = 'minutes_label';
+  static const String secondsLabel      = 'seconds_label';
+  static const String itemsIncludedInPackage = 'items_included_in_package';
+  static const String pagesLabel        = 'pages_label';
+  static const String noOffers          = 'no_offers';
+  static const String offerBook         = 'offer_book';
+  static const String offerPackage      = 'offer_package';
+  static const String offerIssue        = 'offer_issue';
+  static const String offerArticle      = 'offer_article';
+
+  // ── Notifications ─────────────────────────────────────────
+  static const String notificationsTitle = 'notifications_title';
+  static const String today              = 'today';
+  static const String yesterday          = 'yesterday';
+  static const String hoursAgo           = 'hours_ago';
+  static const String noNotifications    = 'no_notifications';
+
+  // ── Search screen (recent search / hashtags / articles) ────
+  static const String recentSearch  = 'recent_search';
+  static const String popularHashtag = 'popular_hashtag';
+  static const String freshArticles  = 'fresh_articles';
+
+  // ── Cart / Checkout ──────────────────────────────────────────
+  static const String myCart              = 'my_cart';
+  static const String applyPromoCodeHint  = 'apply_promo_code_hint';
+  static const String applied             = 'applied';
+  static const String invalidPromoCode    = 'invalid_promo_code';
+  static const String orderSummary        = 'order_summary';
+  static const String totalAmount         = 'total_amount';
+  static const String taxes               = 'taxes';
+  static const String discount            = 'discount';
+  static const String promoCode           = 'promo_code';
+  static const String checkOut            = 'check_out';
+  static const String confirmYourOrder    = 'confirm_your_order';
+  static const String items               = 'items';
+  static const String back                = 'back';
+  static const String proceedToPayment    = 'proceed_to_payment';
+  static const String paymentSuccessful   = 'payment_successful';
+  static const String paymentSuccessDesc  = 'payment_success_desc';
+  static const String viewOrder           = 'view_order';
+  static const String downloadInvoice     = 'download_invoice';
+  static const String cartTypeBook        = 'cart_type_book';
+  static const String cartTypeArticle     = 'cart_type_article';
+  static const String cartTypeIssue       = 'cart_type_issue';
+  static const String cartTypePackage     = 'cart_type_package';
+
   // ── Main Tab Bar ──────────────────────────────────────────
   static const String navHome     = 'nav_home';
   static const String navLibrary  = 'nav_library';

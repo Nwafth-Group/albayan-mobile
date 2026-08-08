@@ -9,6 +9,8 @@ import 'package:albayan/fatures/authors/screens/authors_list_screen.dart';
 import 'package:albayan/fatures/books/screens/books_list_screen.dart';
 import 'package:albayan/fatures/corners/screens/corners_list_screen.dart';
 import 'package:albayan/fatures/issues/screens/issues_screen.dart';
+import 'package:albayan/fatures/notifications/screens/notifications_screen.dart';
+import 'package:albayan/fatures/offers/screens/offers_list_screen.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/utils/constants.dart';
@@ -304,14 +306,14 @@ class _HomeScreenState extends State<HomeScreen> {
           _HeaderIconButton(
             icon: AppImages.offers,
             fallbackIcon: Icons.local_offer_outlined,
-            onTap: () {},
+            onTap: () => AppNavigator.push(const OffersListScreen()),
           ),
           const SizedBox(width: 10),
           // Notification
           _HeaderIconButton(
             icon: AppImages.notification,
             fallbackIcon: Icons.notifications_outlined,
-            onTap: () {},
+            onTap: () => AppNavigator.push(const NotificationsScreen()),
           ),
         ],
       ),
