@@ -6,6 +6,7 @@ import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
 import 'package:albayan/fatures/articles/screens/articles_list_screen.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:albayan/fatures/authors/screens/authors_list_screen.dart';
+import 'package:albayan/fatures/books/screens/books_list_screen.dart';
 import 'package:albayan/fatures/corners/screens/corners_list_screen.dart';
 import 'package:albayan/fatures/issues/screens/issues_screen.dart';
 import 'package:albayan/utils/api_client.dart';
@@ -197,7 +198,9 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildAuthors()),
 
             // ── Best Books ───────────────────────────────────────
-            SliverToBoxAdapter(child: _buildSectionHeader('Best Books in 2026',null)),
+            SliverToBoxAdapter(child: _buildSectionHeader('Best Books in 2026', () {
+              AppNavigator.push(const BooksListScreen());
+            },),),
             SliverToBoxAdapter(child: _buildBestBooks()),
 
             // ── Fresh News ───────────────────────────────────────

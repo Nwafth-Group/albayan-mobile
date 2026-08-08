@@ -23,47 +23,60 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if(image!=null)
-              ImageAsset(
-                image!,
-                height: 300,
-                width: 300,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minHeight = constraints.maxHeight.isFinite
+            ? (constraints.maxHeight - (AppDimensions.paddingXLarge * 2))
+            .clamp(0.0, double.infinity)
+            : 0.0;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppDimensions.paddingXLarge),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (image != null)
+                    ImageAsset(
+                      image!,
+                      height: 220,
+                      width: 220,
+                    ),
+                  if (icon != null)
+                    Icon(
+                      icon,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                  const SizedBox(height: AppDimensions.paddingxSmall),
+                  Text(
+                    message,
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (message2 != null) ...[
+                    const SizedBox(height: AppDimensions.paddingSmall),
+                    Text(
+                      message2!,
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    )
+                  ],
+                  if (actionText != null && onAction != null) ...[
+                    const SizedBox(height: AppDimensions.paddingLarge),
+                    CustomButton(
+                      onPressed: onAction,
+                      text: actionText!,
+                    ),
+                  ],
+                ],
               ),
-            if(icon!=null)
-            Icon(
-              icon,
-              size: 80,
-              color: Colors.grey.shade300,
             ),
-            const SizedBox(height: AppDimensions.paddingxSmall),
-            Text(
-              message,
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            if(message2!=null)...[
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Text(
-              message2!,
-              style: TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            )],
-            if (actionText != null && onAction != null) ...[
-              const SizedBox(height: AppDimensions.paddingLarge),
-              CustomButton(
-                onPressed: onAction,
-                text: actionText!,
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

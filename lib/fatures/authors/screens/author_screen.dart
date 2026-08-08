@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:albayan/fatures/articles/screens/article_screen.dart';
+import 'package:albayan/fatures/books/screens/book_screen.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -143,7 +144,11 @@ class _AuthorViewState extends State<_AuthorView>
                   loadingMore: state.booksStatus == ListStatus.loadingMore,
                   onLoadMore: () =>
                       context.read<AuthorCubit>().loadMoreBooks(),
-                  onItemTap: (b) {/* TODO: open book details */},
+                  onItemTap: (b) => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BookScreen(bookId: b.id),
+                    ),
+                  ),
                 ),
               ],
             ),
