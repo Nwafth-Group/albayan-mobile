@@ -105,30 +105,27 @@ class _NavChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeInOut,
-        height: 56,
-        width: isSelected ? null : 56,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        height: 48,
         padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 14)
-            : EdgeInsets.zero,
+            ? const EdgeInsets.symmetric(horizontal: 18)
+            : const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(isSelected ? 26 : 28),
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
         ),
         alignment: Alignment.center,
         child: isSelected
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _icon(color: Colors.white, size: 20),
-                  const SizedBox(height: 3),
+                  const SizedBox(width: 8),
                   Text(
                     item.labelKey.tr(),
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
