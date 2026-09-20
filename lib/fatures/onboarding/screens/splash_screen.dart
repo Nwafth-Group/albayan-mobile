@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
         SharedPrefHelper.setLaunchedBefore();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const SelectLanguageScreen()),
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
         return;
       }

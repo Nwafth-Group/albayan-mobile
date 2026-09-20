@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 // API Constants
 class ApiConstants {
-  static String get baseUrl => 'http://18.192.211.42/api/v1';
+  static String get baseUrl => 'http://3.70.168.206/api/v1';
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   // Public
@@ -42,6 +42,14 @@ class ApiConstants {
 
   // Publishers Endpoints
   static const String publishers = '/public/publishers';
+
+  // Reader's Library Endpoints
+  static const String myLibrary = '/reader/my-library';
+  static const String myLibraryBooks = '/reader/my-library/books';
+  static const String myLibraryMagazineIssues =
+      '/reader/my-library/magazine/issues';
+  static const String myLibraryMagazineArticles =
+      '/reader/my-library/magazine/articles';
 }
 
 // App Colors
@@ -378,6 +386,16 @@ class AppStrings {
   static const String recentSearch = 'recent_search';
   static const String popularHashtag = 'popular_hashtag';
   static const String freshArticles = 'fresh_articles';
+
+  // ── Advanced Search ──────────────────────────────────────
+  static const String advancedSearch = 'advanced_search';
+  static const String writers = 'writers';
+  static const String chooseWriters = 'choose_writers';
+  static const String type = 'type';
+  static const String issuesTab = 'issues_tab';
+  static const String priceRange = 'price_range';
+  static const String chooseCorner = 'choose_corner';
+  static const String viewResult = 'view_result';
 
   // ── Cart / Checkout ──────────────────────────────────────────
   static const String myCart = 'my_cart';

@@ -1,31 +1,50 @@
+
 // ============================================
 // FILE: lib/fatures/library/screens/library_screen.dart
 // ============================================
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
-import '../data/library_mock_data.dart';
+import '../../../widgets/loading_widget.dart';
+import '../data/datasource/library_remote_data_source.dart';
 import '../data/models/library_section_model.dart';
+import '../data/models/library_summary_model.dart';
+import 'cubit/library_summary_cubit.dart';
 import 'library_books_screen.dart';
 import 'library_documents_screen.dart';
 import 'library_magazine_screen.dart';
 import 'widgets/library_section_card.dart';
 import 'widgets/library_tabs.dart';
 
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends StatelessWidget {
   const LibraryScreen({Key? key}) : super(key: key);
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) {
+        final dataSource = LibraryRemoteDataSourceImpl(ApiService());
+        return LibrarySummaryCubit(dataSource)..load();
+      },
+      child: const _LibraryView(),
+    );
+  }
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
-  // TODO: replace with a real cubit + datasource once a library endpoint
-  // exists. For now the screen renders straight from mock data.
-  late final List<LibrarySectionModel> _sections = mockLibrarySections();
+class _LibraryView extends StatefulWidget {
+  const _LibraryView();
+
+  @override
+  State<_LibraryView> createState() => _LibraryViewState();
+}
+
+class _LibraryViewState extends State<_LibraryView> {
   int _tabIndex = 0;
 
   @override
@@ -63,7 +82,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildTabContent() {
     switch (_tabIndex) {
       case 0:
-        return _buildSectionsGrid();
+        return _MyLibraryTab(
+          onOpenSection: (type) => _openSection(type),
+        );
       case 1:
         return EmptyStateWidget(
           image: AppImages.noData,
@@ -77,8 +98,87 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
   }
 
-  Widget _buildSectionsGrid() {
-    if (_sections.isEmpty) {
+  void _openSection(LibrarySectionType type) {
+    switch (type) {
+      case LibrarySectionType.books:
+        AppNavigator.push(const LibraryBooksScreen());
+        break;
+      case LibrarySectionType.documents:
+        AppNavigator.push(const LibraryDocumentsScreen());
+        break;
+      case LibrarySectionType.magazine:
+        AppNavigator.push(const LibraryMagazineScreen());
+        break;
+    }
+  }
+}
+
+class _MyLibraryTab extends StatelessWidget {
+  final void Function(LibrarySectionType type) onOpenSection;
+
+  const _MyLibraryTab({required this.onOpenSection});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LibrarySummaryCubit, LibrarySummaryState>(
+      builder: (context, state) {
+        switch (state.status) {
+          case LibrarySummaryStatus.initial:
+          case LibrarySummaryStatus.loading:
+            return const LoadingIndicator();
+
+          case LibrarySummaryStatus.failure:
+            return EmptyStateWidget(
+              image: AppImages.noData,
+              message: AppStrings.somethingWentWrong.tr(),
+              message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+              actionText: AppStrings.retry.tr(),
+              onAction: () => context.read<LibrarySummaryCubit>().load(),
+            );
+
+          case LibrarySummaryStatus.success:
+            return _SectionsGrid(
+              summary: state.summary,
+              onOpenSection: onOpenSection,
+            );
+        }
+      },
+    );
+  }
+}
+
+class _SectionsGrid extends StatelessWidget {
+  final LibrarySummaryModel summary;
+  final void Function(LibrarySectionType type) onOpenSection;
+
+  const _SectionsGrid({required this.summary, required this.onOpenSection});
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = [
+      LibrarySectionModel(
+        type: LibrarySectionType.books,
+        titleKey: AppStrings.libraryBooks,
+        countKey: AppStrings.libraryBooksCount,
+        count: summary.booksCount,
+      ),
+      LibrarySectionModel(
+        type: LibrarySectionType.documents,
+        titleKey: AppStrings.libraryMyDocuments,
+        countKey: AppStrings.libraryDocumentsCount,
+        count: summary.myDocumentsCount,
+      ),
+      LibrarySectionModel(
+        type: LibrarySectionType.magazine,
+        titleKey: AppStrings.libraryAlbayanMagazine,
+        countKey: AppStrings.libraryItemsCount,
+        count: summary.magazineTotalCount,
+      ),
+    ];
+
+    if (summary.booksCount == 0 &&
+        summary.myDocumentsCount == 0 &&
+        summary.magazineTotalCount == 0) {
       return EmptyStateWidget(
         image: AppImages.noData,
         message: AppStrings.libraryEmptyTitle.tr(),
@@ -99,30 +199,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
         mainAxisSpacing: AppDimensions.paddingMedium,
         childAspectRatio: 1.3,
       ),
-      itemCount: _sections.length,
+      itemCount: sections.length,
       itemBuilder: (context, index) {
         return LibrarySectionCard(
-          section: _sections[index],
+          section: sections[index],
           color: index.isEven
               ? AppColors.surfaceVariant
               : AppColors.surfaceDark,
-          onTap: () => _openSection(_sections[index]),
+          onTap: () => onOpenSection(sections[index].type),
         );
       },
     );
-  }
-
-  void _openSection(LibrarySectionModel section) {
-    switch (section.type) {
-      case LibrarySectionType.books:
-        AppNavigator.push(const LibraryBooksScreen());
-        break;
-      case LibrarySectionType.documents:
-        AppNavigator.push(const LibraryDocumentsScreen());
-        break;
-      case LibrarySectionType.magazine:
-        AppNavigator.push(const LibraryMagazineScreen());
-        break;
-    }
   }
 }

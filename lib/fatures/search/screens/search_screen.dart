@@ -12,6 +12,7 @@ import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../data/search_mock_data.dart';
+import 'advanced_search_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -63,6 +64,8 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             const SizedBox(height: 10,),
             _searchField(),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            _advancedSearchButton(),
             if (_recentSearches.isNotEmpty) ...[
               const SizedBox(height: AppDimensions.paddingLarge),
               _sectionTitle(AppStrings.recentSearch.tr()),
@@ -154,6 +157,36 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Icon(Icons.search, color: AppColors.primary),
           ),
           suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        ),
+      ),
+    );
+  }
+
+  Widget _advancedSearchButton() {
+    return InkWell(
+      onTap: () => AppNavigator.push(const AdvancedSearchScreen()),
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: AppColors.primary, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.tune, size: 18, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              AppStrings.advancedSearch.tr(),
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeMedium,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
         ),
       ),
     );
