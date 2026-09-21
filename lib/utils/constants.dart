@@ -43,6 +43,14 @@ class ApiConstants {
   // Publishers Endpoints
   static const String publishers = '/public/publishers';
 
+  // Search Endpoints
+  static const String searchInitial = '/public/search/initial';
+  static const String search = '/public/search';
+
+  // Filter option Endpoints
+  static const String categories = '/public/categories';
+  static const String keywords = '/public/keywords';
+
   // Reader's Library Endpoints
   static const String myLibrary = '/reader/my-library';
   static const String myLibraryBooks = '/reader/my-library/books';
@@ -50,6 +58,9 @@ class ApiConstants {
       '/reader/my-library/magazine/issues';
   static const String myLibraryMagazineArticles =
       '/reader/my-library/magazine/articles';
+  static const String personalCategories = '/reader/personal-categories';
+  static const String personalCategoriesCounts =
+      '/reader/personal-categories/counts';
 }
 
 // App Colors
@@ -98,6 +109,7 @@ class AppImages {
   static const String onboardingLogo = 'assets/images/onboardingLogo2.png';
 
   static const String search = 'assets/icons/search.png';
+  static const String searchStatus = 'assets/icons/search-status.png';
   static const String filter = 'assets/icons/filter.png';
   static const String calendar = 'assets/icons/calendar.png';
   static const String noData = 'assets/images/no_data.png';
@@ -394,6 +406,7 @@ class AppStrings {
   static const String type = 'type';
   static const String issuesTab = 'issues_tab';
   static const String priceRange = 'price_range';
+  static const String chooseCategory = 'choose_category';
   static const String chooseCorner = 'choose_corner';
   static const String viewResult = 'view_result';
 

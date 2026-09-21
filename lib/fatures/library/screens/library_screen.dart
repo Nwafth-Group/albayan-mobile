@@ -15,7 +15,10 @@ import '../../../widgets/loading_widget.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import '../data/models/library_section_model.dart';
 import '../data/models/library_summary_model.dart';
+import '../data/models/personal_category_model.dart';
 import 'cubit/library_summary_cubit.dart';
+import 'cubit/personal_categories_cubit.dart';
+import 'personal_categories_screen.dart';
 import 'library_books_screen.dart';
 import 'library_documents_screen.dart';
 import 'library_magazine_screen.dart';
@@ -86,10 +89,7 @@ class _LibraryViewState extends State<_LibraryView> {
           onOpenSection: (type) => _openSection(type),
         );
       case 1:
-        return EmptyStateWidget(
-          image: AppImages.noData,
-          message: AppStrings.libraryNoCategories.tr(),
-        );
+        return const _CategoriesTab();
       default:
         return EmptyStateWidget(
           image: AppImages.noData,
@@ -176,15 +176,15 @@ class _SectionsGrid extends StatelessWidget {
       ),
     ];
 
-    if (summary.booksCount == 0 &&
-        summary.myDocumentsCount == 0 &&
-        summary.magazineTotalCount == 0) {
-      return EmptyStateWidget(
-        image: AppImages.noData,
-        message: AppStrings.libraryEmptyTitle.tr(),
-        message2: AppStrings.libraryEmptySubtitle.tr(),
-      );
-    }
+    // if (summary.booksCount == 0 &&
+    //     summary.myDocumentsCount == 0 &&
+    //     summary.magazineTotalCount == 0) {
+    //   return EmptyStateWidget(
+    //     image: AppImages.noData,
+    //     message: AppStrings.libraryEmptyTitle.tr(),
+    //     message2: AppStrings.libraryEmptySubtitle.tr(),
+    //   );
+    // }
 
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(
@@ -209,6 +209,81 @@ class _SectionsGrid extends StatelessWidget {
           onTap: () => onOpenSection(sections[index].type),
         );
       },
+    );
+  }
+}
+
+class _CategoriesTab extends StatelessWidget {
+  const _CategoriesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => PersonalCategoriesCubit(
+        LibraryRemoteDataSourceImpl(ApiService()),
+      )..load(),
+      child: BlocBuilder<PersonalCategoriesCubit, PersonalCategoriesState>(
+        builder: (context, state) {
+          switch (state.status) {
+            case PersonalCategoriesStatus.initial:
+            case PersonalCategoriesStatus.loading:
+              return const LoadingIndicator();
+
+            case PersonalCategoriesStatus.failure:
+              return EmptyStateWidget(
+                image: AppImages.noData,
+                message: AppStrings.somethingWentWrong.tr(),
+                message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                actionText: AppStrings.retry.tr(),
+                onAction: () => context.read<PersonalCategoriesCubit>().load(),
+              );
+
+            case PersonalCategoriesStatus.empty:
+            case PersonalCategoriesStatus.success:
+              final cards = [
+                (PersonalCategoryType.book, AppStrings.libraryBooks,
+                    AppStrings.libraryBooksCount),
+                (PersonalCategoryType.issue,
+                    AppStrings.libraryMagazineIssuesTab,
+                    AppStrings.libraryIssuesCount),
+                (PersonalCategoryType.article,
+                    AppStrings.libraryMagazineArticlesTab,
+                    AppStrings.libraryArticlesCount),
+              ];
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimensions.paddingMedium,
+                  0,
+                  AppDimensions.paddingMedium,
+                  AppDimensions.paddingLarge,
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppDimensions.paddingMedium,
+                  mainAxisSpacing: AppDimensions.paddingMedium,
+                  childAspectRatio: 1.3,
+                ),
+                itemCount: cards.length,
+                itemBuilder: (context, i) {
+                  final (type, titleKey, countKey) = cards[i];
+                  return LibrarySectionCard(
+                    section: LibrarySectionModel(
+                      type: LibrarySectionType.magazine,
+                      titleKey: titleKey,
+                      countKey: countKey,
+                      count: state.counts.countOf(type),
+                    ),
+                    color: i.isEven
+                        ? AppColors.surfaceVariant
+                        : AppColors.surfaceDark,
+                    onTap: () =>
+                        AppNavigator.push(PersonalCategoriesScreen(type: type)),
+                  );
+                },
+              );
+          }
+        },
+      ),
     );
   }
 }

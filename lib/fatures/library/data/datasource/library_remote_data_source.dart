@@ -10,6 +10,7 @@ import '../models/library_article_model.dart';
 import '../models/library_book_model.dart';
 import '../models/library_issue_model.dart';
 import '../models/library_summary_model.dart';
+import '../models/personal_category_model.dart';
 
 abstract class LibraryRemoteDataSource {
   /// GET /reader/my-library
@@ -23,6 +24,14 @@ abstract class LibraryRemoteDataSource {
 
   /// GET /reader/my-library/magazine/articles?page=
   Future<LibraryArticlesResponse> getMagazineArticles({required int page});
+
+  /// GET /reader/personal-categories/counts
+  Future<PersonalCategoryCounts> getPersonalCategoryCounts();
+
+  /// GET /reader/personal-categories?type=
+  Future<List<PersonalCategoryModel>> getPersonalCategories(
+    PersonalCategoryType type,
+  );
 }
 
 class LibraryRemoteDataSourceImpl implements LibraryRemoteDataSource {
@@ -79,5 +88,26 @@ class LibraryRemoteDataSourceImpl implements LibraryRemoteDataSource {
       return LibraryArticlesResponse.fromData(data);
     }
     return LibraryArticlesResponse.fromData(const {});
+  }
+
+  @override
+  Future<PersonalCategoryCounts> getPersonalCategoryCounts() async {
+    final response = await _api.get(ApiConstants.personalCategoriesCounts);
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return PersonalCategoryCounts.fromJson(data);
+    }
+    return PersonalCategoryCounts.empty;
+  }
+
+  @override
+  Future<List<PersonalCategoryModel>> getPersonalCategories(
+    PersonalCategoryType type,
+  ) async {
+    final response = await _api.get(
+      ApiConstants.personalCategories,
+      queryParameters: {'type': type.value},
+    );
+    return PersonalCategoryModel.listFrom(response['data']);
   }
 }

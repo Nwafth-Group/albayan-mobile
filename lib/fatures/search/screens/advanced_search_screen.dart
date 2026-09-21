@@ -3,73 +3,118 @@
 // FILE: lib/fatures/search/screens/advanced_search_screen.dart
 // ============================================
 //
-// UI-only screen matching the "Advanced Search" design. Filter options
-// (writers/categories/corners) are static mock lists — see
-// `advanced_search_mock_data.dart`. Wire this up to
-// `GET /public/search/filters` (and a real search endpoint) once available.
+// Advanced Search filters. Option lists come from `/public/authors`,
+// `/public/categories`, `/public/corners`, `/public/languages` and
+// `/public/keywords` (see `AdvancedSearchFiltersCubit`). "View Result"
+// hands the chosen filter to the results screen (`GET /public/search`).
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/custom_icon.dart';
-import '../data/advanced_search_mock_data.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/loading_widget.dart';
+import '../../authors/data/datasource/authors_remote_data_source.dart';
+import '../../corners/data/datasource/corners_remote_data_source.dart';
+import '../../onboarding/data/language_remote_datasource.dart';
+import '../data/datasource/search_filters_remote_data_source.dart';
+import '../data/models/advanced_search_filter.dart';
 import 'advanced_search_results_screen.dart';
+import 'cubit/advanced_search_filters_cubit.dart';
 
 enum _SearchType { books, articles, issues }
 
-class AdvancedSearchScreen extends StatefulWidget {
-  const AdvancedSearchScreen({super.key});
-
-  @override
-  State<AdvancedSearchScreen> createState() => _AdvancedSearchScreenState();
+/// An id/label pair shown in the picker sheets.
+class _Option {
+  final String id;
+  final String label;
+  const _Option(this.id, this.label);
 }
 
-class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
-  final List<String> _writers = mockWriters();
-  final List<String> _categories = mockCategories();
-  final List<String> _corners = mockCorners();
-  final List<String> _keywordChips = mockKeywordChips();
+class AdvancedSearchScreen extends StatelessWidget {
+  /// Text typed in the main search field, carried into the `q` filter.
+  final String initialQuery;
 
-  final Set<String> _selectedWriters = {};
-  String? _selectedCategory;
-  String? _selectedCorner;
+  const AdvancedSearchScreen({super.key, this.initialQuery = ''});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AdvancedSearchFiltersCubit(
+        authorsDataSource: AuthorsRemoteDataSourceImpl(ApiService()),
+        cornersDataSource: CornersRemoteDataSourceImpl(ApiService()),
+        filtersDataSource: SearchFiltersRemoteDataSourceImpl(ApiService()),
+        languagesDataSource: LanguageRemoteDataSource(ApiService()),
+      )..load(),
+      child: _AdvancedSearchView(initialQuery: initialQuery),
+    );
+  }
+}
+
+class _AdvancedSearchView extends StatefulWidget {
+  final String initialQuery;
+  const _AdvancedSearchView({required this.initialQuery});
+
+  @override
+  State<_AdvancedSearchView> createState() => _AdvancedSearchViewState();
+}
+
+class _AdvancedSearchViewState extends State<_AdvancedSearchView> {
+  static const _defaultPriceRange = RangeValues(50, 100);
+
+  final Set<String> _selectedWriterIds = {};
+  String? _selectedCategoryId;
+  String? _selectedCornerId;
 
   DateTime? _fromDate;
   DateTime? _toDate;
 
   _SearchType _type = _SearchType.articles;
 
-  RangeValues _priceRange = const RangeValues(50, 100);
+  RangeValues _priceRange = _defaultPriceRange;
 
-  final Set<String> _selectedKeywords = {'Articles'};
-
-  String _language = 'Arabic';
+  String? _selectedKeywordId;
+  String? _languageCode;
 
   double _rating = 4;
 
   void _reset() {
     setState(() {
-      _selectedWriters.clear();
-      _selectedCategory = null;
-      _selectedCorner = null;
+      _selectedWriterIds.clear();
+      _selectedCategoryId = null;
+      _selectedCornerId = null;
       _fromDate = null;
       _toDate = null;
       _type = _SearchType.articles;
-      _priceRange = const RangeValues(50, 100);
-      _selectedKeywords
-        ..clear()
-        ..add('Articles');
-      _language = 'Arabic';
+      _priceRange = _defaultPriceRange;
+      _selectedKeywordId = null;
+      _languageCode = null;
       _rating = 4;
     });
   }
 
   void _viewResult() {
-    AppNavigator.push(const AdvancedSearchResultsScreen());
+    final filter = AdvancedSearchFilter(
+      query: widget.initialQuery,
+      authorIds: {..._selectedWriterIds},
+      fromDate: _fromDate,
+      toDate: _toDate,
+      contentType: _type.name,
+      priceFrom: _priceRange.start.roundToDouble(),
+      priceTo: _priceRange.end.roundToDouble(),
+      categoryId: _selectedCategoryId,
+      cornerId: _selectedCornerId,
+      languageCode: _languageCode,
+      minRating: _rating,
+      keywordId: _selectedKeywordId,
+    );
+    AppNavigator.push(AdvancedSearchResultsScreen(filter: filter));
   }
 
   Future<void> _pickDate({required bool isFrom}) async {
@@ -99,8 +144,8 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
 
   Future<void> _pickSingle({
     required String title,
-    required List<String> options,
-    required String? current,
+    required List<_Option> options,
+    required String? currentId,
     required ValueChanged<String> onSelected,
   }) async {
     final picked = await showModalBottomSheet<String>(
@@ -110,31 +155,39 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
       builder: (_) => _OptionListSheet(
         title: title,
         options: options,
-        isSelected: (o) => o == current,
-        onTap: (o) => Navigator.of(context).pop(o),
+        isSelected: (o) => o.id == currentId,
+        onTap: (o) => Navigator.of(context).pop(o.id),
       ),
     );
     if (picked != null) onSelected(picked);
   }
 
-  Future<void> _pickMultiWriters() async {
+  Future<void> _pickWriters(List<_Option> options) async {
     final result = await showModalBottomSheet<Set<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _MultiOptionListSheet(
         title: AppStrings.writers.tr(),
-        options: _writers,
-        initialSelected: _selectedWriters,
+        options: options,
+        initialSelected: _selectedWriterIds,
       ),
     );
     if (result != null) {
       setState(() {
-        _selectedWriters
+        _selectedWriterIds
           ..clear()
           ..addAll(result);
       });
     }
+  }
+
+  String? _labelFor(List<_Option> options, String? id) {
+    if (id == null) return null;
+    for (final o in options) {
+      if (o.id == id) return o.label;
+    }
+    return null;
   }
 
   @override
@@ -143,180 +196,213 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> {
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: AppStrings.advancedSearch.tr()),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppDimensions.paddingMedium,
-            0,
-            AppDimensions.paddingMedium,
-            AppDimensions.paddingLarge,
-          ),
+        child: BlocBuilder<AdvancedSearchFiltersCubit,
+            AdvancedSearchFiltersState>(
+          builder: (context, state) {
+            switch (state.status) {
+              case AdvancedSearchFiltersStatus.initial:
+              case AdvancedSearchFiltersStatus.loading:
+                return const LoadingIndicator();
+
+              case AdvancedSearchFiltersStatus.failure:
+                return EmptyStateWidget(
+                  image: AppImages.noData,
+                  message: AppStrings.somethingWentWrong.tr(),
+                  message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                  actionText: AppStrings.retry.tr(),
+                  onAction: () =>
+                      context.read<AdvancedSearchFiltersCubit>().load(),
+                );
+
+              case AdvancedSearchFiltersStatus.success:
+                return _form(context, state);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _form(BuildContext context, AdvancedSearchFiltersState state) {
+    final locale = context.locale.languageCode;
+    final writers =
+        state.authors.map((a) => _Option(a.id, a.name)).toList();
+    final categories =
+        state.categories.map((c) => _Option(c.id, c.name)).toList();
+    final corners = state.corners.map((c) => _Option(c.id, c.name)).toList();
+
+    final writersValue = _selectedWriterIds.isEmpty
+        ? null
+        : writers
+            .where((w) => _selectedWriterIds.contains(w.id))
+            .map((w) => w.label)
+            .join(', ');
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.paddingMedium,
+        0,
+        AppDimensions.paddingMedium,
+        AppDimensions.paddingLarge,
+      ),
+      children: [
+        _label(AppStrings.writers.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        _DropdownField(
+          hint: AppStrings.chooseWriters.tr(),
+          value: writersValue,
+          onTap: () => _pickWriters(writers),
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        Row(
           children: [
-            _label(AppStrings.writers.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            _DropdownField(
-              hint: AppStrings.chooseWriters.tr(),
-              value: _selectedWriters.isEmpty
-                  ? null
-                  : _selectedWriters.join(', '),
-              onTap: _pickMultiWriters,
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            Row(
-              children: [
-                Expanded(child: _label(AppStrings.fromDate.tr())),
-                const SizedBox(width: AppDimensions.paddingMedium),
-                Expanded(child: _label(AppStrings.toDate.tr())),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Row(
-              children: [
-                Expanded(
-                  child: _DateField(
-                    date: _fromDate,
-                    onTap: () => _pickDate(isFrom: true),
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.paddingMedium),
-                Expanded(
-                  child: _DateField(
-                    date: _toDate,
-                    onTap: () => _pickDate(isFrom: false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.type.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Row(
-              children: [
-                _OutlinePillChip(
-                  label: AppStrings.booksTab.tr(),
-                  selected: _type == _SearchType.books,
-                  onTap: () => setState(() => _type = _SearchType.books),
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                _OutlinePillChip(
-                  label: AppStrings.articlesTab.tr(),
-                  selected: _type == _SearchType.articles,
-                  onTap: () => setState(() => _type = _SearchType.articles),
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                _OutlinePillChip(
-                  label: AppStrings.issuesTab.tr(),
-                  selected: _type == _SearchType.issues,
-                  onTap: () => setState(() => _type = _SearchType.issues),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.price.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            _PriceRangeCard(
-              range: _priceRange,
-              onChanged: (v) => setState(() => _priceRange = v),
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.keywords.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Wrap(
-              spacing: AppDimensions.paddingSmall,
-              runSpacing: AppDimensions.paddingSmall,
-              children: [
-                for (final chip in _keywordChips)
-                  _FilledChip(
-                    label: chip,
-                    selected: _selectedKeywords.contains(chip),
-                    onTap: () => setState(() {
-                      if (_selectedKeywords.contains(chip)) {
-                        _selectedKeywords.remove(chip);
-                      } else {
-                        _selectedKeywords.add(chip);
-                      }
-                    }),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.category.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            _DropdownField(
-              hint: AppStrings.chooseWriters.tr(),
-              value: _selectedCategory,
-              onTap: () => _pickSingle(
-                title: AppStrings.category.tr(),
-                options: _categories,
-                current: _selectedCategory,
-                onSelected: (v) => setState(() => _selectedCategory = v),
+            Expanded(child: _label(AppStrings.fromDate.tr())),
+            const SizedBox(width: AppDimensions.paddingMedium),
+            Expanded(child: _label(AppStrings.toDate.tr())),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        Row(
+          children: [
+            Expanded(
+              child: _DateField(
+                date: _fromDate,
+                onTap: () => _pickDate(isFrom: true),
               ),
             ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.cornersTitle.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            _DropdownField(
-              hint: AppStrings.chooseCorner.tr(),
-              value: _selectedCorner,
-              onTap: () => _pickSingle(
-                title: AppStrings.cornersTitle.tr(),
-                options: _corners,
-                current: _selectedCorner,
-                onSelected: (v) => setState(() => _selectedCorner = v),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.language.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Row(
-              children: [
-                _OutlinePillChip(
-                  label: 'Arabic',
-                  selected: _language == 'Arabic',
-                  onTap: () => setState(() => _language = 'Arabic'),
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                _OutlinePillChip(
-                  label: 'English',
-                  selected: _language == 'English',
-                  onTap: () => setState(() => _language = 'English'),
-                ),
-                const SizedBox(width: AppDimensions.paddingSmall),
-                _OutlinePillChip(
-                  label: 'French',
-                  selected: _language == 'French',
-                  onTap: () => setState(() => _language = 'French'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _label(AppStrings.rating.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            _RatingStars(
-              rating: _rating,
-              onChanged: (v) => setState(() => _rating = v),
-            ),
-            const SizedBox(height: AppDimensions.paddingXLarge),
-            CustomButton(
-              text: AppStrings.viewResult.tr(),
-              onPressed: _viewResult,
-            ),
-            const SizedBox(height: AppDimensions.paddingMedium),
-            Center(
-              child: TextButton(
-                onPressed: _reset,
-                child: Text(
-                  AppStrings.reset.tr(),
-                  style: const TextStyle(
-                    fontSize: AppDimensions.fontSizeMedium,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
+            const SizedBox(width: AppDimensions.paddingMedium),
+            Expanded(
+              child: _DateField(
+                date: _toDate,
+                onTap: () => _pickDate(isFrom: false),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _label(AppStrings.type.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        Row(
+          children: [
+            _OutlinePillChip(
+              label: AppStrings.articlesTab.tr(),
+              selected: _type == _SearchType.articles,
+              onTap: () => setState(() => _type = _SearchType.articles),
+            ),
+            const SizedBox(width: AppDimensions.paddingSmall),
+            _OutlinePillChip(
+              label: AppStrings.booksTab.tr(),
+              selected: _type == _SearchType.books,
+              onTap: () => setState(() => _type = _SearchType.books),
+            ),
+            const SizedBox(width: AppDimensions.paddingSmall),
+            _OutlinePillChip(
+              label: AppStrings.issuesTab.tr(),
+              selected: _type == _SearchType.issues,
+              onTap: () => setState(() => _type = _SearchType.issues),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _label(AppStrings.price.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        _PriceRangeCard(
+          range: _priceRange,
+          onChanged: (v) => setState(() => _priceRange = v),
+        ),
+        if (state.keywords.isNotEmpty) ...[
+          const SizedBox(height: AppDimensions.paddingLarge),
+          _label(AppStrings.keywords.tr()),
+          const SizedBox(height: AppDimensions.paddingSmall),
+          Wrap(
+            spacing: AppDimensions.paddingSmall,
+            runSpacing: AppDimensions.paddingSmall,
+            children: [
+              for (final keyword in state.keywords)
+                _FilledChip(
+                  label: keyword.name,
+                  selected: keyword.id == _selectedKeywordId,
+                  onTap: () => setState(() {
+                    _selectedKeywordId =
+                        keyword.id == _selectedKeywordId ? null : keyword.id;
+                  }),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _label(AppStrings.category.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        _DropdownField(
+          hint: AppStrings.chooseCategory.tr(),
+          value: _labelFor(categories, _selectedCategoryId),
+          onTap: () => _pickSingle(
+            title: AppStrings.category.tr(),
+            options: categories,
+            currentId: _selectedCategoryId,
+            onSelected: (v) => setState(() => _selectedCategoryId = v),
+          ),
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _label(AppStrings.cornersTitle.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        _DropdownField(
+          hint: AppStrings.chooseCorner.tr(),
+          value: _labelFor(corners, _selectedCornerId),
+          onTap: () => _pickSingle(
+            title: AppStrings.cornersTitle.tr(),
+            options: corners,
+            currentId: _selectedCornerId,
+            onSelected: (v) => setState(() => _selectedCornerId = v),
+          ),
+        ),
+        if (state.languages.isNotEmpty) ...[
+          const SizedBox(height: AppDimensions.paddingLarge),
+          _label(AppStrings.language.tr()),
+          const SizedBox(height: AppDimensions.paddingSmall),
+          Wrap(
+            spacing: AppDimensions.paddingSmall,
+            runSpacing: AppDimensions.paddingSmall,
+            children: [
+              for (final language in state.languages)
+                _OutlinePillChip(
+                  label: language.displayName(locale),
+                  selected: language.code == _languageCode,
+                  onTap: () => setState(() {
+                    _languageCode =
+                        language.code == _languageCode ? null : language.code;
+                  }),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _label(AppStrings.rating.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        _RatingStars(
+          rating: _rating,
+          onChanged: (v) => setState(() => _rating = v),
+        ),
+        const SizedBox(height: AppDimensions.paddingXLarge),
+        CustomButton(
+          text: AppStrings.viewResult.tr(),
+          onPressed: _viewResult,
+        ),
+        const SizedBox(height: AppDimensions.paddingMedium),
+        Center(
+          child: TextButton(
+            onPressed: _reset,
+            child: Text(
+              AppStrings.reset.tr(),
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeMedium,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -625,11 +711,12 @@ class _RatingStars extends StatelessWidget {
   }
 }
 
+
 class _OptionListSheet extends StatelessWidget {
   final String title;
-  final List<String> options;
-  final bool Function(String) isSelected;
-  final ValueChanged<String> onTap;
+  final List<_Option> options;
+  final bool Function(_Option) isSelected;
+  final ValueChanged<_Option> onTap;
 
   const _OptionListSheet({
     required this.title,
@@ -641,6 +728,9 @@ class _OptionListSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.paddingLarge,
         AppDimensions.paddingMedium,
@@ -675,15 +765,22 @@ class _OptionListSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppDimensions.paddingSmall),
-          for (final option in options)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(option),
-              trailing: isSelected(option)
-                  ? const Icon(Icons.check, color: AppColors.primary)
-                  : null,
-              onTap: () => onTap(option),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final option in options)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(option.label),
+                    trailing: isSelected(option)
+                        ? const Icon(Icons.check, color: AppColors.primary)
+                        : null,
+                    onTap: () => onTap(option),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -692,7 +789,7 @@ class _OptionListSheet extends StatelessWidget {
 
 class _MultiOptionListSheet extends StatefulWidget {
   final String title;
-  final List<String> options;
+  final List<_Option> options;
   final Set<String> initialSelected;
 
   const _MultiOptionListSheet({
@@ -711,6 +808,9 @@ class _MultiOptionListSheetState extends State<_MultiOptionListSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       padding: EdgeInsets.only(
         left: AppDimensions.paddingLarge,
         right: AppDimensions.paddingLarge,
@@ -745,21 +845,28 @@ class _MultiOptionListSheetState extends State<_MultiOptionListSheet> {
               color: AppColors.textPrimary,
             ),
           ),
-          for (final option in widget.options)
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _selected.contains(option),
-              activeColor: AppColors.primary,
-              title: Text(option),
-              controlAffinity: ListTileControlAffinity.leading,
-              onChanged: (checked) => setState(() {
-                if (checked == true) {
-                  _selected.add(option);
-                } else {
-                  _selected.remove(option);
-                }
-              }),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final option in widget.options)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _selected.contains(option.id),
+                    activeColor: AppColors.primary,
+                    title: Text(option.label),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (checked) => setState(() {
+                      if (checked == true) {
+                        _selected.add(option.id);
+                      } else {
+                        _selected.remove(option.id);
+                      }
+                    }),
+                  ),
+              ],
             ),
+          ),
           const SizedBox(height: AppDimensions.paddingSmall),
           CustomButton(
             text: AppStrings.applyFilter.tr(),

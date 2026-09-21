@@ -1,36 +1,53 @@
+
 // ============================================
 // FILE: lib/fatures/search/screens/search_screen.dart
 // ============================================
 
 import 'package:albayan/fatures/articles/screens/article_screen.dart';
-import 'package:albayan/fatures/corners/data/models/corner_article_model.dart';
 import 'package:albayan/fatures/corners/screens/widgets/corner_article_card.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/custom_icon.dart';
 import '../../../widgets/empty_state_widget.dart';
-import '../data/search_mock_data.dart';
+import '../../../widgets/loading_widget.dart';
+import '../data/datasource/search_remote_data_source.dart';
+import '../data/models/search_initial_model.dart';
+import '../data/models/advanced_search_filter.dart';
+import 'advanced_search_results_screen.dart';
 import 'advanced_search_screen.dart';
+import 'cubit/search_initial_cubit.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends StatelessWidget {
   const SearchScreen({Key? key}) : super(key: key);
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) {
+        final dataSource = SearchRemoteDataSourceImpl(ApiService());
+        return SearchInitialCubit(dataSource)..load();
+      },
+      child: const _SearchView(),
+    );
+  }
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchView extends StatefulWidget {
+  const _SearchView();
+
+  @override
+  State<_SearchView> createState() => _SearchViewState();
+}
+
+class _SearchViewState extends State<_SearchView> {
   final _searchController = TextEditingController();
 
-  // TODO: replace with a real search datasource/cubit once a unified
-  // search endpoint exists. For now this renders from mock data.
-  late final List<String> _recentSearches = mockRecentSearches();
-  final List<String> _hashtags = mockPopularHashtags();
-  final List<CornerArticleModel> _freshArticles = mockFreshArticles();
-
-  int _selectedHashtag = 0;
+  String? _selectedKeyword;
 
   @override
   void dispose() {
@@ -38,15 +55,28 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _removeRecent(int index) {
-    setState(() => _recentSearches.removeAt(index));
+  /// Runs the search for [query] and refreshes the recent-search list when
+  /// the user comes back from the results.
+  Future<void> _submit(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _searchController.text = q;
+      _selectedKeyword = q;
+    });
+    final cubit = context.read<SearchInitialCubit>();
+    await AppNavigator.push(
+      AdvancedSearchResultsScreen(filter: AdvancedSearchFilter(query: q)),
+    );
+    if (!mounted) return;
+    setState(() => _selectedKeyword = null);
+    cubit.load();
   }
 
-  void _applyHashtag(int index) {
-    setState(() {
-      _selectedHashtag = index;
-      _searchController.text = _hashtags[index];
-    });
+  void _clear() {
+    _searchController.clear();
+    setState(() => _selectedKeyword = null);
   }
 
   @override
@@ -54,7 +84,12 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: ListView(
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => context.read<SearchInitialCubit>().load(),
+          child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(
             AppDimensions.paddingMedium,
             AppDimensions.paddingSmall,
@@ -66,65 +101,104 @@ class _SearchScreenState extends State<SearchScreen> {
             _searchField(),
             const SizedBox(height: AppDimensions.paddingMedium),
             _advancedSearchButton(),
-            if (_recentSearches.isNotEmpty) ...[
-              const SizedBox(height: AppDimensions.paddingLarge),
-              _sectionTitle(AppStrings.recentSearch.tr()),
-              const SizedBox(height: AppDimensions.paddingSmall),
-              for (var i = 0; i < _recentSearches.length; i++)
-                _RecentSearchRow(
-                  text: _recentSearches[i],
-                  onTap: () => setState(
-                        () => _searchController.text = _recentSearches[i],
-                  ),
-                  onRemove: () => _removeRecent(i),
-                ),
-            ],
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _sectionTitle(AppStrings.popularHashtag.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            Wrap(
-              spacing: AppDimensions.paddingSmall,
-              runSpacing: AppDimensions.paddingSmall,
-              children: [
-                for (var i = 0; i < _hashtags.length; i++)
-                  _HashtagChip(
-                    label: _hashtags[i],
-                    selected: i == _selectedHashtag,
-                    onTap: () => _applyHashtag(i),
-                  ),
-              ],
+            BlocBuilder<SearchInitialCubit, SearchInitialState>(
+              builder: (context, state) {
+                switch (state.status) {
+                  case SearchInitialStatus.initial:
+                  case SearchInitialStatus.loading:
+                    return const Padding(
+                      padding:
+                          EdgeInsets.only(top: AppDimensions.paddingXLarge),
+                      child: LoadingIndicator(),
+                    );
+
+                  case SearchInitialStatus.failure:
+                    return Padding(
+                      padding: const EdgeInsets.only(
+                          top: AppDimensions.paddingLarge),
+                      child: EmptyStateWidget(
+                        image: AppImages.noData,
+                        message: AppStrings.somethingWentWrong.tr(),
+                        message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                        actionText: AppStrings.retry.tr(),
+                        onAction: () =>
+                            context.read<SearchInitialCubit>().load(),
+                      ),
+                    );
+
+                  case SearchInitialStatus.success:
+                    return _content(state.data);
+                }
+              },
             ),
-            const SizedBox(height: AppDimensions.paddingLarge),
-            _sectionTitle(AppStrings.freshArticles.tr()),
-            const SizedBox(height: AppDimensions.paddingSmall),
-            if (_freshArticles.isEmpty)
-              EmptyStateWidget(
-                image: AppImages.noData,
-                message: AppStrings.noArticles.tr(),
-              )
-            else
-              for (final article in _freshArticles)
-                Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: AppDimensions.paddingSmall,
-                  ),
-                  child: CornerArticleCard(
-                    article: article,
-                    onTap: () => AppNavigator.push(
-                      ArticleScreen(articleId: article.id),
-                    ),
-                    onFavoriteTap: () {
-                      // TODO: wire favorite toggle once real search results
-                      // carry stable, real article ids.
-                    },
-                    onCartTap: () {
-                      // TODO: add to cart.
-                    },
-                  ),
-                ),
           ],
         ),
+        ),
       ),
+    );
+  }
+
+  Widget _content(SearchInitialModel data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (data.recentSearches.isNotEmpty) ...[
+          const SizedBox(height: AppDimensions.paddingLarge),
+          _sectionTitle(AppStrings.recentSearch.tr()),
+          const SizedBox(height: AppDimensions.paddingSmall),
+          for (final recent in data.recentSearches)
+            _RecentSearchRow(
+              text: recent.query,
+              onTap: () => _submit(recent.query),
+              onRemove: () => context
+                  .read<SearchInitialCubit>()
+                  .removeRecentSearch(recent.id),
+            ),
+        ],
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _sectionTitle(AppStrings.popularHashtag.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        Wrap(
+          spacing: AppDimensions.paddingSmall,
+          runSpacing: AppDimensions.paddingSmall,
+          children: [
+            for (final keyword in data.trendingKeywords)
+              _HashtagChip(
+                label: keyword.name,
+                selected: keyword.name == _selectedKeyword,
+                onTap: () => _submit(keyword.name),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
+        _sectionTitle(AppStrings.freshArticles.tr()),
+        const SizedBox(height: AppDimensions.paddingSmall),
+        if (data.discoveryArticles.isEmpty)
+          EmptyStateWidget(
+            image: AppImages.noData,
+            message: AppStrings.noArticles.tr(),
+          )
+        else
+          for (final article in data.discoveryArticles)
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: AppDimensions.paddingSmall,
+              ),
+              child: CornerArticleCard(
+                article: article,
+                onTap: () => AppNavigator.push(
+                  ArticleScreen(articleId: article.id),
+                ),
+                onFavoriteTap: () {
+                  // TODO: wire favorite toggle once a favorite endpoint
+                  // for search results is available.
+                },
+                onCartTap: () {
+                  // TODO: add to cart.
+                },
+              ),
+            ),
+      ],
     );
   }
 
@@ -138,7 +212,8 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: TextField(
         controller: _searchController,
-        // TODO: wire to a search API once the endpoint is available.
+        textInputAction: TextInputAction.search,
+        onSubmitted: _submit,
         onChanged: (_) => setState(() {}),
         textAlignVertical: TextAlignVertical.center,
         style: const TextStyle(
@@ -152,9 +227,28 @@ class _SearchScreenState extends State<SearchScreen> {
           border: InputBorder.none,
           contentPadding:
           const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          suffixIcon: const Padding(
-            padding: EdgeInsets.all(13),
-            child: Icon(Icons.search, color: AppColors.primary),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                InkWell(
+                  onTap: _clear,
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(Icons.close,
+                        size: 18, color: AppColors.textLight),
+                  ),
+                ),
+              InkWell(
+                onTap: () => _submit(_searchController.text),
+                customBorder: const CircleBorder(),
+                child: const Padding(
+                  padding: EdgeInsets.all(13),
+                  child: Icon(Icons.search, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
           suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         ),
@@ -164,19 +258,21 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _advancedSearchButton() {
     return InkWell(
-      onTap: () => AppNavigator.push(const AdvancedSearchScreen()),
+      onTap: () => AppNavigator.push(
+        AdvancedSearchScreen(initialQuery: _searchController.text),
+      ),
       borderRadius: BorderRadius.circular(30),
       child: Container(
         height: 46,
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.primary, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.tune, size: 18, color: AppColors.primary),
+            ImageAsset(AppImages.searchStatus, width: 18, height: 18),
             const SizedBox(width: 8),
             Text(
               AppStrings.advancedSearch.tr(),
