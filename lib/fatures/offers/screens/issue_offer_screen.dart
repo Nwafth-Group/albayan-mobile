@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
 import 'widgets/offer_countdown_banner.dart';
 
@@ -21,7 +23,8 @@ class IssueOfferScreen extends StatefulWidget {
   State<IssueOfferScreen> createState() => _IssueOfferScreenState();
 }
 
-class _IssueOfferScreenState extends State<IssueOfferScreen> {
+class _IssueOfferScreenState extends State<IssueOfferScreen>
+    with AddToCartStateMixin {
   int _tab = 0; // 0 = Short Word, 1 = Issue Index
 
   @override
@@ -138,9 +141,11 @@ class _IssueOfferScreenState extends State<IssueOfferScreen> {
                     child: CustomButton(
                       text:
                           '${AppStrings.addToCart.tr()} ${offer.newPrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                      onPressed: () {
-                        // TODO: add to cart
-                      },
+                      isLoading: isAddingToCart,
+                      onPressed: () => addToCart(
+                        type: CartItemType.issue,
+                        id: offer.id,
+                      ),
                     ),
                   ),
                 ],

@@ -13,6 +13,8 @@ class PromoCodeField extends StatelessWidget {
   final bool applied;
   final String? errorText;
   final VoidCallback onApply;
+  final VoidCallback? onRemove;
+  final bool isLoading;
 
   const PromoCodeField({
     super.key,
@@ -20,6 +22,8 @@ class PromoCodeField extends StatelessWidget {
     required this.applied,
     required this.errorText,
     required this.onApply,
+    this.onRemove,
+    this.isLoading = false,
   });
 
   @override
@@ -61,7 +65,16 @@ class PromoCodeField extends StatelessWidget {
                   ),
                 ),
               ),
-              if (applied)
+              if (isLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                )
+              else if (applied)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -75,6 +88,14 @@ class PromoCodeField extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.check_circle, color: AppColors.success, size: 18),
+                    if (onRemove != null) ...[
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: onRemove,
+                        child: const Icon(Icons.close,
+                            color: AppColors.textLight, size: 18),
+                      ),
+                    ],
                   ],
                 )
               else

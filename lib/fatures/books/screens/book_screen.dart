@@ -14,6 +14,8 @@ import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/books_remote_data_source.dart';
 import 'cubit/book_cubit.dart';
 import 'widgets/about_book_tab.dart';
@@ -45,7 +47,7 @@ class _BookView extends StatefulWidget {
 }
 
 class _BookViewState extends State<_BookView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AddToCartStateMixin {
   late final TabController _tabController;
 
   @override
@@ -319,7 +321,11 @@ class _BookViewState extends State<_BookView>
                           text: book.isFree
                               ? AppStrings.addToCart.tr()
                               : '${AppStrings.addToCart.tr()} ${book.effectivePrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                          onPressed: () {/* TODO: add to cart */},
+                          isLoading: isAddingToCart,
+                          onPressed: () => addToCart(
+                            type: CartItemType.book,
+                            id: book.id,
+                          ),
                         ),
                       ),
                     ],

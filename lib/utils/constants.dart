@@ -61,6 +61,12 @@ class ApiConstants {
   static const String personalCategories = '/reader/personal-categories';
   static const String personalCategoriesCounts =
       '/reader/personal-categories/counts';
+
+  // Cart Endpoints
+  static const String cart = '/reader/cart';
+  static const String cartItems = '/reader/cart/items';
+  static const String cartApplyCoupon = '/reader/cart/apply-coupon';
+  static const String cartRemoveCoupon = '/reader/cart/remove-coupon';
 }
 
 // App Colors
@@ -302,6 +308,7 @@ class AppStrings {
   static const String editorialStaff = 'editorial_staff';
   static const String read = 'read';
   static const String addToCart = 'add_to_cart';
+  static const String addedToCart = 'added_to_cart';
   static const String gift = 'gift';
   static const String hijriSuffix = 'hijri_suffix';
   static const String articlesCountLabel = 'articles_count';

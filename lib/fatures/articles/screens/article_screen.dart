@@ -13,6 +13,8 @@ import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/articles_remote_data_source.dart';
 import 'cubit/article_cubit.dart';
 import 'widgets/about_article_tab.dart';
@@ -45,7 +47,7 @@ class _ArticleView extends StatefulWidget {
 }
 
 class _ArticleViewState extends State<_ArticleView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AddToCartStateMixin {
   late final TabController _tabController;
 
   @override
@@ -313,7 +315,11 @@ class _ArticleViewState extends State<_ArticleView>
                 text: article.isFree
                     ? AppStrings.addToCart.tr()
                     : '${AppStrings.addToCart.tr()} ${article.price.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                onPressed: () {/* TODO: add to cart */},
+                isLoading: isAddingToCart,
+                onPressed: () => addToCart(
+                  type: CartItemType.article,
+                  id: article.id,
+                ),
               ),
             ),
           ],

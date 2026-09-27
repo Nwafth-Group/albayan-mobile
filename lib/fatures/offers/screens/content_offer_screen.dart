@@ -10,6 +10,8 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
 import '../../articles/screens/widgets/star_row.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
 import 'widgets/offer_countdown_banner.dart';
 
@@ -17,12 +19,19 @@ import 'widgets/offer_countdown_banner.dart';
 /// offers — a simplified promotional view (cover + price + overview),
 /// distinct from the full [BookScreen]/[ArticleScreen] which have tabs,
 /// reviews, and related items.
-class ContentOfferScreen extends StatelessWidget {
+class ContentOfferScreen extends StatefulWidget {
   final OfferModel offer;
   const ContentOfferScreen({super.key, required this.offer});
 
   @override
+  State<ContentOfferScreen> createState() => _ContentOfferScreenState();
+}
+
+class _ContentOfferScreenState extends State<ContentOfferScreen>
+    with AddToCartStateMixin {
+  @override
   Widget build(BuildContext context) {
+    final offer = widget.offer;
     final isBook = offer.type == OfferType.book;
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -187,9 +196,11 @@ class ContentOfferScreen extends StatelessWidget {
                       text: offer.isFree
                           ? AppStrings.addToCart.tr()
                           : '${AppStrings.addToCart.tr()} ${offer.newPrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                      onPressed: () {
-                        // TODO: add to cart
-                      },
+                      isLoading: isAddingToCart,
+                      onPressed: () => addToCart(
+                        type: isBook ? CartItemType.book : CartItemType.article,
+                        id: offer.id,
+                      ),
                     ),
                   ),
                 ],

@@ -18,6 +18,8 @@ import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/issues_remote_data_source.dart';
 import '../data/models/issue_detail_model.dart';
 import 'cubit/issue_details_cubit.dart';
@@ -46,7 +48,7 @@ class _DetailsView extends StatefulWidget {
   State<_DetailsView> createState() => _DetailsViewState();
 }
 
-class _DetailsViewState extends State<_DetailsView> {
+class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
   int _tab = 0; // 0 = Short Word, 1 = Issue Index
 
   @override
@@ -258,9 +260,11 @@ class _DetailsViewState extends State<_DetailsView> {
               child: CustomButton(
                 text: cartText,
                 fontSize: AppDimensions.fontSizeMedium,
-                onPressed: () {
-                  // TODO: add to cart
-                },
+                isLoading: isAddingToCart,
+                onPressed: () => addToCart(
+                  type: CartItemType.issue,
+                  id: detail.id,
+                ),
               ),
             ),
           ],

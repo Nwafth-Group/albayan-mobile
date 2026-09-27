@@ -11,15 +11,24 @@ import 'package:flutter/material.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
 import 'widgets/offer_countdown_banner.dart';
 
-class PackageOfferScreen extends StatelessWidget {
+class PackageOfferScreen extends StatefulWidget {
   final OfferModel offer;
   const PackageOfferScreen({super.key, required this.offer});
 
   @override
+  State<PackageOfferScreen> createState() => _PackageOfferScreenState();
+}
+
+class _PackageOfferScreenState extends State<PackageOfferScreen>
+    with AddToCartStateMixin {
+  @override
   Widget build(BuildContext context) {
+    final offer = widget.offer;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: offer.name),
@@ -102,7 +111,10 @@ class PackageOfferScreen extends StatelessWidget {
                           // TODO: open the real book once package items are
                           // backed by real book ids.
                         },
-                        onCartTap: () {},
+                        onCartTap: () => addToCart(
+                          type: CartItemType.book,
+                          id: item.id,
+                        ),
                       );
                     },
                   ),
@@ -128,9 +140,11 @@ class PackageOfferScreen extends StatelessWidget {
                     flex: 2,
                     child: CustomButton(
                       text: AppStrings.addToCart.tr(),
-                      onPressed: () {
-                        // TODO: add package to cart
-                      },
+                      isLoading: isAddingToCart,
+                      onPressed: () => addToCart(
+                        type: CartItemType.package,
+                        id: offer.id,
+                      ),
                     ),
                   ),
                 ],
