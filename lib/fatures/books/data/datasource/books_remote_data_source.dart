@@ -3,6 +3,7 @@
 // FILE: lib/fatures/books/data/datasource/books_remote_data_source.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/fatures/articles/data/models/comment_model.dart';
 import 'package:albayan/fatures/authors/data/models/book_model.dart';
 import 'package:albayan/utils/api_client.dart';
@@ -67,7 +68,7 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
     final response = await _api.get('${ApiConstants.books}/$id');
     final data = response['data'];
     if (data is Map<String, dynamic>) return BookDetailModel.fromJson(data);
-    throw Exception('Invalid book response');
+    throw AppStrings.errorInvalidResponse.tr();
   }
 
   @override

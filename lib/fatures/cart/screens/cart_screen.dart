@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/screens/cart_screen.dart
 // ============================================
@@ -10,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/loading_widget.dart';
@@ -22,20 +22,25 @@ import 'widgets/order_summary_card.dart';
 import 'widgets/promo_code_field.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  /// True when pushed as its own page (e.g. from a header cart icon) rather
+  /// than shown as the bottom-nav Cart tab — adds a back-button app bar.
+  final bool showAppBar;
+
+  const CartScreen({Key? key, this.showAppBar = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          CartCubit(CartRemoteDataSourceImpl(ApiService()))..load(),
-      child: const _CartView(),
+      create: (_) => CartCubit(CartRemoteDataSourceImpl(ApiService()))..load(),
+      child: _CartView(showAppBar: showAppBar),
     );
   }
 }
 
 class _CartView extends StatefulWidget {
-  const _CartView();
+  final bool showAppBar;
+
+  const _CartView({required this.showAppBar});
 
   @override
   State<_CartView> createState() => _CartViewState();
@@ -87,17 +92,18 @@ class _CartViewState extends State<_CartView> {
     });
   }
 
-  void _checkout(CartState state) {
+  void _checkout(BuildContext context, CartState state) {
     final summary = state.cart.summary;
+    final cartCubit = context.read<CartCubit>();
 
     AppNavigator.push(
       ConfirmOrderScreen(
         items: List.of(state.cart.items),
-        subtotal: summary.subtotal,
-        discountPercent: summary.discountPercent,
-        promoDeduction:
-            summary.couponDiscount > 0 ? summary.couponDiscount : null,
-        total: summary.totalAmount,
+        summary: summary,
+        // Captured here (this context has the BlocProvider ancestor) since
+        // ConfirmOrderScreen is pushed as a separate route and can't reach
+        // this tab's CartCubit on its own.
+        onCheckoutComplete: cartCubit.clearAfterCheckout,
       ),
     );
   }
@@ -106,6 +112,14 @@ class _CartViewState extends State<_CartView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: widget.showAppBar
+          ? CustomAppBar(
+              title: AppStrings.myCart.tr(),
+              color: AppColors.textPrimary,
+              titleFontSize: AppDimensions.fontSizeXLarge,
+              titleFontWeight: FontWeight.w500,
+            )
+          : null,
       body: BlocBuilder<CartCubit, CartState>(
         builder: (context, state) {
           switch (state.status) {
@@ -147,8 +161,7 @@ class _CartViewState extends State<_CartView> {
               final items = state.cart.items;
               final summary = state.cart.summary;
               final couponCode = state.cart.couponCode;
-              final couponApplied =
-                  couponCode != null && couponCode.isNotEmpty;
+              final couponApplied = couponCode != null && couponCode.isNotEmpty;
 
               if (couponApplied && _promoController.text != couponCode) {
                 _promoController.text = couponCode;
@@ -174,6 +187,7 @@ class _CartViewState extends State<_CartView> {
                             for (final item in items)
                               CartItemCard(
                                 item: item,
+                                currency: summary.currency,
                                 onRemove: () => _removeItem(context, item),
                               ),
                             const SizedBox(height: AppDimensions.paddingSmall),
@@ -186,15 +200,7 @@ class _CartViewState extends State<_CartView> {
                               onRemove: _removePromo,
                             ),
                             const SizedBox(height: AppDimensions.paddingLarge),
-                            OrderSummaryCard(
-                              subtotal: summary.subtotal,
-                              taxes: summary.taxAmount,
-                              discountPercent: summary.discountPercent,
-                              promoDeduction: summary.couponDiscount > 0
-                                  ? summary.couponDiscount
-                                  : null,
-                              total: summary.totalAmount,
-                            ),
+                            OrderSummaryCard(summary: summary),
                           ],
                         ),
                       ),
@@ -204,10 +210,11 @@ class _CartViewState extends State<_CartView> {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.all(
-                                AppDimensions.paddingMedium),
+                              AppDimensions.paddingMedium,
+                            ),
                             child: CustomButton(
                               text: AppStrings.checkOut.tr(),
-                              onPressed: () => _checkout(state),
+                              onPressed: () => _checkout(context, state),
                             ),
                           ),
                         ),

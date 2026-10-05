@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/screens/cubit/cart_cubit.dart
 // ============================================
@@ -26,10 +25,12 @@ class CartCubit extends Cubit<CartState> {
     emit(state.copyWith(status: CartStatus.loading, error: null));
     try {
       final cart = await dataSource.getCart();
-      emit(state.copyWith(
-        status: cart.isEmpty ? CartStatus.empty : CartStatus.success,
-        cart: cart,
-      ));
+      emit(
+        state.copyWith(
+          status: cart.isEmpty ? CartStatus.empty : CartStatus.success,
+          cart: cart,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(status: CartStatus.failure, error: e.toString()));
     }
@@ -41,10 +42,12 @@ class CartCubit extends Cubit<CartState> {
   Future<void> _refreshSilently() async {
     try {
       final cart = await dataSource.getCart();
-      emit(state.copyWith(
-        status: cart.isEmpty ? CartStatus.empty : CartStatus.success,
-        cart: cart,
-      ));
+      emit(
+        state.copyWith(
+          status: cart.isEmpty ? CartStatus.empty : CartStatus.success,
+          cart: cart,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(status: CartStatus.failure, error: e.toString()));
     }
@@ -55,26 +58,32 @@ class CartCubit extends Cubit<CartState> {
   Future<void> removeItem(CartItemModel item) async {
     final previous = state.cart;
     final optimistic = previous.items.where((i) => i.id != item.id).toList();
-    emit(state.copyWith(
-      cart: CartModel(
-        cartId: previous.cartId,
-        itemsCount: optimistic.length,
-        items: optimistic,
-        couponCode: previous.couponCode,
-        summary: previous.summary,
+    emit(
+      state.copyWith(
+        cart: CartModel(
+          cartId: previous.cartId,
+          itemsCount: optimistic.length,
+          items: optimistic,
+          couponCode: previous.couponCode,
+          summary: previous.summary,
+        ),
+        status: optimistic.isEmpty ? CartStatus.empty : CartStatus.success,
       ),
-      status: optimistic.isEmpty ? CartStatus.empty : CartStatus.success,
-    ));
+    );
 
     try {
       await dataSource.removeItem(item.id);
       await _refreshSilently();
     } catch (e) {
       Helpers.showError(e.toString());
-      emit(state.copyWith(
-        cart: previous,
-        status: previous.items.isEmpty ? CartStatus.empty : CartStatus.success,
-      ));
+      emit(
+        state.copyWith(
+          cart: previous,
+          status: previous.items.isEmpty
+              ? CartStatus.empty
+              : CartStatus.success,
+        ),
+      );
     }
   }
 
@@ -100,5 +109,14 @@ class CartCubit extends Cubit<CartState> {
     } catch (e) {
       return e.toString();
     }
+  }
+
+  /// Called right after `POST /reader/cart/checkout` succeeds. A completed
+  /// order should always leave the cart empty, so this clears it immediately
+  /// (instead of waiting on a round trip) and then reconciles with the
+  /// server in the background in case anything was left behind.
+  void clearAfterCheckout() {
+    emit(state.copyWith(status: CartStatus.empty, cart: CartModel.empty));
+    _refreshSilently();
   }
 }

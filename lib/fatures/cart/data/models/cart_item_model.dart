@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/data/models/cart_item_model.dart
 // ============================================
@@ -53,15 +52,19 @@ class CartItemModel {
   final String subLabel;
   final String title;
   final String? image;
-  final String author;
 
-  /// Not returned by `GET /reader/cart` — kept so the existing cart UI
-  /// (which shows a star row) still renders; always 0 until the backend
-  /// includes a rating here.
-  final double rate;
+  /// Empty when the API returns `author: null` (e.g. issues).
+  final String author;
 
   final num oldPrice;
   final num newPrice;
+
+  /// `offer_discount` — the amount the active offer takes off this item.
+  final num offerDiscount;
+
+  /// `active_offer` — the offer applied to this item, or null. Its shape
+  /// isn't documented yet, so it's kept raw.
+  final Map<String, dynamic>? activeOffer;
 
   const CartItemModel({
     required this.id,
@@ -72,12 +75,15 @@ class CartItemModel {
     required this.title,
     required this.image,
     required this.author,
-    required this.rate,
     required this.oldPrice,
     required this.newPrice,
+    this.offerDiscount = 0,
+    this.activeOffer,
   });
 
   bool get hasDiscount => oldPrice > newPrice;
+
+  bool get hasAuthor => author.trim().isNotEmpty;
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     num parseNum(dynamic v) {
@@ -95,11 +101,19 @@ class CartItemModel {
       isGift: json['is_gift'] == true,
       subLabel: json['subtitle']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      image: json['image_url']?.toString(),
+      image: _nonEmpty(json['image_url']),
       author: json['author']?.toString() ?? '',
-      rate: 0,
       oldPrice: originalPrice,
       newPrice: finalPrice,
+      offerDiscount: parseNum(json['offer_discount']),
+      activeOffer: json['active_offer'] is Map<String, dynamic>
+          ? json['active_offer'] as Map<String, dynamic>
+          : null,
     );
   }
+}
+
+String? _nonEmpty(dynamic v) {
+  final s = v?.toString().trim();
+  return (s == null || s.isEmpty) ? null : s;
 }

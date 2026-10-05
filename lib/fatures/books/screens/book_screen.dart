@@ -194,7 +194,9 @@ class _BookViewState extends State<_BookView>
           onTap: () {/* TODO: open reader */},
         ),
         _circleAction(
-          child: ImageAsset(AppImages.favorate, width: 20, height: 20),
+          child: book.isFavorite
+              ? const Icon(Icons.favorite, size: 20, color: AppColors.primary)
+              : ImageAsset(AppImages.favorate, width: 20, height: 20),
           onTap: () => context.read<BookCubit>().toggleFavorite(),
         ),
         const SizedBox(width: AppDimensions.paddingMedium),

@@ -3,6 +3,7 @@
 // FILE: lib/fatures/authors/data/datasource/authors_remote_data_source.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 
@@ -59,7 +60,7 @@ class AuthorsRemoteDataSourceImpl implements AuthorsRemoteDataSource {
     final response = await _api.get('${ApiConstants.authors}/$id');
     final data = response['data'];
     if (data is Map<String, dynamic>) return AuthorDetailsModel.fromJson(data);
-    throw Exception('Invalid author response');
+    throw AppStrings.errorInvalidResponse.tr();
   }
 
   @override

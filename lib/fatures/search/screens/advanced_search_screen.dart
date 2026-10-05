@@ -425,7 +425,7 @@ class _DateField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = date == null
-        ? 'Choose Date'
+        ? AppStrings.chooseDate.tr()
         : '${date!.day.toString().padLeft(2, '0')}/'
             '${date!.month.toString().padLeft(2, '0')}/'
             '${date!.year}';

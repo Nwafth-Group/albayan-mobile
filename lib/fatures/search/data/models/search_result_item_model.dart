@@ -49,6 +49,25 @@ class SearchResultItemModel {
 
   num get effectivePrice => finalPrice ?? price ?? 0;
 
+  SearchResultItemModel copyWith({bool? isFavorite}) => SearchResultItemModel(
+        id: id,
+        versionId: versionId,
+        title: title,
+        summary: summary,
+        authorName: authorName,
+        authorAvatar: authorAvatar,
+        cornerName: cornerName,
+        issueNumber: issueNumber,
+        price: price,
+        finalPrice: finalPrice,
+        isFree: isFree,
+        image: image,
+        rate: rate,
+        publishedAt: publishedAt,
+        isFavorite: isFavorite ?? this.isFavorite,
+        isOwned: isOwned,
+      );
+
   factory SearchResultItemModel.fromJson(Map<String, dynamic> json) {
     final author = json['author'];
     final corner = json['corner'];

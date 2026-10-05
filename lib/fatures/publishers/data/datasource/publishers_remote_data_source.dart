@@ -3,6 +3,7 @@
 // FILE: lib/fatures/publishers/data/datasource/publishers_remote_data_source.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/fatures/authors/data/models/book_model.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
@@ -29,7 +30,7 @@ class PublishersRemoteDataSourceImpl implements PublishersRemoteDataSource {
     if (data is Map<String, dynamic>) {
       return PublisherDetailModel.fromJson(data);
     }
-    throw Exception('Invalid publisher response');
+    throw AppStrings.errorInvalidResponse.tr();
   }
 
   @override

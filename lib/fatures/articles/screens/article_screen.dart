@@ -1,9 +1,7 @@
-
 // ============================================
 // FILE: lib/fatures/articles/screens/article_screen.dart
 // ============================================
 
-import 'package:albayan/widgets/custom_icon.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +10,8 @@ import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/detail_hero.dart';
+import '../../../widgets/detail_tabs.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
@@ -48,6 +48,9 @@ class _ArticleView extends StatefulWidget {
 
 class _ArticleViewState extends State<_ArticleView>
     with SingleTickerProviderStateMixin, AddToCartStateMixin {
+  /// Height of the cream sheet's rounded top that overlaps the hero.
+  static const _sheetRadius = 28.0;
+
   late final TabController _tabController;
 
   @override
@@ -109,32 +112,24 @@ class _ArticleViewState extends State<_ArticleView>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(
-                    top: AppDimensions.paddingMedium,
-                    bottom: AppDimensions.paddingSmall,
+                    top: AppDimensions.paddingxSmall,
+                    bottom: AppDimensions.paddingLarge,
                   ),
                   child: ArticleInfoBar(article: article),
                 ),
               ),
               SliverPersistentHeader(
                 pinned: true,
-                delegate: _TabBarDelegate(
-                  TabBar(
-                    dividerColor: AppColors.cardColor,
-                    controller: _tabController,
-                    isScrollable: true,
-                    labelColor: AppColors.textPrimary,
-                    unselectedLabelColor: AppColors.textLight,
-                    indicatorColor: AppColors.primary,
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(
-                      fontSize: AppDimensions.fontSizeLarge,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    tabs: [
-                      Tab(text: AppStrings.aboutArticle.tr()),
-                      Tab(text: AppStrings.reviews.tr()),
-                      Tab(text: AppStrings.similarArticle.tr()),
+                delegate: _TabsDelegate(
+                  selectedIndex: _tabController.index,
+                  child: DetailTabs(
+                    labels: [
+                      AppStrings.aboutArticle.tr(),
+                      AppStrings.reviews.tr(),
+                      AppStrings.similarArticle.tr(),
                     ],
+                    selectedIndex: _tabController.index,
+                    onChanged: _tabController.animateTo,
                   ),
                 ),
               ),
@@ -170,12 +165,16 @@ class _ArticleViewState extends State<_ArticleView>
     );
   }
 
-  // ---- Header (image + title) ----
+  // ---- Header: blurred-cover hero, with the sheet's rounded top ----
   Widget _buildHeader(BuildContext context, ArticleState state) {
     final article = state.article!;
+    final media = MediaQuery.of(context);
+    // Same share of the screen as the issue details hero.
+    final heroHeight = media.size.height * 0.5;
+
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 320,
+      expandedHeight: heroHeight - media.padding.top,
       backgroundColor: const Color(0xFF2A2A2A),
       foregroundColor: Colors.white,
       elevation: 0,
@@ -183,18 +182,26 @@ class _ArticleViewState extends State<_ArticleView>
         icon: const Icon(Icons.arrow_back, color: Colors.white),
         onPressed: () => Navigator.of(context).maybePop(),
       ),
+      titleSpacing: 0,
       title: Text(
         AppStrings.article.tr(),
-        style: const TextStyle(color: Colors.white, fontSize: 18),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       centerTitle: false,
       actions: [
-        _circleAction(
-          child: ImageAsset(AppImages.openBook, width: 20, height: 20),
-          onTap: () {/* TODO: open reader */},
+        DetailCircleAction(
+          asset: AppImages.openBook,
+          onTap: () {
+            /* TODO: open reader */
+          },
         ),
-        _circleAction(
-          child: ImageAsset(AppImages.favorate, width: 20, height: 20),
+        const SizedBox(width: AppDimensions.paddingSmall),
+        DetailFavoriteAction(
+          isFavorite: article.isFavorite,
           onTap: () => context.read<ArticleCubit>().toggleFavorite(),
         ),
         const SizedBox(width: AppDimensions.paddingMedium),
@@ -203,75 +210,28 @@ class _ArticleViewState extends State<_ArticleView>
         background: Stack(
           fit: StackFit.expand,
           children: [
-            if (article.image != null)
-              Image.network(
-                article.image!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: const Color(0xFF2A2A2A)),
-              )
-            else
-              Container(color: const Color(0xFF2A2A2A)),
-            // Darken for legibility
-            Container(color: Colors.black.withOpacity(0.45)),
-            // Centered cover + title
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(top: kToolbarHeight),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ClipRRect(
-                      borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusLarge),
-                      child: SizedBox(
-                        width: 150,
-                        height: 150,
-                        child: (article.image != null)
-                            ? Image.network(article.image!, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const ColoredBox(
-                                color: AppColors.surfaceVariant))
-                            : const ColoredBox(color: AppColors.surfaceVariant),
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.paddingMedium),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        article.title,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: AppDimensions.fontSizeXLarge,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+            DetailHero(
+              coverUrl: article.image,
+              title: article.title,
+              // The app bar above draws the back/title/actions row.
+              topBar: null,
+              bottomSpacing: _sheetRadius + AppDimensions.paddingMedium,
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: _sheetRadius,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.cardColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(_sheetRadius),
+                  ),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _circleAction({required Widget child, VoidCallback? onTap}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AppDimensions.paddingSmall),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: child,
         ),
       ),
     );
@@ -291,48 +251,49 @@ class _ArticleViewState extends State<_ArticleView>
         padding: const EdgeInsets.all(AppDimensions.paddingMedium),
         child: isReviews
             ? (article.allowedRating
-            ? CustomButton(
-          text: AppStrings.addRating.tr(),
-          isLoading: state.submittingRating,
-          onPressed: _openRating,
-        )
-            : const SizedBox.shrink())
+                  ? CustomButton(
+                      text: AppStrings.addRating.tr(),
+                      isLoading: state.submittingRating,
+                      onPressed: _openRating,
+                    )
+                  : const SizedBox.shrink())
             : Row(
-          children: [
-            Expanded(
-              child: CustomButton(
-                text: AppStrings.gift.tr(),
-                isOutlined: true,
-                icon: Icons.card_giftcard,
-                textColor: AppColors.primary,
-                onPressed: () {/* TODO: gift */},
+                children: [
+                  Expanded(
+                    child: CustomButton(
+                      text: AppStrings.gift.tr(),
+                      isOutlined: true,
+                      textColor: AppColors.primary,
+                      onPressed: () {
+                        /* TODO: gift */
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.paddingSmall),
+                  Expanded(
+                    flex: 2,
+                    child: CustomButton(
+                      text: article.isFree
+                          ? AppStrings.addToCart.tr()
+                          : '${AppStrings.addToCart.tr()} ${article.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}',
+                      isLoading: isAddingToCart,
+                      onPressed: () =>
+                          addToCart(type: CartItemType.article, id: article.id),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: AppDimensions.paddingMedium),
-            Expanded(
-              flex: 2,
-              child: CustomButton(
-                text: article.isFree
-                    ? AppStrings.addToCart.tr()
-                    : '${AppStrings.addToCart.tr()} ${article.price.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                isLoading: isAddingToCart,
-                onPressed: () => addToCart(
-                  type: CartItemType.article,
-                  id: article.id,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
 
-/// Pinned TabBar header for the NestedScrollView.
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-  _TabBarDelegate(this.tabBar);
+/// Pinned tab row for the NestedScrollView.
+class _TabsDelegate extends SliverPersistentHeaderDelegate {
+  final int selectedIndex;
+  final Widget child;
+
+  _TabsDelegate({required this.selectedIndex, required this.child});
 
   @override
   double get minExtent => 48;
@@ -343,12 +304,15 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
     return Container(
       color: AppColors.cardColor,
-      alignment: Alignment.centerLeft,
-      child: tabBar,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+      ),
+      alignment: AlignmentDirectional.centerStart,
+      child: child,
     );
   }
 
   @override
-  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) =>
-      oldDelegate.tabBar != tabBar;
+  bool shouldRebuild(covariant _TabsDelegate oldDelegate) =>
+      oldDelegate.selectedIndex != selectedIndex || oldDelegate.child != child;
 }

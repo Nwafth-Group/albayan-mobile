@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/data/models/cart_model.dart
 // ============================================
@@ -35,15 +34,6 @@ class CartSummaryModel {
   });
 
   static const empty = CartSummaryModel();
-
-  /// The combined "Discount" line the existing cart UI shows as a
-  /// percentage — offer + coupon discount relative to the subtotal.
-  double get discountPercent {
-    if (subtotal <= 0) return 0;
-    return ((offerDiscount + couponDiscount) / subtotal * 100)
-        .clamp(0, 100)
-        .toDouble();
-  }
 
   factory CartSummaryModel.fromJson(Map<String, dynamic> json) {
     return CartSummaryModel(
@@ -85,14 +75,15 @@ class CartModel {
     final rawItems = json['items'];
     final items = (rawItems is List)
         ? rawItems
-            .whereType<Map<String, dynamic>>()
-            .map(CartItemModel.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(CartItemModel.fromJson)
+              .toList()
         : <CartItemModel>[];
 
     final rawCoupon = json['coupon'];
-    final couponCode =
-        rawCoupon is Map<String, dynamic> ? rawCoupon['code']?.toString() : null;
+    final couponCode = rawCoupon is Map<String, dynamic>
+        ? rawCoupon['code']?.toString()
+        : null;
 
     final rawSummary = json['summary'];
     final summary = (rawSummary is Map<String, dynamic>)

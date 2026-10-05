@@ -3,6 +3,7 @@
 // FILE: lib/fatures/corners/data/datasource/corners_remote_data_source.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 
@@ -65,7 +66,7 @@ class CornersRemoteDataSourceImpl implements CornersRemoteDataSource {
     if (data is Map<String, dynamic>) {
       return CornerModel.fromJson(data);
     }
-    throw Exception('Invalid corner response');
+    throw AppStrings.errorInvalidResponse.tr();
   }
 
   @override

@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import '../../../../utils/constants.dart';
 import '../../data/models/corner_model.dart';
 
+/// The corner's hero card: photo with its name and header text in white,
+/// and the article count in maroon where the photo fades into the page.
 class CornerHeader extends StatelessWidget {
   final CornerModel corner;
   const CornerHeader({super.key, required this.corner});
@@ -19,13 +21,13 @@ class CornerHeader extends StatelessWidget {
         horizontal: AppDimensions.paddingMedium,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        borderRadius: BorderRadius.circular(20),
         child: AspectRatio(
-          aspectRatio: 16 / 10,
+          aspectRatio: 1.68,
           child: Stack(
             children: [
               Positioned.fill(child: _CoverImage(url: corner.image)),
-              // Dark gradient for text legibility.
+              // Darkens the middle so the white text stays legible.
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -33,39 +35,60 @@ class CornerHeader extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.65),
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.2),
                       ],
+                      stops: const [0.25, 0.7, 1],
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                left: AppDimensions.paddingMedium,
-                right: AppDimensions.paddingMedium,
+              // Fades the bottom edge into the page background.
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.background.withValues(alpha: 0),
+                        AppColors.background,
+                      ],
+                      stops: const [0.72, 1],
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: AppDimensions.paddingMedium,
+                end: AppDimensions.paddingMedium,
                 bottom: AppDimensions.paddingMedium,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       corner.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: AppDimensions.fontSizeXLarge,
-                        fontWeight: FontWeight.bold,
+                        fontSize: AppDimensions.fontSizeLarge,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (corner.header != null &&
                         corner.header!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         corner.header!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: AppDimensions.fontSizeMedium,
-                          height: 1.3,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -75,9 +98,8 @@ class CornerHeader extends StatelessWidget {
                         namedArgs: {'count': corner.articlesCount.toString()},
                       ),
                       style: const TextStyle(
-                        color: AppColors.accentLight,
+                        color: AppColors.primary,
                         fontSize: AppDimensions.fontSizeLarge,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -125,8 +147,7 @@ class _CoverImage extends StatelessWidget {
     return Container(
       color: AppColors.surfaceVariant,
       child: const Center(
-        child: Icon(Icons.image_outlined,
-            color: AppColors.textLight, size: 40),
+        child: Icon(Icons.image_outlined, color: AppColors.textLight, size: 40),
       ),
     );
   }

@@ -3,7 +3,11 @@
 // FILE: lib/fatures/articles/screens/cubit/article_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:albayan/fatures/corners/data/models/corner_article_model.dart';
+import 'package:albayan/fatures/favorites/data/favorites_sync.dart';
+import 'package:albayan/fatures/favorites/data/models/favorite_item_model.dart';
 import 'package:albayan/fatures/issues/data/models/pagination_meta.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,8 +25,24 @@ class ArticleCubit extends Cubit<ArticleState> {
   bool _fetchingComments = false;
   bool _fetchingSimilar = false;
 
+  late final StreamSubscription<FavoriteChange> _favoriteSub;
+
   ArticleCubit(this.dataSource, {required this.articleId})
-      : super(const ArticleState());
+      : super(const ArticleState()) {
+    // Keep the heart in sync when this article is (un)favorited elsewhere.
+    _favoriteSub = FavoritesSync.changes.listen((c) {
+      final a = state.article;
+      if (a != null && c.matches(FavoriteType.article, a.id)) {
+        _setFavorite(c.isFavorite);
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _favoriteSub.cancel();
+    return super.close();
+  }
 
   /// Loads the article detail, then the first page of comments and similar.
   Future<void> load() async {
@@ -52,12 +72,23 @@ class ArticleCubit extends Cubit<ArticleState> {
     await _fetchSimilar(page: next, reset: false);
   }
 
-  /// Optimistic favorite toggle (wire the real endpoint here when available).
-  void toggleFavorite() {
+  /// POST /reader/favorites/toggle — optimistic, settles on the server's
+  /// answer (see [FavoritesSync.toggleOptimistic]).
+  Future<void> toggleFavorite() async {
     final a = state.article;
     if (a == null) return;
-    emit(state.copyWith(article: a.copyWith(isFavorite: !a.isFavorite)));
-    // TODO: call favorite/unfavorite endpoint; revert on failure.
+    await FavoritesSync.toggleOptimistic(
+      type: FavoriteType.article,
+      id: a.id,
+      current: a.isFavorite,
+      apply: _setFavorite,
+    );
+  }
+
+  void _setFavorite(bool isFavorite) {
+    final a = state.article;
+    if (isClosed || a == null || a.isFavorite == isFavorite) return;
+    emit(state.copyWith(article: a.copyWith(isFavorite: isFavorite)));
   }
 
   /// Submits a rating + optional comment, then refreshes the comments list.

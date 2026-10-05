@@ -149,6 +149,8 @@ class _AuthorViewState extends State<_AuthorView>
                       builder: (_) => BookScreen(bookId: b.id),
                     ),
                   ),
+                  onFavoriteTap: (b) =>
+                      context.read<AuthorCubit>().toggleBookFavorite(b.id),
                 ),
               ],
             ),

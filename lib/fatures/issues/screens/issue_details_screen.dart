@@ -2,8 +2,6 @@
 // FILE: lib/fatures/issues/screens/issue_details_screen.dart
 // ============================================
 
-import 'dart:ui';
-
 import 'package:albayan/fatures/corners/screens/corner_screen.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/widgets/index_article_tile.dart';
@@ -16,8 +14,11 @@ import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/detail_hero.dart';
+import '../../../widgets/detail_tabs.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../../widgets/promo_banner.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/issues_remote_data_source.dart';
@@ -98,8 +99,33 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
             left: 0,
             right: 0,
             height: heroHeight,
-            child:
-            _Hero(detail: detail, dateText: _headerDate(context, detail)),
+            child: DetailHero(
+              coverUrl: detail.coverImage,
+              title: detail.title,
+              subtitle: _headerDate(context, detail),
+              topBar: DetailTopBar(
+                title: AppStrings.detailsPage.tr(),
+                actions: [
+                  DetailCircleAction(
+                    asset: AppImages.taj, // crown / subscription
+                    onTap: () {
+                      // TODO: subscription
+                    },
+                  ),
+                  DetailCircleAction(
+                    asset: AppImages.openBook, // read
+                    onTap: () {
+                      // TODO: read
+                    },
+                  ),
+                  DetailFavoriteAction(
+                    isFavorite: detail.isFavorite,
+                    onTap: () =>
+                        context.read<IssueDetailsCubit>().toggleFavorite(),
+                  ),
+                ],
+              ),
+            ),
           ),
           Positioned(
             top: heroHeight - overlap,
@@ -130,8 +156,13 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _tabs(context),
-          const SizedBox(height: AppDimensions.paddingLarge),
+          DetailTabs(
+            labels: [AppStrings.shortWord.tr(), AppStrings.issueIndex.tr()],
+            selectedIndex: _tab,
+            spacing: 36,
+            onChanged: (i) => setState(() => _tab = i),
+          ),
+          const SizedBox(height: AppDimensions.paddingMedium),
           Expanded(
             child: _tab == 0
                 ? _shortWord(context, detail)
@@ -144,24 +175,6 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
     );
   }
 
-  Widget _tabs(BuildContext context) {
-    return Row(
-      children: [
-        _TabItem(
-          label: AppStrings.shortWord.tr(),
-          selected: _tab == 0,
-          onTap: () => setState(() => _tab = 0),
-        ),
-        const SizedBox(width: AppDimensions.paddingLarge),
-        _TabItem(
-          label: AppStrings.issueIndex.tr(),
-          selected: _tab == 1,
-          onTap: () => setState(() => _tab = 1),
-        ),
-      ],
-    );
-  }
-
   // ── Short Word tab ──────────────────────────────────────
   Widget _shortWord(BuildContext context, IssueDetailModel detail) {
     final intro = detail.shortIntroduction;
@@ -169,15 +182,18 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const AdPromoBanner(
+            padding: EdgeInsets.only(bottom: AppDimensions.paddingLarge),
+          ),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Text(
                   intro?.title ?? detail.title,
                   style: const TextStyle(
-                    fontSize: AppDimensions.fontSizeLarge,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -187,17 +203,17 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
                 AppStrings.editorialStaff.tr(),
                 style: const TextStyle(
                   fontSize: AppDimensions.fontSizeSmall,
-                  color: AppColors.textLight,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.paddingMedium),
+          const SizedBox(height: AppDimensions.paddingSmall),
           Text(
             intro?.summary ?? '',
             style: const TextStyle(
-              fontSize: AppDimensions.fontSizeMedium,
-              height: 1.7,
+              fontSize: 14.5,
+              height: 1.75,
               color: AppColors.textSecondary,
             ),
           ),
@@ -220,12 +236,12 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
       padding: EdgeInsets.zero,
       itemCount: detail.indexPreview.length,
       separatorBuilder: (_, __) =>
-      const SizedBox(height: AppDimensions.paddingMedium),
+          const SizedBox(height: AppDimensions.paddingMedium),
       itemBuilder: (_, i) => IndexArticleTile(
         item: detail.indexPreview[i],
         onTap: () {
           AppNavigator.push(
-             CornerScreen(cornerId: detail.indexPreview[i].corner!.id),
+            CornerScreen(cornerId: detail.indexPreview[i].corner!.id),
           );
         },
       ),
@@ -237,7 +253,7 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
     final cartText = detail.isFree
         ? AppStrings.addToCart.tr()
         : '${AppStrings.addToCart.tr()} '
-        '${detail.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}';
+              '${detail.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}';
 
     return Column(
       children: [
@@ -261,15 +277,13 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
                 text: cartText,
                 fontSize: AppDimensions.fontSizeMedium,
                 isLoading: isAddingToCart,
-                onPressed: () => addToCart(
-                  type: CartItemType.issue,
-                  id: detail.id,
-                ),
+                onPressed: () =>
+                    addToCart(type: CartItemType.issue, id: detail.id),
               ),
             ),
           ],
         ),
-        const SizedBox(height: AppDimensions.paddingxSmall),
+        const SizedBox(height: AppDimensions.paddingSmall),
         Row(
           children: [
             Expanded(
@@ -297,262 +311,5 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
     final hMonth = isAr ? d.hMonthNameAr : d.hMonthNameEn;
     final hijri = '$hMonth ${d.hYear} ${AppStrings.hijriSuffix.tr()}';
     return greg.isEmpty ? hijri : '$greg | $hijri';
-  }
-}
-
-// ── Hero header ───────────────────────────────────────────
-class _Hero extends StatelessWidget {
-  final IssueDetailModel detail;
-  final String dateText;
-
-  const _Hero({required this.detail, required this.dateText});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Blurred background of the same cover
-        _BlurredCover(url: detail.coverImage),
-        // Scrim for text legibility
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.25),
-                Colors.transparent,
-                Colors.black.withOpacity(0.45),
-              ],
-              stops: const [0, 0.4, 1],
-            ),
-          ),
-        ),
-        SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              children: [
-                _topBar(context),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: AspectRatio(
-                        aspectRatio: 0.82,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: _SharpCover(url: detail.coverImage),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    detail.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: AppDimensions.fontSizeXLarge,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.paddingSmall),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    dateText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: AppDimensions.fontSizeMedium,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 38),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _topBar(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white,),
-          onPressed: () => AppNavigator.pop(),
-        ),
-        Text(
-          AppStrings.detailsPage.tr(),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-          ),
-        ),
-        const Spacer(),
-        _CircleAction(
-          asset: AppImages.taj,        // crown / subscription
-          onTap: () {
-            // TODO: subscription
-          },
-        ),
-        const SizedBox(width: 4,),
-        _CircleAction(
-          asset: AppImages.openBook,   // read
-          onTap: () {
-            // TODO: read
-          },
-        ),
-        const SizedBox(width: 4,),
-        _CircleAction(
-          asset: AppImages.favorate,   // favorite
-          onTap: () => context.read<IssueDetailsCubit>().toggleFavorite(),
-        ),
-      ],
-    );
-  }
-}
-
-class _CircleAction extends StatelessWidget {
-  final String asset;
-  final VoidCallback onTap;
-  final double size;
-
-  const _CircleAction({
-    required this.asset,
-    required this.onTap,
-    this.size = 22,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 30,
-          height: 30,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
-          child: Image.asset(
-            asset,
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BlurredCover extends StatelessWidget {
-  final String? url;
-  const _BlurredCover({this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
-      return Container(color: AppColors.surfaceVariant);
-    }
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(
-            url!,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: AppColors.surfaceVariant),
-          ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(color: Colors.black.withOpacity(0.15)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SharpCover extends StatelessWidget {
-  final String? url;
-  const _SharpCover({this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
-      return Container(
-        color: AppColors.surfaceVariant,
-        child: const Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 40),
-      );
-    }
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
-        color: AppColors.surfaceVariant,
-        child: const Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 40),
-      ),
-    );
-  }
-}
-
-class _TabItem extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _TabItem({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: AppDimensions.fontSizeMedium,
-              fontWeight: FontWeight.bold,
-              color: selected ? AppColors.textPrimary : AppColors.textLight,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            height: 2.5,
-            width: 36,
-            decoration: BoxDecoration(
-              color: selected ? AppColors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

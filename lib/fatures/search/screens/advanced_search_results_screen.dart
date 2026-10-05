@@ -281,7 +281,8 @@ class _ResultsTabState extends State<_ResultsTab>
         return CornerArticleCard(
           article: _toCornerArticle(item),
           onTap: () => AppNavigator.push(ArticleScreen(articleId: item.id)),
-          onFavoriteTap: () {},
+          onFavoriteTap: () =>
+              context.read<SearchResultsCubit>().toggleFavorite(item),
           onCartTap: () {},
         );
       },

@@ -5,6 +5,7 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
@@ -13,26 +14,57 @@ import '../../articles/screens/widgets/star_row.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
+import 'cubit/offer_details_cubit.dart';
+import 'widgets/offer_content_status.dart';
 import 'widgets/offer_countdown_banner.dart';
+import 'widgets/offer_format.dart';
 
 /// Shared offer landing page for [OfferType.book] and [OfferType.article]
 /// offers — a simplified promotional view (cover + price + overview),
 /// distinct from the full [BookScreen]/[ArticleScreen] which have tabs,
 /// reviews, and related items.
-class ContentOfferScreen extends StatefulWidget {
+class ContentOfferScreen extends StatelessWidget {
   final OfferModel offer;
-  const ContentOfferScreen({super.key, required this.offer});
+
+  /// Already-loaded content; when null the author, pages, rating and
+  /// overview are fetched from the book's / article's own endpoint.
+  final OfferContent? initialContent;
+
+  const ContentOfferScreen({
+    super.key,
+    required this.offer,
+    this.initialContent,
+  });
 
   @override
-  State<ContentOfferScreen> createState() => _ContentOfferScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          OfferDetailsCubit.create(offer, initialContent: initialContent)
+            ..load(),
+      child: _ContentOfferView(offer: offer),
+    );
+  }
 }
 
-class _ContentOfferScreenState extends State<ContentOfferScreen>
+class _ContentOfferView extends StatefulWidget {
+  final OfferModel offer;
+  const _ContentOfferView({required this.offer});
+
+  @override
+  State<_ContentOfferView> createState() => _ContentOfferViewState();
+}
+
+class _ContentOfferViewState extends State<_ContentOfferView>
     with AddToCartStateMixin {
   @override
   Widget build(BuildContext context) {
     final offer = widget.offer;
     final isBook = offer.type == OfferType.book;
+    final state = context.watch<OfferDetailsCubit>().state;
+    final content = state.content;
+    final overview = content.overview;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: offer.name),
@@ -48,11 +80,15 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                   AppDimensions.paddingLarge,
                 ),
                 children: [
-                  OfferCountdownBanner(
-                    title: AppStrings.offerEndsInDetail.tr(),
-                    endsAt: offer.endsAt,
-                  ),
-                  const SizedBox(height: AppDimensions.paddingLarge),
+                  // Only shown when the exact end time is known (see
+                  // OfferContent.endsAt).
+                  if (content.endsAt != null) ...[
+                    OfferCountdownBanner(
+                      title: AppStrings.offerEndsInDetail.tr(),
+                      endsAt: content.endsAt!,
+                    ),
+                    const SizedBox(height: AppDimensions.paddingLarge),
+                  ],
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -78,7 +114,7 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                '${offer.discountPercent}%',
+                                offerDiscountLabel(offer),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: AppDimensions.fontSizeSmall,
@@ -96,22 +132,22 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                                 height: 1.3,
                               ),
                             ),
-                            if (offer.author != null) ...[
+                            if (content.author?.isNotEmpty ?? false) ...[
                               const SizedBox(height: 6),
                               Text(
-                                offer.author!,
+                                content.author!,
                                 style: const TextStyle(
                                   fontSize: AppDimensions.fontSizeSmall,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
-                            if (isBook && offer.pagesCount != null) ...[
+                            if (isBook && content.pagesCount != null) ...[
                               const SizedBox(height: 4),
                               Text(
                                 AppStrings.pagesLabel.tr(
                                   namedArgs: {
-                                    'count': offer.pagesCount.toString()
+                                    'count': content.pagesCount.toString()
                                   },
                                 ),
                                 style: const TextStyle(
@@ -124,7 +160,7 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                             Row(
                               children: [
                                 Text(
-                                  '${offer.oldPrice.toStringAsFixed(0)} ${AppStrings.currencySar.tr()}',
+                                  '${offerMoney(offer.oldPrice)} ${AppStrings.currencySar.tr()}',
                                   style: const TextStyle(
                                     fontSize: AppDimensions.fontSizeSmall,
                                     color: AppColors.textLight,
@@ -133,7 +169,7 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '${offer.newPrice.toStringAsFixed(0)} ${AppStrings.currencySar.tr()}',
+                                  '${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
                                   style: const TextStyle(
                                     fontSize: AppDimensions.fontSizeMedium,
                                     fontWeight: FontWeight.w700,
@@ -142,9 +178,9 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                                 ),
                               ],
                             ),
-                            if (offer.rate != null) ...[
+                            if (content.rate != null) ...[
                               const SizedBox(height: 4),
-                              StarRow(rating: offer.rate!, size: 16),
+                              StarRow(rating: content.rate!, size: 16),
                             ],
                           ],
                         ),
@@ -163,49 +199,58 @@ class _ContentOfferScreenState extends State<ContentOfferScreen>
                     ),
                   ),
                   const SizedBox(height: AppDimensions.paddingSmall),
-                  if (offer.overview != null)
+                  if (overview != null && overview.trim().isNotEmpty)
                     Text(
-                      offer.overview!,
+                      overview,
                       style: const TextStyle(
                         fontSize: AppDimensions.fontSizeMedium,
                         color: AppColors.textSecondary,
                         height: 1.6,
                       ),
+                    )
+                  else
+                    OfferContentStatus(
+                      loading: state.isLoading,
+                      failed: state.isFailure,
+                      onRetry: () => context.read<OfferDetailsCubit>().load(),
                     ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      text: AppStrings.gift.tr(),
-                      isOutlined: true,
-                      textColor: AppColors.primary,
-                      onPressed: () {
-                        // TODO: gift flow
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.paddingMedium),
-                  Expanded(
-                    flex: 2,
-                    child: CustomButton(
-                      text: offer.isFree
-                          ? AppStrings.addToCart.tr()
-                          : '${AppStrings.addToCart.tr()} ${offer.newPrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                      isLoading: isAddingToCart,
-                      onPressed: () => addToCart(
-                        type: isBook ? CartItemType.book : CartItemType.article,
-                        id: offer.id,
+            if (!offer.isCampaign)
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: AppStrings.gift.tr(),
+                        isOutlined: true,
+                        textColor: AppColors.primary,
+                        onPressed: () {
+                          // TODO: gift flow
+                        },
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppDimensions.paddingMedium),
+                    Expanded(
+                      flex: 2,
+                      child: CustomButton(
+                        text: offer.isFree
+                            ? AppStrings.addToCart.tr()
+                            : '${AppStrings.addToCart.tr()} ${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
+                        isLoading: isAddingToCart,
+                        onPressed: () => addToCart(
+                          type: isBook
+                              ? CartItemType.book
+                              : CartItemType.article,
+                          id: offer.id,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../../../utils/constants.dart';
 import '../../data/models/article_model.dart';
 
+/// Raised Rating | Language | Price card under the article hero.
 class ArticleInfoBar extends StatelessWidget {
   final ArticleModel article;
   const ArticleInfoBar({super.key, required this.article});
@@ -19,35 +20,45 @@ class ArticleInfoBar extends StatelessWidget {
         horizontal: AppDimensions.paddingMedium,
       ),
       padding: const EdgeInsets.symmetric(
-        vertical: AppDimensions.paddingMedium,
+        vertical: 14,
         horizontal: AppDimensions.paddingSmall,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        border: Border.all(color: AppColors.surface),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _textCell(article.rate.toStringAsFixed(1), AppStrings.rating.tr()),
-            _divider(),
-            _textCell(article.languageLabel, AppStrings.language.tr()),
-            _divider(),
-            _priceCell(),
-          ],
-        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _textCell(article.rate.toStringAsFixed(1), AppStrings.rating.tr()),
+          _divider(),
+          _textCell(article.languageLabel, AppStrings.language.tr()),
+          _divider(),
+          _priceCell(),
+        ],
       ),
     );
   }
 
-  Widget _divider() => const VerticalDivider(
-    width: 1,
-    thickness: 1,
-    color: AppColors.primary,
-    indent: 4,
-    endIndent: 4,
+  Widget _divider() =>
+      Container(width: 1.5, height: 34, color: AppColors.primary);
+
+  static const _valueStyle = TextStyle(
+    fontSize: 17,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+  );
+
+  static const _labelStyle = TextStyle(
+    fontSize: 13,
+    color: AppColors.textSecondary,
   );
 
   Widget _textCell(String value, String label) {
@@ -59,20 +70,10 @@ class ArticleInfoBar extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: _valueStyle,
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeSmall,
-              color: AppColors.textLight,
-            ),
-          ),
+          Text(label, style: _labelStyle),
         ],
       ),
     );
@@ -86,11 +87,7 @@ class ArticleInfoBar extends StatelessWidget {
           if (article.isFree)
             Text(
               AppStrings.free.tr(),
-              style: const TextStyle(
-                fontSize: AppDimensions.fontSizeLarge,
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
-              ),
+              style: _valueStyle.copyWith(color: AppColors.success),
             )
           else
             Text.rich(
@@ -98,17 +95,13 @@ class ArticleInfoBar extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: article.price.toStringAsFixed(0),
-                    style: const TextStyle(
-                      fontSize: AppDimensions.fontSizeLarge,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: _valueStyle,
                   ),
                   TextSpan(
                     text: AppStrings.currencySar.tr(),
                     style: const TextStyle(
-                      fontSize: AppDimensions.fontSizeSmall,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -116,13 +109,7 @@ class ArticleInfoBar extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 4),
-          Text(
-            AppStrings.price.tr(),
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeSmall,
-              color: AppColors.textLight,
-            ),
-          ),
+          Text(AppStrings.price.tr(), style: _labelStyle),
         ],
       ),
     );

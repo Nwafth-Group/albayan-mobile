@@ -3,9 +3,13 @@
 // FILE: lib/fatures/issues/screens/cubit/issue_details_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../favorites/data/favorites_sync.dart';
+import '../../../favorites/data/models/favorite_item_model.dart';
 import '../../data/datasource/issues_remote_data_source.dart';
 import '../../data/models/issue_detail_model.dart';
 
@@ -15,8 +19,24 @@ class IssueDetailsCubit extends Cubit<IssueDetailsState> {
   final IssuesRemoteDataSource dataSource;
   final String issueId;
 
+  late final StreamSubscription<FavoriteChange> _favoriteSub;
+
   IssueDetailsCubit(this.dataSource, {required this.issueId})
-      : super(const IssueDetailsState());
+      : super(const IssueDetailsState()) {
+    // Keep the heart in sync when this issue is (un)favorited elsewhere.
+    _favoriteSub = FavoritesSync.changes.listen((c) {
+      final detail = state.detail;
+      if (detail != null && c.matches(FavoriteType.issue, detail.id)) {
+        _setFavorite(c.isFavorite);
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _favoriteSub.cancel();
+    return super.close();
+  }
 
   Future<void> load() async {
     emit(state.copyWith(status: DetailsStatus.loading, error: null));
@@ -31,13 +51,22 @@ class IssueDetailsCubit extends Cubit<IssueDetailsState> {
     }
   }
 
-  /// Local optimistic toggle. Wire to the favorite API when available.
-  void toggleFavorite() {
+  /// POST /reader/favorites/toggle — optimistic, settles on the server's
+  /// answer (see [FavoritesSync.toggleOptimistic]).
+  Future<void> toggleFavorite() async {
     final detail = state.detail;
     if (detail == null) return;
-    emit(state.copyWith(
-      detail: detail.copyWith(isFavorite: !detail.isFavorite),
-    ));
-    // TODO: call favorite/unfavorite endpoint and revert on failure.
+    await FavoritesSync.toggleOptimistic(
+      type: FavoriteType.issue,
+      id: detail.id,
+      current: detail.isFavorite,
+      apply: _setFavorite,
+    );
+  }
+
+  void _setFavorite(bool isFavorite) {
+    final detail = state.detail;
+    if (isClosed || detail == null || detail.isFavorite == isFavorite) return;
+    emit(state.copyWith(detail: detail.copyWith(isFavorite: isFavorite)));
   }
 }

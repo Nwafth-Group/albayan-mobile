@@ -5,6 +5,7 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../utils/constants.dart';
@@ -13,23 +14,53 @@ import '../../../widgets/custom_button.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
+import 'cubit/offer_details_cubit.dart';
+import 'widgets/offer_content_status.dart';
 import 'widgets/offer_countdown_banner.dart';
+import 'widgets/offer_format.dart';
 
-class IssueOfferScreen extends StatefulWidget {
+class IssueOfferScreen extends StatelessWidget {
   final OfferModel offer;
-  const IssueOfferScreen({super.key, required this.offer});
+
+  /// Already-loaded content; when null the issue's short word and index are
+  /// fetched from `/public/issues/{id}`.
+  final OfferContent? initialContent;
+
+  const IssueOfferScreen({
+    super.key,
+    required this.offer,
+    this.initialContent,
+  });
 
   @override
-  State<IssueOfferScreen> createState() => _IssueOfferScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          OfferDetailsCubit.create(offer, initialContent: initialContent)
+            ..load(),
+      child: _IssueOfferView(offer: offer),
+    );
+  }
 }
 
-class _IssueOfferScreenState extends State<IssueOfferScreen>
+class _IssueOfferView extends StatefulWidget {
+  final OfferModel offer;
+  const _IssueOfferView({required this.offer});
+
+  @override
+  State<_IssueOfferView> createState() => _IssueOfferViewState();
+}
+
+class _IssueOfferViewState extends State<_IssueOfferView>
     with AddToCartStateMixin {
   int _tab = 0; // 0 = Short Word, 1 = Issue Index
 
   @override
   Widget build(BuildContext context) {
     final offer = widget.offer;
+    final state = context.watch<OfferDetailsCubit>().state;
+    final content = state.content;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: offer.name),
@@ -45,11 +76,15 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
                   AppDimensions.paddingLarge,
                 ),
                 children: [
-                  OfferCountdownBanner(
-                    title: AppStrings.offerEndsInDetail.tr(),
-                    endsAt: offer.endsAt,
-                  ),
-                  const SizedBox(height: AppDimensions.paddingLarge),
+                  // Only shown when the exact end time is known (see
+                  // OfferContent.endsAt).
+                  if (content.endsAt != null) ...[
+                    OfferCountdownBanner(
+                      title: AppStrings.offerEndsInDetail.tr(),
+                      endsAt: content.endsAt!,
+                    ),
+                    const SizedBox(height: AppDimensions.paddingLarge),
+                  ],
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -75,7 +110,7 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                '${offer.discountPercent}%',
+                                offerDiscountLabel(offer),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: AppDimensions.fontSizeSmall,
@@ -92,17 +127,20 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              DateFormat('MMM d, yyyy').format(offer.date),
-                              style: const TextStyle(
-                                fontSize: AppDimensions.fontSizeSmall,
-                                color: AppColors.textLight,
+                            if (content.publishedAt != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                DateFormat('MMM d, yyyy')
+                                    .format(content.publishedAt!),
+                                style: const TextStyle(
+                                  fontSize: AppDimensions.fontSizeSmall,
+                                  color: AppColors.textLight,
+                                ),
                               ),
-                            ),
+                            ],
                             const SizedBox(height: 4),
                             Text(
-                              '${offer.newPrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
+                              '${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
                               style: const TextStyle(
                                 fontSize: AppDimensions.fontSizeMedium,
                                 fontWeight: FontWeight.w700,
@@ -117,40 +155,43 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
                   const SizedBox(height: AppDimensions.paddingLarge),
                   _tabs(),
                   const SizedBox(height: AppDimensions.paddingLarge),
-                  _tab == 0 ? _shortWord(offer) : _issueIndex(offer),
+                  _tab == 0
+                      ? _shortWord(offer, state)
+                      : _issueIndex(state),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      text: AppStrings.gift.tr(),
-                      isOutlined: true,
-                      textColor: AppColors.primary,
-                      onPressed: () {
-                        // TODO: gift flow
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.paddingMedium),
-                  Expanded(
-                    flex: 2,
-                    child: CustomButton(
-                      text:
-                          '${AppStrings.addToCart.tr()} ${offer.newPrice.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-                      isLoading: isAddingToCart,
-                      onPressed: () => addToCart(
-                        type: CartItemType.issue,
-                        id: offer.id,
+            if (!offer.isCampaign)
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: AppStrings.gift.tr(),
+                        isOutlined: true,
+                        textColor: AppColors.primary,
+                        onPressed: () {
+                          // TODO: gift flow
+                        },
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppDimensions.paddingMedium),
+                    Expanded(
+                      flex: 2,
+                      child: CustomButton(
+                        text:
+                            '${AppStrings.addToCart.tr()} ${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
+                        isLoading: isAddingToCart,
+                        onPressed: () => addToCart(
+                          type: CartItemType.issue,
+                          id: offer.id,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -175,7 +216,16 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
     );
   }
 
-  Widget _shortWord(OfferModel offer) {
+  Widget _shortWord(OfferModel offer, OfferDetailsState state) {
+    final content = state.content;
+    final summary = content.shortWordSummary;
+    if (summary == null || summary.trim().isEmpty) {
+      return OfferContentStatus(
+        loading: state.isLoading,
+        failed: state.isFailure,
+        onRetry: () => context.read<OfferDetailsCubit>().load(),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,7 +234,7 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
           children: [
             Expanded(
               child: Text(
-                offer.shortWordTitle ?? offer.name,
+                content.shortWordTitle ?? offer.name,
                 style: const TextStyle(
                   fontSize: AppDimensions.fontSizeLarge,
                   fontWeight: FontWeight.bold,
@@ -204,7 +254,7 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
         ),
         const SizedBox(height: AppDimensions.paddingMedium),
         Text(
-          offer.shortWordSummary ?? '',
+          summary,
           style: const TextStyle(
             fontSize: AppDimensions.fontSizeMedium,
             height: 1.7,
@@ -215,8 +265,16 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
     );
   }
 
-  Widget _issueIndex(OfferModel offer) {
-    if (offer.indexItems.isEmpty) {
+  Widget _issueIndex(OfferDetailsState state) {
+    final items = state.content.indexItems;
+    if (items.isEmpty) {
+      if (state.isLoading || state.isFailure) {
+        return OfferContentStatus(
+          loading: state.isLoading,
+          failed: state.isFailure,
+          onRetry: () => context.read<OfferDetailsCubit>().load(),
+        );
+      }
       return Center(
         child: Text(
           AppStrings.noResults.tr(),
@@ -226,7 +284,7 @@ class _IssueOfferScreenState extends State<IssueOfferScreen>
     }
     return Column(
       children: [
-        for (final item in offer.indexItems) ...[
+        for (final item in items) ...[
           _IndexTile(item: item),
           const SizedBox(height: AppDimensions.paddingMedium),
         ],

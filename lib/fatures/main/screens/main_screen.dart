@@ -29,12 +29,13 @@ class _MainScreenState extends State<MainScreen> {
     _selectedIndex = widget.initialIndex;
   }
 
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    LibraryScreen(),
-    SearchScreen(),
-    CartScreen(),
-    SettingsScreen(),
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const LibraryScreen(),
+    const SearchScreen(),
+    const CartScreen(),
+    // The Settings tab's back arrow returns to Home.
+    SettingsScreen(onBack: () => _onTabTapped(0)),
   ];
 
   void _onTabTapped(int index) {
@@ -46,10 +47,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: MainBottomNavBar(
         selectedIndex: _selectedIndex,
         onTap: _onTabTapped,

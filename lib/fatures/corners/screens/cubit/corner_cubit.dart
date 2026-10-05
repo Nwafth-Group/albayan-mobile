@@ -8,6 +8,8 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:albayan/fatures/favorites/data/favorites_sync.dart';
+import 'package:albayan/fatures/favorites/data/models/favorite_item_model.dart';
 import 'package:albayan/fatures/issues/data/models/pagination_meta.dart';
 
 import '../../data/datasource/corners_remote_data_source.dart';
@@ -23,11 +25,17 @@ class CornerCubit extends Cubit<CornerState> {
 
   Timer? _searchDebounce;
   bool _isFetching = false;
+  late final StreamSubscription<FavoriteChange> _favoriteSub;
 
   CornerCubit(
       this.dataSource, {
         required this.cornerId,
-      }) : super(const CornerState());
+      }) : super(const CornerState()) {
+    // Keep hearts in sync when an article is (un)favorited elsewhere.
+    _favoriteSub = FavoritesSync.changes.listen((c) {
+      if (c.type == FavoriteType.article) _setFavorite(c.id, c.isFavorite);
+    });
+  }
 
   /// Loads the corner header + the first page of articles.
   Future<void> load() async {
@@ -68,15 +76,28 @@ class CornerCubit extends Cubit<CornerState> {
     await _fetch(page: 1, reset: true);
   }
 
-  /// Optimistic favorite toggle (wire the real endpoint here when available).
-  void toggleFavorite(String articleId) {
-    final updated = state.articles
-        .map((a) => a.id == articleId
-        ? a.copyWith(isFavorite: !a.isFavorite)
-        : a)
-        .toList();
-    emit(state.copyWith(articles: updated));
-    // TODO: call favorite/unfavorite endpoint and revert on failure.
+  /// POST /reader/favorites/toggle — optimistic, settles on the server's
+  /// answer (see [FavoritesSync.toggleOptimistic]).
+  Future<void> toggleFavorite(String articleId) async {
+    final article = state.articles.where((a) => a.id == articleId).firstOrNull;
+    if (article == null) return;
+    await FavoritesSync.toggleOptimistic(
+      type: FavoriteType.article,
+      id: articleId,
+      current: article.isFavorite,
+      apply: (isFavorite) => _setFavorite(articleId, isFavorite),
+    );
+  }
+
+  void _setFavorite(String articleId, bool isFavorite) {
+    if (isClosed) return;
+    var changed = false;
+    final updated = state.articles.map((a) {
+      if (a.id != articleId || a.isFavorite == isFavorite) return a;
+      changed = true;
+      return a.copyWith(isFavorite: isFavorite);
+    }).toList();
+    if (changed) emit(state.copyWith(articles: updated));
   }
 
   Future<void> _fetch({required int page, required bool reset}) async {
@@ -118,6 +139,7 @@ class CornerCubit extends Cubit<CornerState> {
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _favoriteSub.cancel();
     return super.close();
   }
 }

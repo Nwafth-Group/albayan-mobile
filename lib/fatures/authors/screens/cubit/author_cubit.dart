@@ -3,7 +3,11 @@
 // FILE: lib/fatures/authors/screens/cubit/author_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:albayan/fatures/corners/data/models/corner_article_model.dart';
+import 'package:albayan/fatures/favorites/data/favorites_sync.dart';
+import 'package:albayan/fatures/favorites/data/models/favorite_item_model.dart';
 import 'package:albayan/fatures/issues/data/models/pagination_meta.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,8 +25,46 @@ class AuthorCubit extends Cubit<AuthorState> {
   bool _fetchingArticles = false;
   bool _fetchingBooks = false;
 
+  late final StreamSubscription<FavoriteChange> _favoriteSub;
+
   AuthorCubit(this.dataSource, {required this.authorId})
-      : super(const AuthorState());
+      : super(const AuthorState()) {
+    // Keep the books tab's hearts in sync with changes made elsewhere.
+    _favoriteSub = FavoritesSync.changes.listen((c) {
+      if (c.type == FavoriteType.book) _setBookFavorite(c.id, c.isFavorite);
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _favoriteSub.cancel();
+    return super.close();
+  }
+
+  /// POST /reader/favorites/toggle for one of this author's books —
+  /// optimistic, settles on the server's answer. [bookId] is the book's
+  /// list `id` (its version id, which favorites use).
+  Future<void> toggleBookFavorite(String bookId) async {
+    final book = state.books.where((b) => b.id == bookId).firstOrNull;
+    if (book == null) return;
+    await FavoritesSync.toggleOptimistic(
+      type: FavoriteType.book,
+      id: bookId,
+      current: book.isFavorite,
+      apply: (isFavorite) => _setBookFavorite(bookId, isFavorite),
+    );
+  }
+
+  void _setBookFavorite(String bookId, bool isFavorite) {
+    if (isClosed) return;
+    var changed = false;
+    final updated = state.books.map((b) {
+      if (b.id != bookId || b.isFavorite == isFavorite) return b;
+      changed = true;
+      return b.copyWith(isFavorite: isFavorite);
+    }).toList();
+    if (changed) emit(state.copyWith(books: updated));
+  }
 
   Future<void> load() async {
     emit(state.copyWith(status: AuthorStatus.loading, error: null));

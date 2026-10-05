@@ -40,26 +40,26 @@ class IssueCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: AppDimensions.paddingSmall),
+          const SizedBox(height: 10),
           Text(
             issue.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: AppDimensions.fontSizeMedium,
-              fontWeight: FontWeight.bold,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             _dateText,
             style: const TextStyle(
-              fontSize: AppDimensions.fontSizeSmall,
-              color: AppColors.textSecondary,
+              fontSize: 12.5,
+              color: AppColors.textLight,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           if (issue.isFree)
             Text(
               AppStrings.free.tr(),
@@ -75,8 +75,7 @@ class IssueCard extends StatelessWidget {
                 Text(
                   _priceText,
                   style: const TextStyle(
-                    fontSize: AppDimensions.fontSizeMedium,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -84,8 +83,7 @@ class IssueCard extends StatelessWidget {
                 Text(
                   AppStrings.currencySar.tr(),
                   style: const TextStyle(
-                    fontSize: AppDimensions.fontSizeSmall,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
                     color: AppColors.primary,
                   ),
                 ),

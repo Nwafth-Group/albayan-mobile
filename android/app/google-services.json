@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "842051961964",
+    "project_id": "albayan-e-2026-5e885",
+    "storage_bucket": "albayan-e-2026-5e885.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842051961964:android:700b6d117d983315b40449",
+        "android_client_info": {
+          "package_name": "com.example.albayan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBk_hbVUP_0TioOz9RUyzATbNNKkAFNl-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

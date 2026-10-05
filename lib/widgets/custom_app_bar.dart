@@ -1,5 +1,4 @@
 import 'package:albayan/utils/app_navigator.dart';
-import 'package:albayan/widgets/custom_icon.dart';
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 
@@ -7,13 +6,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBack;
   final String title;
   final Color color;
+  final double titleFontSize;
+  final FontWeight titleFontWeight;
   final List<Widget> actions;
 
   const CustomAppBar({
     Key? key,
     this.showBack = true,
     this.title = "",
-    this.color = AppColors.primary, this.actions = const [],
+    this.color = AppColors.primary,
+    this.titleFontSize = 16,
+    this.titleFontWeight = FontWeight.bold,
+    this.actions = const [],
   }) : super(key: key);
 
   @override
@@ -30,8 +34,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: titleFontSize,
+            fontWeight: titleFontWeight,
             color: color,
           ),
         ):null, actions: actions

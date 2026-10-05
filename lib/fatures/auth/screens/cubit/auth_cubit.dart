@@ -2,6 +2,8 @@
 // FILE: lib/fatures/auth/screens/cubit/auth_cubit.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:albayan/utils/constants.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/data/models/user_model.dart';
 import 'package:albayan/utils/shared_pref_helper.dart';
@@ -126,7 +128,7 @@ class AuthCubit extends Cubit<AuthState> {
       final userJson = data?['user']    as Map<String, dynamic>?;
 
       if (token == null || userJson == null) {
-        emit(const OtpError('Invalid response from server.'));
+        emit(OtpError(AppStrings.errorInvalidResponse.tr()));
         return;
       }
       final user = UserModel.fromJson(userJson);
@@ -181,7 +183,7 @@ class AuthCubit extends Cubit<AuthState> {
       final resetToken = data?['reset_token'] as String?;
 
       if (resetToken == null) {
-        emit(const ForgotPasswordOtpError('Invalid response from server.'));
+        emit(ForgotPasswordOtpError(AppStrings.errorInvalidResponse.tr()));
         return;
       }
       emit(ForgotPasswordOtpVerified(resetToken));
@@ -218,7 +220,7 @@ class AuthCubit extends Cubit<AuthState> {
       final response = await _dataSource.getProfile();
       final userJson = response['data'] as Map<String, dynamic>?;
       if (userJson == null) {
-        emit(const ProfileError('Invalid response from server.'));
+        emit(ProfileError(AppStrings.errorInvalidResponse.tr()));
         return;
       }
       final user = UserModel.fromJson(userJson);
@@ -262,7 +264,7 @@ class AuthCubit extends Cubit<AuthState> {
       final userJson = data?['user'] as Map<String, dynamic>?;
 
       if (token == null || userJson == null) {
-        emit(const LoginError('Invalid response from server.'));
+        emit(LoginError(AppStrings.errorInvalidResponse.tr()));
         return;
       }
 

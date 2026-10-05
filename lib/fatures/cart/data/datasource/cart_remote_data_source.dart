@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/data/datasource/cart_remote_data_source.dart
 // ============================================
@@ -7,6 +6,8 @@ import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 
 import '../models/cart_model.dart';
+import '../models/cart_payment_method.dart';
+import '../models/checkout_order_model.dart';
 
 abstract class CartRemoteDataSource {
   /// GET /reader/cart
@@ -29,6 +30,11 @@ abstract class CartRemoteDataSource {
 
   /// POST /reader/cart/remove-coupon
   Future<void> removeCoupon();
+
+  /// POST /reader/cart/checkout
+  /// body: { "payment_method": "apple_pay|google_pay|credit_card|mada|simulated_payment" }
+  /// Returns the created order (with its invoice).
+  Future<CheckoutOrderModel> checkout(CartPaymentMethod paymentMethod);
 }
 
 class CartRemoteDataSourceImpl implements CartRemoteDataSource {
@@ -54,11 +60,7 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   }) async {
     await _api.post(
       ApiConstants.cartItems,
-      data: {
-        'type': type,
-        'id': id,
-        'is_gift': isGift,
-      },
+      data: {'type': type, 'id': id, 'is_gift': isGift},
     );
   }
 
@@ -75,5 +77,23 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<void> removeCoupon() async {
     await _api.post(ApiConstants.cartRemoveCoupon);
+  }
+
+  @override
+  Future<CheckoutOrderModel> checkout(CartPaymentMethod paymentMethod) async {
+    final response = await _api.post(
+      ApiConstants.cartCheckout,
+      data: {'payment_method': paymentMethod.apiValue},
+    );
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return CheckoutOrderModel.fromJson(data);
+    }
+    // A 200 without an order body still means the order went through.
+    return const CheckoutOrderModel(
+      id: '',
+      orderNumber: '',
+      summary: CartSummaryModel.empty,
+    );
   }
 }

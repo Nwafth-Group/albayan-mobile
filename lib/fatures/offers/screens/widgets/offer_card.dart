@@ -5,10 +5,10 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../utils/constants.dart';
 import '../../data/models/offer_model.dart';
+import 'offer_format.dart';
 
 class OfferCard extends StatelessWidget {
   final OfferModel offer;
@@ -49,7 +49,7 @@ class OfferCard extends StatelessWidget {
                 width: 84,
                 height: 90,
                 child: offer.type == OfferType.package
-                    ? _PackageTile(percent: offer.discountPercent)
+                    ? _PackageTile(label: offerDiscountLabel(offer))
                     : _CoverImage(url: offer.image),
               ),
             ),
@@ -70,7 +70,7 @@ class OfferCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      _Badge(percent: offer.discountPercent),
+                      _Badge(label: offerDiscountLabel(offer)),
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -88,7 +88,7 @@ class OfferCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${offer.oldPrice.toStringAsFixed(0)} ${AppStrings.currencySar.tr()}',
+                        '${offerMoney(offer.oldPrice)} ${AppStrings.currencySar.tr()}',
                         style: const TextStyle(
                           fontSize: AppDimensions.fontSizeSmall,
                           color: AppColors.textLight,
@@ -97,7 +97,7 @@ class OfferCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${offer.newPrice.toStringAsFixed(0)} ${AppStrings.currencySar.tr()}',
+                        '${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
                         style: const TextStyle(
                           fontSize: AppDimensions.fontSizeSmall,
                           fontWeight: FontWeight.w700,
@@ -106,11 +106,13 @@ class OfferCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // `extra_info` for a package is its books count, already
+                  // localized by the backend ("3 Books").
                   if (offer.type == OfferType.package &&
-                      offer.booksCount != null) ...[
+                      (offer.extraInfo?.isNotEmpty ?? false)) ...[
                     const SizedBox(height: 2),
                     Text(
-                      '${offer.booksCount} ${AppStrings.booksTab.tr()}',
+                      offer.extraInfo!,
                       style: const TextStyle(
                         fontSize: AppDimensions.fontSizeSmall,
                         color: AppColors.textSecondary,
@@ -121,7 +123,7 @@ class OfferCard extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      DateFormat('MMM d, yyyy').format(offer.date),
+                      offer.endDateLabel,
                       style: const TextStyle(
                         fontSize: AppDimensions.fontSizeSmall,
                         color: AppColors.textLight,
@@ -139,8 +141,8 @@ class OfferCard extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  final int percent;
-  const _Badge({required this.percent});
+  final String label;
+  const _Badge({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +153,7 @@ class _Badge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        '$percent%',
+        label,
         style: const TextStyle(
           color: Colors.white,
           fontSize: AppDimensions.fontSizeSmall,
@@ -163,8 +165,8 @@ class _Badge extends StatelessWidget {
 }
 
 class _PackageTile extends StatelessWidget {
-  final int percent;
-  const _PackageTile({required this.percent});
+  final String label;
+  const _PackageTile({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +177,8 @@ class _PackageTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            '$percent%',
+            label,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: AppDimensions.fontSizeLarge,
               fontWeight: FontWeight.bold,
@@ -183,7 +186,7 @@ class _PackageTile extends StatelessWidget {
             ),
           ),
           Text(
-            'OFF',
+            AppStrings.offerOff.tr(),
             style: const TextStyle(
               fontSize: AppDimensions.fontSizeSmall,
               fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@
 // ============================================
 
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:developer' as developer;
 
 import '../utils/constants.dart';
@@ -21,13 +22,17 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Accept-Language': lng,
       },
     ));
 
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // Read per request (not baked into BaseOptions) so a language
+          // change applies to services that already exist.
+          options.headers['Accept-Language'] = lang;
+
+
           // ── Inject token from SharedPrefs (async, safe) ──────
           final token = await SharedPrefHelper.getToken();
           if (token != null && token.isNotEmpty) {
@@ -38,6 +43,7 @@ class ApiService {
           developer.log('📤 REQUEST', name: 'API');
           developer.log('URL: ${options.baseUrl}${options.path}', name: 'API');
           developer.log('Method: ${options.method}', name: 'API');
+          developer.log('Accept-Language: $lang', name: 'API');
           if (options.queryParameters.isNotEmpty) {
             developer.log('Params: ${options.queryParameters}', name: 'API');
           }
@@ -183,20 +189,24 @@ class ApiService {
         });
       }
 
-      return data is Map
-          ? (data['message'] ?? error.message ?? 'An error occurred').toString()
-          : (error.message ?? 'An error occurred');
+      // The backend's `message` is already localized (Accept-Language).
+      // Dio's own `error.message` is a technical English paragraph, so it's
+      // never shown — a translated generic message is used instead.
+      final message = data is Map ? data['message']?.toString() : null;
+      return (message != null && message.trim().isNotEmpty)
+          ? message
+          : AppStrings.somethingWentWrong.tr();
     }
 
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
-        return 'Connection timeout. Please check your internet.';
+        return AppStrings.errorConnectionTimeout.tr();
       case DioExceptionType.receiveTimeout:
-        return 'Server took too long to respond.';
+        return AppStrings.errorServerTimeout.tr();
       case DioExceptionType.connectionError:
-        return 'No internet connection.';
+        return AppStrings.errorNoInternet.tr();
       default:
-        return error.message ?? 'An unexpected error occurred.';
+        return AppStrings.errorUnexpected.tr();
     }
   }
 }

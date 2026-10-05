@@ -16,6 +16,7 @@ class BooksTab extends StatelessWidget {
   final bool loadingMore;
   final VoidCallback onLoadMore;
   final void Function(BookModel) onItemTap;
+  final void Function(BookModel)? onFavoriteTap;
 
   const BooksTab({
     super.key,
@@ -23,6 +24,7 @@ class BooksTab extends StatelessWidget {
     required this.loadingMore,
     required this.onLoadMore,
     required this.onItemTap,
+    this.onFavoriteTap,
   });
 
   @override
@@ -46,7 +48,12 @@ class BooksTab extends StatelessWidget {
         ),
         children: [
           for (final b in items)
-            BookCard(book: b, onTap: () => onItemTap(b)),
+            BookCard(
+              book: b,
+              onTap: () => onItemTap(b),
+              onFavoriteTap:
+                  onFavoriteTap == null ? null : () => onFavoriteTap!(b),
+            ),
           if (loadingMore)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),

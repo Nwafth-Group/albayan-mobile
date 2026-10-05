@@ -31,7 +31,7 @@ class IssuesSearchBar extends StatelessWidget {
           child: Container(
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.cardColor,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: AppColors.primary, width: 1),
             ),
@@ -75,7 +75,7 @@ class IssuesSearchBar extends StatelessWidget {
                 width: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.cardColor,
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.primary, width: 1),
                 ),

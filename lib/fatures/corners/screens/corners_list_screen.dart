@@ -13,6 +13,7 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../../widgets/promo_banner.dart';
 import '../data/datasource/corners_remote_data_source.dart';
 import 'cubit/corners_list_cubit.dart';
 import 'widgets/corner_list_card.dart';
@@ -71,11 +72,17 @@ class _CornersListViewState extends State<_CornersListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: AppStrings.cornersTitle.tr()),
+      appBar: CustomAppBar(
+        title: AppStrings.cornersTitle.tr(),
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w500,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.paddingMedium),
+            horizontal: AppDimensions.paddingMedium,
+          ),
           child: Column(
             children: [
               const SizedBox(height: AppDimensions.paddingSmall),
@@ -148,34 +155,34 @@ class _CornersGrid extends StatelessWidget {
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.only(top: AppDimensions.paddingSmall),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: AppDimensions.paddingLarge,
-                crossAxisSpacing: AppDimensions.paddingSmall,
-                childAspectRatio: 0.75,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final corner = state.corners[index];
-                  return CornerListCard(
-                    corner: corner,
-                    onTap: () {
-                      AppNavigator.push(CornerScreen(cornerId: corner.id));
-                    },
-                  );
-                },
-                childCount: state.corners.length,
-              ),
+          const SliverToBoxAdapter(
+            child: AdPromoBanner(
+              padding: EdgeInsets.only(bottom: AppDimensions.paddingLarge),
             ),
+          ),
+          SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: AppDimensions.paddingLarge,
+              crossAxisSpacing: AppDimensions.paddingLarge,
+              childAspectRatio: 0.66,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final corner = state.corners[index];
+              return CornerListCard(
+                corner: corner,
+                onTap: () {
+                  AppNavigator.push(CornerScreen(cornerId: corner.id));
+                },
+              );
+            }, childCount: state.corners.length),
           ),
           if (state.isLoadingMore)
             const SliverToBoxAdapter(
               child: Padding(
-                padding:
-                EdgeInsets.symmetric(vertical: AppDimensions.paddingLarge),
+                padding: EdgeInsets.symmetric(
+                  vertical: AppDimensions.paddingLarge,
+                ),
                 child: Center(
                   child: SizedBox(
                     width: 24,

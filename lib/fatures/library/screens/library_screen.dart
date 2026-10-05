@@ -12,6 +12,7 @@ import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../favorites/screens/favorites_tab.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import '../data/models/library_section_model.dart';
 import '../data/models/library_summary_model.dart';
@@ -91,10 +92,7 @@ class _LibraryViewState extends State<_LibraryView> {
       case 1:
         return const _CategoriesTab();
       default:
-        return EmptyStateWidget(
-          image: AppImages.noData,
-          message: AppStrings.libraryNoFavorites.tr(),
-        );
+        return const FavoritesTab();
     }
   }
 

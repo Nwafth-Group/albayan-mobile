@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/screens/widgets/order_summary_card.dart
 // ============================================
@@ -7,25 +6,24 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../utils/constants.dart';
+import '../../data/models/cart_model.dart';
+import '../../utils/cart_format.dart';
 
+/// The `summary` block of `GET /reader/cart` — all amounts come straight
+/// from the API (nothing is recalculated on the client).
 class OrderSummaryCard extends StatelessWidget {
-  final num subtotal;
-  final num taxes;
-  final double discountPercent;
-  final num? promoDeduction;
-  final num total;
+  final CartSummaryModel summary;
 
-  const OrderSummaryCard({
-    super.key,
-    required this.subtotal,
-    required this.taxes,
-    required this.discountPercent,
-    required this.promoDeduction,
-    required this.total,
-  });
+  const OrderSummaryCard({super.key, required this.summary});
 
   @override
   Widget build(BuildContext context) {
+    final currency = summary.currency;
+    final taxRate = summary.taxRate;
+    final taxLabel = taxRate > 0
+        ? '${AppStrings.taxes.tr()} (${taxRate % 1 == 0 ? taxRate.toInt() : taxRate}%)'
+        : AppStrings.taxes.tr();
+
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
@@ -45,29 +43,27 @@ class OrderSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppDimensions.paddingMedium),
-          _row(AppStrings.totalAmount.tr(),
-              '${subtotal.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}'),
+          _row(AppStrings.subtotal.tr(), cartMoney(summary.subtotal, currency)),
           const SizedBox(height: AppDimensions.paddingSmall),
-          _row(AppStrings.taxes.tr(),
-              '${taxes.toStringAsFixed(0)} ${AppStrings.currencySar.tr()}'),
-          const SizedBox(height: AppDimensions.paddingSmall),
-          _row(AppStrings.discount.tr(), '${discountPercent.round()}%'),
-          const SizedBox(height: AppDimensions.paddingSmall),
-          _row(
-            AppStrings.promoCode.tr(),
-            promoDeduction != null && promoDeduction! > 0
-                ? '-${promoDeduction!.toStringAsFixed(2)}'
-                : '-',
-            valueColor: promoDeduction != null && promoDeduction! > 0
-                ? AppColors.primary
-                : AppColors.textLight,
+          _discountRow(
+            AppStrings.discount.tr(),
+            summary.offerDiscount,
+            currency,
           ),
+          const SizedBox(height: AppDimensions.paddingSmall),
+          _discountRow(
+            AppStrings.promoCode.tr(),
+            summary.couponDiscount,
+            currency,
+          ),
+          const SizedBox(height: AppDimensions.paddingSmall),
+          _row(taxLabel, cartMoney(summary.taxAmount, currency)),
           const SizedBox(height: AppDimensions.paddingMedium),
           const _DashedDivider(),
           const SizedBox(height: AppDimensions.paddingMedium),
           _row(
             AppStrings.totalAmount.tr(),
-            '${total.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
+            cartMoney(summary.totalAmount, currency),
             bold: true,
           ),
         ],
@@ -75,7 +71,21 @@ class OrderSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value, {bool bold = false, Color? valueColor}) {
+  Widget _discountRow(String label, num amount, String? currency) {
+    final has = amount > 0;
+    return _row(
+      label,
+      has ? '-${cartMoney(amount, currency)}' : '-',
+      valueColor: has ? AppColors.primary : AppColors.textLight,
+    );
+  }
+
+  Widget _row(
+    String label,
+    String value, {
+    bool bold = false,
+    Color? valueColor,
+  }) {
     final style = TextStyle(
       fontSize: AppDimensions.fontSizeMedium,
       fontWeight: bold ? FontWeight.bold : FontWeight.w400,

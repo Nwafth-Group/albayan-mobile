@@ -9,6 +9,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../authors/data/models/book_model.dart';
+import '../../../favorites/data/favorites_sync.dart';
+import '../../../favorites/data/models/favorite_item_model.dart';
 import '../../../issues/data/models/pagination_meta.dart';
 import '../../data/datasource/books_remote_data_source.dart';
 import '../../data/models/books_filter.dart';
@@ -18,10 +20,16 @@ part 'books_list_state.dart';
 class BooksListCubit extends Cubit<BooksListState> {
   final BooksRemoteDataSource dataSource;
 
-  BooksListCubit(this.dataSource) : super(const BooksListState());
+  BooksListCubit(this.dataSource) : super(const BooksListState()) {
+    // Keep favorite flags in sync when a book is (un)favorited elsewhere.
+    _favoriteSub = FavoritesSync.changes.listen((c) {
+      if (c.type == FavoriteType.book) _setFavorite(c.id, c.isFavorite);
+    });
+  }
 
   Timer? _searchDebounce;
   bool _isFetching = false;
+  late final StreamSubscription<FavoriteChange> _favoriteSub;
 
   /// First load / reload with the current filter.
   Future<void> load() => _fetch(page: 1, reset: true);
@@ -45,27 +53,29 @@ class BooksListCubit extends Cubit<BooksListState> {
     });
   }
 
-  /// Local optimistic favorite toggle.
-  void toggleFavorite(String bookId) {
-    final updated = state.books
-        .map((b) => b.id == bookId
-            ? BookModel(
-                id: b.id,
-                bookId: b.bookId,
-                name: b.name,
-                language: b.language,
-                image: b.image,
-                author: b.author,
-                price: b.price,
-                finalPrice: b.finalPrice,
-                rate: b.rate,
-                rateCount: b.rateCount,
-                isFavorite: !b.isFavorite,
-              )
-            : b)
-        .toList();
-    emit(state.copyWith(books: updated));
-    // TODO: call favorite/unfavorite endpoint and revert on failure.
+  /// POST /reader/favorites/toggle — optimistic, settles on the server's
+  /// answer. [bookId] is the list item's `id`, i.e. the version id
+  /// favorites use.
+  Future<void> toggleFavorite(String bookId) async {
+    final book = state.books.where((b) => b.id == bookId).firstOrNull;
+    if (book == null) return;
+    await FavoritesSync.toggleOptimistic(
+      type: FavoriteType.book,
+      id: bookId,
+      current: book.isFavorite,
+      apply: (isFavorite) => _setFavorite(bookId, isFavorite),
+    );
+  }
+
+  void _setFavorite(String bookId, bool isFavorite) {
+    if (isClosed) return;
+    var changed = false;
+    final updated = state.books.map((b) {
+      if (b.id != bookId || b.isFavorite == isFavorite) return b;
+      changed = true;
+      return b.copyWith(isFavorite: isFavorite);
+    }).toList();
+    if (changed) emit(state.copyWith(books: updated));
   }
 
   Future<void> _fetch({required int page, required bool reset}) async {
@@ -106,6 +116,7 @@ class BooksListCubit extends Cubit<BooksListState> {
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _favoriteSub.cancel();
     return super.close();
   }
 }

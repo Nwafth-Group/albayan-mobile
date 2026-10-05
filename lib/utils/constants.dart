@@ -62,11 +62,43 @@ class ApiConstants {
   static const String personalCategoriesCounts =
       '/reader/personal-categories/counts';
 
+  // Offers Endpoints
+  static const String offers = '/public/offers';
+  static const String packages = '/public/packages';
+
+  // Favorites Endpoints
+  static const String favorites = '/reader/favorites';
+  static const String favoritesToggle = '/reader/favorites/toggle';
+
   // Cart Endpoints
   static const String cart = '/reader/cart';
   static const String cartItems = '/reader/cart/items';
   static const String cartApplyCoupon = '/reader/cart/apply-coupon';
   static const String cartRemoveCoupon = '/reader/cart/remove-coupon';
+  static const String cartCheckout = '/reader/cart/checkout';
+
+  // Home Endpoints
+  // NOTE: no "list all home sections" endpoint has been provided yet, so
+  // these are the specific section-content endpoints (each keyed to one
+  // section's fixed id) given for the current home page design. If the
+  // backend can reorder/add/remove sections, replace this with a real
+  // `GET /public/home-sections` list call instead of this hardcoded set.
+  static const String homeSectionBanners =
+      '/public/home-sections/01a0e810-5fa6-7356-a015-38421f56e869/content';
+  static const String homeSectionCorners =
+      '/public/home-sections/01a0e810-5faf-73b1-9ce3-589e483ac195/content';
+  static const String homeSectionLatestIssues =
+      '/public/home-sections/01a0e810-5fb9-72d4-9d54-d20ce115ddc8/content';
+  static const String homeSectionArticles =
+      '/public/home-sections/01a0e810-5fc4-73f5-901d-ba4718ca94c4/content';
+  static const String homeSectionWritersAuthors =
+      '/public/home-sections/01a0e810-5fcd-70b0-9a9f-ea5998ed8db3/content';
+  static const String homeSectionBestBooks =
+      '/public/home-sections/01a0e810-5fd7-71d8-82cb-6aaa45c15db4/content';
+  static const String homeSectionFreshNews =
+      '/public/home-sections/01a0e810-5fe1-7182-a7fe-309a2342585e/content';
+  static const String homeSectionCustom =
+      '/public/home-sections/01a0e810-5feb-705a-8763-f2460721b47c/content';
 }
 
 // App Colors
@@ -170,7 +202,10 @@ class StorageKeys {
   static const String isAdmin = 'is_admin';
 }
 
-String lng = 'en';
+/// Sent as the `Accept-Language` header on every API request (see
+/// `ApiService`). Fixed to English for now; the settings screen will set it
+/// once in-app language switching is added — which is why it isn't `const`.
+String lang = 'en';
 
 class AppStrings {
   // ── Onboarding ────────────────────────────────────────────
@@ -423,6 +458,7 @@ class AppStrings {
   static const String applied = 'applied';
   static const String invalidPromoCode = 'invalid_promo_code';
   static const String orderSummary = 'order_summary';
+  static const String subtotal = 'subtotal';
   static const String totalAmount = 'total_amount';
   static const String taxes = 'taxes';
   static const String discount = 'discount';
@@ -436,6 +472,10 @@ class AppStrings {
   static const String paymentSuccessDesc = 'payment_success_desc';
   static const String viewOrder = 'view_order';
   static const String downloadInvoice = 'download_invoice';
+  static const String orderNumber = 'order_number';
+  static const String invoiceNumber = 'invoice_number';
+  static const String paymentReference = 'payment_reference';
+  static const String paymentNotCompleted = 'payment_not_completed';
   static const String cartTypeBook = 'cart_type_book';
   static const String cartTypeArticle = 'cart_type_article';
   static const String cartTypeIssue = 'cart_type_issue';
@@ -494,7 +534,162 @@ class AppStrings {
   static const String logout = 'logout';
   static const String logoutConfirmTitle = 'logout_confirm_title';
   static const String logoutConfirmMessage = 'logout_confirm_message';
+
+  // ── Settings ──
+  static const String settingsGeneral = 'settings_general';
+  static const String settingsAbout = 'settings_about';
+  static const String myProfile = 'my_profile';
+  static const String mySubscriptions = 'my_subscriptions';
+  static const String myOrder = 'my_order';
+  static const String settingsArchive = 'settings_archive';
+  static const String restorePurchases = 'restore_purchases';
+  static const String redeemGift = 'redeem_gift';
+  static const String changePassword = 'change_password';
+  static const String changeLanguage = 'change_language';
+  static const String contactUs = 'contact_us';
+  static const String aboutUs = 'about_us';
+  static const String rateApplication = 'rate_application';
+  static const String privacyPolicy = 'privacy_policy';
+  static const String termsConditions = 'terms_conditions';
+  static const String profileTitle = 'profile_title';
+  static const String phoneNumber = 'phone_number';
+  static const String chooseCountry = 'choose_country';
+  static const String readingHours = 'reading_hours';
+  static const String readingHour = 'reading_hour';
+  static const String readingMinutes = 'reading_minutes';
+  static const String timeAm = 'time_am';
+  static const String timePm = 'time_pm';
+  static const String saveChange = 'save_change';
+  static const String subActive = 'sub_active';
+  static const String monthsCount = 'months_count';
+  static const String startDate = 'start_date';
+  static const String endDate = 'end_date';
+  static const String autoRenewal = 'auto_renewal';
+  static const String renewsOn = 'renews_on';
+  static const String toggleOn = 'toggle_on';
+  static const String toggleOff = 'toggle_off';
+  static const String planAnnual = 'plan_annual';
+  static const String planPremium = 'plan_premium';
+  static const String subUpgrade = 'sub_upgrade';
+  static const String manageSubscription = 'manage_subscription';
+  static const String noSubscriptionTitle = 'no_subscription_title';
+  static const String noSubscriptionDesc = 'no_subscription_desc';
+  static const String statusCompleted = 'status_completed';
+  static const String statusProcessing = 'status_processing';
+  static const String statusCancelled = 'status_cancelled';
+  static const String orderHash = 'order_hash';
+  static const String itemsCount = 'items_count';
+  static const String noOrders = 'no_orders';
+  static const String orderDetails = 'order_details';
+  static const String viewInvoice = 'view_invoice';
+  static const String invoiceTitle = 'invoice_title';
+  static const String sellerInformation = 'seller_information';
+  static const String customerInformation = 'customer_information';
+  static const String companyName = 'company_name';
+  static const String customerName = 'customer_name';
+  static const String addressLabel = 'address_label';
+  static const String mobileNumber = 'mobile_number';
+  static const String taxNumber = 'tax_number';
+  static const String itemsImageName = 'items_image_name';
+  static const String priceLabel = 'price_label';
+  static const String totalLabel = 'total_label';
+  static const String noPurchasesRestored = 'no_purchases_restored';
+  static const String backToHome = 'back_to_home';
+  static const String giftCode = 'gift_code';
+  static const String enterCode = 'enter_code';
+  static const String redeem = 'redeem';
+  static const String currentPassword = 'current_password';
+  static const String newPassword = 'new_password';
+  static const String confirmNewPassword = 'confirm_new_password';
+  static const String retypePasswordHint = 'retype_password_hint';
+  static const String newPasswordHint = 'new_password_hint';
+  static const String fieldRequired = 'field_required';
+  static const String verificationCode = 'verification_code';
+  static const String otpSentTo = 'otp_sent_to';
+  static const String codeSentPhone = 'code_sent_phone';
+  static const String resendIn = 'resend_in';
+  static const String successExclaim = 'success_exclaim';
+  static const String passwordChanged = 'password_changed';
+  static const String fullName = 'full_name';
+  static const String messageLabel = 'message_label';
+  static const String writeMessageHint = 'write_message_hint';
+  static const String callUs = 'call_us';
+  static const String magazineName = 'magazine_name';
+  static const String aboutMagazineDesc = 'about_magazine_desc';
+  static const String ourMission = 'our_mission';
+  static const String ourMissionDesc1 = 'our_mission_desc1';
+  static const String ourMissionDesc2 = 'our_mission_desc2';
+  static const String featureLibraryTitle = 'feature_library_title';
+  static const String featureLibraryDesc = 'feature_library_desc';
+  static const String featurePersonalTitle = 'feature_personal_title';
+  static const String featurePersonalDesc = 'feature_personal_desc';
+  static const String featureAnywhereTitle = 'feature_anywhere_title';
+  static const String featureAnywhereDesc = 'feature_anywhere_desc';
+  static const String watchOurStory = 'watch_our_story';
+  static const String copyrightText = 'copyright_text';
+  static const String versionLabel = 'version_label';
+  static const String thanksFeedback = 'thanks_feedback';
+  static const String thanksFeedbackDesc = 'thanks_feedback_desc';
+  static const String logoutTitle = 'logout_title';
+  static const String logoutQuestion = 'logout_question';
+  static const String yesLogout = 'yes_logout';
+  static const String privacyIntro = 'privacy_intro';
+  static const String privacyCollectTitle = 'privacy_collect_title';
+  static const String privacyCollect1 = 'privacy_collect_1';
+  static const String privacyCollect2 = 'privacy_collect_2';
+  static const String privacyCollect3 = 'privacy_collect_3';
+  static const String privacyUseTitle = 'privacy_use_title';
+  static const String privacyUseIntro = 'privacy_use_intro';
+  static const String privacyUse1 = 'privacy_use_1';
+  static const String privacyUse2 = 'privacy_use_2';
+  static const String featureComingSoon = 'feature_coming_soon';
   static const String guestModeTitle = 'guest_mode_title';
   static const String guestModeSubtitle = 'guest_mode_subtitle';
   static const String login = 'login';
+  static const String loginToUseFavorites = 'login_to_use_favorites';
+
+  // ── Home ──────────────────────────────────────────────────
+  static const String homeGreeting = 'home_greeting'; // "Hello, {name}"
+  static const String homeTagline = 'home_tagline';
+  static const String homeGuestName = 'home_guest_name';
+  static const String homeReaderName = 'home_reader_name';
+  static const String seeAll = 'see_all';
+  static const String homeLatestIssues = 'home_latest_issues';
+  static const String homeBestBooks = 'home_best_books';
+  static const String homeFreshNews = 'home_fresh_news';
+  static const String homeRecommendations = 'home_recommendations';
+  static const String chooseDate = 'choose_date';
+  static const String offerOff = 'offer_off'; // the "OFF" under a discount
+
+  // ── Errors ────────────────────────────────────────────────
+  static const String errorConnectionTimeout = 'error_connection_timeout';
+  static const String errorServerTimeout = 'error_server_timeout';
+  static const String errorNoInternet = 'error_no_internet';
+  static const String errorUnexpected = 'error_unexpected';
+  static const String errorInvalidResponse = 'error_invalid_response';
+
+  // ── Book reader ───────────────────────────────────────────
+  static const String readerDownloading = 'reader_downloading';
+  static const String readerOpenFailed = 'reader_open_failed';
+  static const String readerSearchHint = 'reader_search_hint';
+  static const String readerNoMatches = 'reader_no_matches';
+  static const String readerPageOf = 'reader_page_of';
+  static const String readerPage = 'reader_page';
+  static const String readerBookmarks = 'reader_bookmarks';
+  static const String readerHighlights = 'reader_highlights';
+  static const String readerNoBookmarks = 'reader_no_bookmarks';
+  static const String readerNoHighlights = 'reader_no_highlights';
+  static const String readerBookmarkAdded = 'reader_bookmark_added';
+  static const String readerBookmarkRemoved = 'reader_bookmark_removed';
+  static const String readerHighlightAdded = 'reader_highlight_added';
+  static const String readerCopy = 'reader_copy';
+  static const String readerCopied = 'reader_copied';
+  static const String readerHighlight = 'reader_highlight';
+  static const String readerGoToPage = 'reader_go_to_page';
+  static const String readerGo = 'reader_go';
+  static const String readerViewOptions = 'reader_view_options';
+  static const String readerContinuous = 'reader_continuous';
+  static const String readerSinglePage = 'reader_single_page';
+  static const String readerVertical = 'reader_vertical';
+  static const String readerHorizontal = 'reader_horizontal';
 }

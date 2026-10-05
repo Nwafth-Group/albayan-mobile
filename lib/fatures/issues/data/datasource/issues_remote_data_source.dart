@@ -2,6 +2,7 @@
 // FILE: lib/fatures/issues/data/datasource/issues_remote_data_source.dart
 // ============================================
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/widgets/issues_filter.dart';
@@ -48,6 +49,6 @@ class IssuesRemoteDataSourceImpl implements IssuesRemoteDataSource {
     if (data is Map<String, dynamic>) {
       return IssueDetailModel.fromJson(data);
     }
-    throw Exception('Invalid issue details response');
+    throw AppStrings.errorInvalidResponse.tr();
   }
 }

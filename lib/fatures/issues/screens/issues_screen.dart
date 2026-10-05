@@ -17,9 +17,9 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../../widgets/promo_banner.dart';
 import '../data/datasource/issues_remote_data_source.dart';
 import 'cubit/issues_cubit.dart';
-
 
 class IssuesScreen extends StatelessWidget {
   /// Optional starting filter (e.g. preselected year).
@@ -76,13 +76,15 @@ class _IssuesViewState extends State<_IssuesView> {
 
   Future<void> _openFilter() async {
     final cubit = context.read<IssuesCubit>();
-    final result =
-    await showIssuesFilterSheet(context, current: cubit.state.filter);
+    final result = await showIssuesFilterSheet(
+      context,
+      current: cubit.state.filter,
+    );
     if (result == null) return; // dismissed
 
     if (result.action == FilterAction.reset) {
-      _searchController.clear();          // clear the issue-number box
-      await cubit.resetFilter();          // back to first-open defaults
+      _searchController.clear(); // clear the issue-number box
+      await cubit.resetFilter(); // back to first-open defaults
     } else {
       await cubit.applyFilter(result.filter!);
     }
@@ -98,17 +100,23 @@ class _IssuesViewState extends State<_IssuesView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(title: _titleYear),
+      appBar: CustomAppBar(
+        title: _titleYear,
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w500,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.paddingMedium),
+            horizontal: AppDimensions.paddingMedium,
+          ),
           child: Column(
             children: [
               const SizedBox(height: AppDimensions.paddingSmall),
               BlocBuilder<IssuesCubit, IssuesState>(
                 buildWhen: (a, b) =>
-                a.filter.hasDateFilter != b.filter.hasDateFilter,
+                    a.filter.hasDateFilter != b.filter.hasDateFilter,
                 builder: (context, state) {
                   return IssuesSearchBar(
                     controller: _searchController,
@@ -148,8 +156,9 @@ class _IssuesViewState extends State<_IssuesView> {
             final year = state.filter.year ?? DateTime.now().year;
             return EmptyStateWidget(
               image: AppImages.noData,
-              message: AppStrings.noIssuesAvailable
-                  .tr(namedArgs: {'year': '$year'}),
+              message: AppStrings.noIssuesAvailable.tr(
+                namedArgs: {'year': '$year'},
+              ),
               message2: AppStrings.checkBackLater.tr(),
             );
 
@@ -186,34 +195,34 @@ class _IssuesGrid extends StatelessWidget {
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.only(top: AppDimensions.paddingSmall),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: AppDimensions.paddingLarge,
-                crossAxisSpacing: AppDimensions.paddingMedium,
-                childAspectRatio: 0.62,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final issue = state.issues[index];
-                  return IssueCard(
-                    issue: issue,
-                    onTap: () {
-                      AppNavigator.push(IssueDetailsScreen(issueId: issue.id));
-                    },
-                  );
-                },
-                childCount: state.issues.length,
-              ),
+          const SliverToBoxAdapter(
+            child: AdPromoBanner(
+              padding: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
             ),
+          ),
+          SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: AppDimensions.paddingMedium,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.59,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final issue = state.issues[index];
+              return IssueCard(
+                issue: issue,
+                onTap: () {
+                  AppNavigator.push(IssueDetailsScreen(issueId: issue.id));
+                },
+              );
+            }, childCount: state.issues.length),
           ),
           if (state.isLoadingMore)
             const SliverToBoxAdapter(
               child: Padding(
-                padding:
-                EdgeInsets.symmetric(vertical: AppDimensions.paddingLarge),
+                padding: EdgeInsets.symmetric(
+                  vertical: AppDimensions.paddingLarge,
+                ),
                 child: Center(
                   child: SizedBox(
                     width: 24,

@@ -25,117 +25,160 @@ class CornerArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.paddingMedium,
-        vertical: AppDimensions.paddingxSmall,
+        vertical: AppDimensions.paddingSmall,
       ),
-      color: AppColors.white,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.paddingSmall),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail (unchanged size)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                child: SizedBox(
-                  width: 96,
-                  height: 120,
-                  child: _CoverImage(url: article.image),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.paddingSmall),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top row: issue label + action icons
-                    Row(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
+                    ),
+                    child: SizedBox(
+                      width: 96,
+                      height: 128,
+                      child: _CoverImage(url: article.image),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            AppStrings.issueLabel.tr(
-                              namedArgs: {
-                                'number': article.issueNumber.toString(),
-                              },
+                        // Issue label + action chips
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                AppStrings.issueLabel.tr(
+                                  namedArgs: {
+                                    'number': article.issueNumber.toString(),
+                                  },
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
-                            style: const TextStyle(
-                              fontSize: AppDimensions.fontSizeSmall,
-                              color: AppColors.textSecondary,
+                            if (!article.isFree) ...[
+                              _ActionChip(
+                                onTap: onCartTap,
+                                child: Image.asset(
+                                  AppImages.cart,
+                                  width: 13,
+                                  height: 13,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.shopping_cart_outlined,
+                                    size: 13,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            _ActionChip(
+                              onTap: onFavoriteTap,
+                              child: Icon(
+                                article.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 13,
+                                color: AppColors.primary,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          article.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                            height: 1.3,
                           ),
                         ),
-                        if (!article.isFree)
-                          _IconButtonSmall(
-                            icon: Icons.shopping_cart_outlined,
-                            onTap: onCartTap,
+                        const SizedBox(height: 4),
+                        Text(
+                          article.author,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
                           ),
-                        _IconButtonSmall(
-                          icon: article.isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: article.isFavorite
-                              ? AppColors.error
-                              : AppColors.primary,
-                          onTap: onFavoriteTap,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    // Title
-                    Text(
-                      article.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: AppDimensions.fontSizeMedium,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Author
-                    Text(
-                      article.author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: AppDimensions.fontSizeSmall,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Price (or Free)
-                    _PriceLabel(price: article.price, isFree: article.isFree),
-                    const SizedBox(height: 5),
-                    // Rating + date
-                    Row(
-                      children: [
+                        // Free articles show no price line.
+                        if (!article.isFree) ...[
+                          const SizedBox(height: 4),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${article.price.toStringAsFixed(2)} ',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: AppStrings.currencySar.tr(),
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
                         _StarRating(rating: article.rate),
-                        const Spacer(),
                         if (article.publishedAt != null)
-                          Text(
-                            DateFormat('MMM d, yyyy')
-                                .format(article.publishedAt!),
-                            style: const TextStyle(
-                              fontSize: AppDimensions.fontSizeSmall,
-                              color: AppColors.textLight,
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Text(
+                              DateFormat(
+                                'MMM d, yyyy',
+                              ).format(article.publishedAt!),
+                              style: const TextStyle(
+                                fontSize: AppDimensions.fontSizeSmall,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -143,52 +186,27 @@ class CornerArticleCard extends StatelessWidget {
   }
 }
 
-class _PriceLabel extends StatelessWidget {
-  final num price;
-  final bool isFree;
-  const _PriceLabel({required this.price, required this.isFree});
-
-  @override
-  Widget build(BuildContext context) {
-    if (isFree) {
-      return Text(
-        AppStrings.free.tr(),
-        style: const TextStyle(
-          fontSize: AppDimensions.fontSizeSmall,
-          fontWeight: FontWeight.w700,
-          color: AppColors.success,
-        ),
-      );
-    }
-    return Text(
-      '${price.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}',
-      style: const TextStyle(
-        fontSize: AppDimensions.fontSizeSmall,
-        fontWeight: FontWeight.w700,
-        color: AppColors.primary,
-      ),
-    );
-  }
-}
-
-class _IconButtonSmall extends StatelessWidget {
-  final IconData icon;
-  final Color color;
+/// Small round cream chip holding the cart / heart icon.
+class _ActionChip extends StatelessWidget {
+  final Widget child;
   final VoidCallback? onTap;
-  const _IconButtonSmall({
-    required this.icon,
-    this.color = AppColors.primary,
-    this.onTap,
-  });
+
+  const _ActionChip({required this.child, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       customBorder: const CircleBorder(),
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Icon(icon, size: 18, color: color),
+      child: Container(
+        width: 22,
+        height: 22,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.cardColor,
+          shape: BoxShape.circle,
+        ),
+        child: child,
       ),
     );
   }
@@ -196,14 +214,13 @@ class _IconButtonSmall extends StatelessWidget {
 
 class _StarRating extends StatelessWidget {
   final double rating;
-  final int total;
-  const _StarRating({required this.rating, this.total = 5});
+  const _StarRating({required this.rating});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(total, (i) {
+      children: List.generate(5, (i) {
         IconData icon;
         if (i < rating.floor()) {
           icon = Icons.star;
@@ -212,7 +229,7 @@ class _StarRating extends StatelessWidget {
         } else {
           icon = Icons.star_border;
         }
-        return Icon(icon, color: Colors.amber, size: 12);
+        return Icon(icon, color: Colors.amber, size: 11);
       }),
     );
   }
@@ -252,8 +269,11 @@ class _CoverImage extends StatelessWidget {
     return Container(
       color: AppColors.surfaceVariant,
       child: const Center(
-        child: Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 32),
+        child: Icon(
+          Icons.menu_book_outlined,
+          color: AppColors.textLight,
+          size: 32,
+        ),
       ),
     );
   }

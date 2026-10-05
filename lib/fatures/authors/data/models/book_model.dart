@@ -40,6 +40,20 @@ class BookModel {
 
   bool get isFree => effectivePrice <= 0;
 
+  BookModel copyWith({bool? isFavorite}) => BookModel(
+        id: id,
+        bookId: bookId,
+        name: name,
+        language: language,
+        image: image,
+        author: author,
+        price: price,
+        finalPrice: finalPrice,
+        rate: rate,
+        rateCount: rateCount,
+        isFavorite: isFavorite ?? this.isFavorite,
+      );
+
   factory BookModel.fromJson(Map<String, dynamic> json) {
     return BookModel(
       id: json['id']?.toString() ?? '',

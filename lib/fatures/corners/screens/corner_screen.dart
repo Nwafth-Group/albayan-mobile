@@ -11,8 +11,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
-import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/promo_banner.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/screens/cart_screen.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
+import '../../notifications/screens/notifications_screen.dart';
 import '../data/datasource/corners_remote_data_source.dart';
 import 'cubit/corner_cubit.dart';
 import 'widgets/corner_article_card.dart';
@@ -45,7 +49,10 @@ class _CornerView extends StatefulWidget {
   State<_CornerView> createState() => _CornerViewState();
 }
 
-class _CornerViewState extends State<_CornerView> {
+class _CornerViewState extends State<_CornerView> with AddToCartStateMixin {
+  /// The promo banner sits after this many articles (per the design).
+  static const _bannerAfter = 2;
+
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
 
@@ -92,8 +99,25 @@ class _CornerViewState extends State<_CornerView> {
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
         title: context.select<CornerCubit, String>(
-              (c) => c.state.corner?.name ?? '',
+          (c) => c.state.corner?.name ?? '',
         ),
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w600,
+        actions: [
+          _HeaderIcon(
+            asset: AppImages.cart,
+            fallbackIcon: Icons.shopping_cart_outlined,
+            onTap: () => AppNavigator.push(const CartScreen(showAppBar: true)),
+          ),
+          const SizedBox(width: 10),
+          _HeaderIcon(
+            asset: AppImages.notification,
+            fallbackIcon: Icons.notifications_outlined,
+            onTap: () => AppNavigator.push(const NotificationsScreen()),
+          ),
+          const SizedBox(width: AppDimensions.paddingMedium),
+        ],
       ),
       body: BlocBuilder<CornerCubit, CornerState>(
         builder: (context, state) {
@@ -115,6 +139,14 @@ class _CornerViewState extends State<_CornerView> {
             );
           }
 
+          final articles = state.articles;
+          final hasBanner = articles.isNotEmpty;
+          // Banner goes after the 2nd article, or after the last one when
+          // there are fewer.
+          final bannerIndex = articles.length < _bannerAfter
+              ? articles.length
+              : _bannerAfter;
+
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () => context.read<CornerCubit>().refresh(),
@@ -125,17 +157,16 @@ class _CornerViewState extends State<_CornerView> {
                 // Search + filter (top of page)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: AppDimensions.paddingMedium,
-                      right: AppDimensions.paddingMedium,
-                      bottom: AppDimensions.paddingMedium,
-                      // vertical: AppDimensions.paddingSmall,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimensions.paddingMedium,
+                      AppDimensions.paddingxSmall,
+                      AppDimensions.paddingMedium,
+                      AppDimensions.paddingMedium,
                     ),
                     child: CornersSearchBar(
                       controller: _searchController,
                       filterActive: state.filter.hasDates,
-                      onChanged: (v) =>
-                          context.read<CornerCubit>().search(v),
+                      onChanged: (v) => context.read<CornerCubit>().search(v),
                       onFilterTap: _openFilter,
                     ),
                   ),
@@ -162,28 +193,33 @@ class _CornerViewState extends State<_CornerView> {
                     ),
                   ),
 
-                // Article list
+                // Article list, with the promo banner slotted in
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      final article = state.articles[index];
-                      return CornerArticleCard(
-                        article: article,
-                        onTap: () {
-                          AppNavigator.push( ArticleScreen(
-                            articleId: article.id,
-                          ));
-                        },
-                        onFavoriteTap: () => context
-                            .read<CornerCubit>()
-                            .toggleFavorite(article.id),
-                        onCartTap: () {
-                          // TODO: add to cart.
-                        },
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (hasBanner && index == bannerIndex) {
+                      return const AdPromoBanner(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingMedium,
+                          vertical: AppDimensions.paddingSmall,
+                        ),
                       );
-                    },
-                    childCount: state.articles.length,
-                  ),
+                    }
+                    final articleIndex = hasBanner && index > bannerIndex
+                        ? index - 1
+                        : index;
+                    final article = articles[articleIndex];
+                    return CornerArticleCard(
+                      article: article,
+                      onTap: () {
+                        AppNavigator.push(ArticleScreen(articleId: article.id));
+                      },
+                      onFavoriteTap: () => context
+                          .read<CornerCubit>()
+                          .toggleFavorite(article.id),
+                      onCartTap: () =>
+                          addToCart(type: CartItemType.article, id: article.id),
+                    );
+                  }, childCount: articles.length + (hasBanner ? 1 : 0)),
                 ),
 
                 // Loading-more spinner
@@ -213,6 +249,43 @@ class _CornerViewState extends State<_CornerView> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Round cream button in the app bar (cart / notifications).
+class _HeaderIcon extends StatelessWidget {
+  final String asset;
+  final IconData fallbackIcon;
+  final VoidCallback onTap;
+
+  const _HeaderIcon({
+    required this.asset,
+    required this.fallbackIcon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.cardColor,
+          shape: BoxShape.circle,
+        ),
+        child: Image.asset(
+          asset,
+          width: 20,
+          height: 20,
+          errorBuilder: (_, __, ___) =>
+              Icon(fallbackIcon, color: AppColors.primary, size: 20),
+        ),
       ),
     );
   }

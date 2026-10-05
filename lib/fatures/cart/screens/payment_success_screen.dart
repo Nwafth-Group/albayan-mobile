@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/cart/screens/payment_success_screen.dart
 // ============================================
@@ -8,9 +7,32 @@ import 'package:flutter/material.dart';
 
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
+import '../data/models/checkout_order_model.dart';
+import '../utils/cart_format.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
-  const PaymentSuccessScreen({super.key});
+  /// The order returned by `POST /reader/cart/checkout`.
+  final CheckoutOrderModel order;
+
+  const PaymentSuccessScreen({super.key, required this.order});
+
+  List<(String, String)> get _details {
+    final invoiceNumber = order.invoice?.invoiceNumber ?? '';
+    final reference =
+        order.paymentReference ?? order.invoice?.paymentReference ?? '';
+    return [
+      if (order.orderNumber.isNotEmpty)
+        (AppStrings.orderNumber.tr(), order.orderNumber),
+      if (invoiceNumber.isNotEmpty)
+        (AppStrings.invoiceNumber.tr(), invoiceNumber),
+      if (reference.isNotEmpty) (AppStrings.paymentReference.tr(), reference),
+      if (order.id.isNotEmpty)
+        (
+          AppStrings.totalAmount.tr(),
+          cartMoney(order.summary.totalAmount, order.summary.currency),
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +67,49 @@ class PaymentSuccessScreen extends StatelessWidget {
                   color: AppColors.textSecondary,
                 ),
               ),
+              if (_details.isNotEmpty) ...[
+                const SizedBox(height: AppDimensions.paddingLarge),
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusLarge,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final (label, value) in _details)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  fontSize: AppDimensions.fontSizeMedium,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: AppDimensions.paddingSmall),
+                              Expanded(
+                                child: SelectableText(
+                                  value,
+                                  textAlign: TextAlign.end,
+                                  style: const TextStyle(
+                                    fontSize: AppDimensions.fontSizeMedium,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const Spacer(),
               Row(
                 children: [

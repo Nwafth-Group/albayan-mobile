@@ -2,76 +2,92 @@
 // FILE: lib/fatures/settings/screens/settings_screen.dart
 // ============================================
 
+import 'package:albayan/fatures/articles/screens/widgets/rate_experience_sheet.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
-import 'package:albayan/fatures/auth/data/models/user_model.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:albayan/fatures/auth/screens/login_screen.dart';
+import 'package:albayan/fatures/issues/screens/issues_screen.dart';
+import 'dart:ui' as ui;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hugeicons/hugeicons.dart';
+
 import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/shared_pref_helper.dart';
-import '../../../widgets/custom_button.dart';
+import 'about_us_screen.dart';
+import 'change_language_screen.dart';
+import 'change_password_screen.dart';
+import 'contact_us_screen.dart';
+import 'orders_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'profile_screen.dart';
+import 'redeem_gift_screen.dart';
+import 'subscriptions_screen.dart';
+import 'terms_conditions_screen.dart';
+import 'widgets/settings_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  /// Back arrow action — the Settings tab uses it to return to Home.
+  final VoidCallback? onBack;
+
+  const SettingsScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => AuthCubit(AuthRemoteDataSource(ApiService())),
-      child: const _SettingsBody(),
+      child: _SettingsBody(onBack: onBack),
     );
   }
 }
 
-class _SettingsBody extends StatefulWidget {
-  const _SettingsBody();
-
-  @override
-  State<_SettingsBody> createState() => _SettingsBodyState();
-}
-
-class _SettingsBodyState extends State<_SettingsBody> {
-  UserModel? _user;
-
-  @override
-  void initState() {
-    super.initState();
-    _user = SharedPrefHelper.getUser();
-    if (SharedPrefHelper.isLoggedIn()) {
-      context.read<AuthCubit>().getProfile();
-    }
-  }
+class _SettingsBody extends StatelessWidget {
+  final VoidCallback? onBack;
+  const _SettingsBody({this.onBack});
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppStrings.logoutConfirmTitle.tr()),
-        content: Text(AppStrings.logoutConfirmMessage.tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(AppStrings.cancel.tr(),
-                style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(AppStrings.logout.tr(),
-                style: const TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+    final confirmed = await showSettingsSheet(
+      context,
+      title: AppStrings.logoutTitle.tr(),
+      titleColor: AppColors.primary,
+      message: AppStrings.logoutQuestion.tr(),
+      secondaryText: AppStrings.cancel.tr(),
+      primaryText: AppStrings.yesLogout.tr(),
     );
-
     if (confirmed == true && context.mounted) {
       context.read<AuthCubit>().logout();
     }
+  }
+
+  Future<void> _restorePurchases(BuildContext context) async {
+    // TODO(api): call the restore-purchases endpoint (store receipts) once
+    // it exists; until then there is never anything to restore.
+    final backHome = await showSettingsSheet(
+      context,
+      title: AppStrings.restorePurchases.tr(),
+      message: AppStrings.noPurchasesRestored.tr(),
+      primaryText: AppStrings.backToHome.tr(),
+    );
+    if (backHome == true) onBack?.call();
+  }
+
+  Future<void> _rateApplication(BuildContext context) async {
+    final result = await showRateExperienceSheet(context);
+    if (result == null || !context.mounted) return;
+    // TODO(api): submit `result.rating` / `result.comment` to the app
+    // review endpoint once it exists.
+    final backHome = await showSettingsSheet(
+      context,
+      title: AppStrings.thanksFeedback.tr(),
+      message: AppStrings.thanksFeedbackDesc.tr(),
+      primaryText: AppStrings.backToHome.tr(),
+    );
+    if (backHome == true) onBack?.call();
   }
 
   @override
@@ -80,166 +96,181 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is ProfileLoaded) {
-          setState(() => _user = state.user);
-        } else if (state is LogoutSuccess) {
+        if (state is LogoutSuccess) {
           AppNavigator.pushAndRemoveUntil(const LoginScreen());
         }
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          title: Text(
-            AppStrings.settingsTitle.tr(),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
+        appBar: SettingsAppBar(
+          title: AppStrings.settingsTitle.tr(),
+          showBack: onBack != null,
+          onBack: onBack,
         ),
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (isLoggedIn) ...[
-                _ProfileCard(user: _user),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: CustomButton(
-                    text: AppStrings.logout.tr(),
-                    backgroundColor: AppColors.error,
-                    onPressed: () => _confirmLogout(context),
-                  ),
-                ),
-              ] else ...[
-                _GuestCard(),
-              ],
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            _SectionLabel(AppStrings.settingsGeneral.tr()),
+            if (isLoggedIn) ...[
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedUserCircle,
+                title: AppStrings.myProfile.tr(),
+                onTap: () => AppNavigator.push(const ProfileScreen()),
+              ),
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedCrown,
+                title: AppStrings.mySubscriptions.tr(),
+                onTap: () => AppNavigator.push(const SubscriptionsScreen()),
+              ),
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedShoppingBag01,
+                title: AppStrings.myOrder.tr(),
+                onTap: () => AppNavigator.push(const OrdersScreen()),
+              ),
             ],
-          ),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedArchive,
+              title: AppStrings.settingsArchive.tr(),
+              onTap: () => AppNavigator.push(const IssuesScreen()),
+            ),
+            if (isLoggedIn) ...[
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedRefresh,
+                title: AppStrings.restorePurchases.tr(),
+                onTap: () => _restorePurchases(context),
+              ),
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedGift,
+                title: AppStrings.redeemGift.tr(),
+                onTap: () => AppNavigator.push(const RedeemGiftScreen()),
+              ),
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedKey01,
+                title: AppStrings.changePassword.tr(),
+                onTap: () => AppNavigator.push(const ChangePasswordScreen()),
+              ),
+            ],
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedGlobe02,
+              title: AppStrings.language.tr(),
+              onTap: () => AppNavigator.push(const ChangeLanguageScreen()),
+            ),
+            const SizedBox(height: 8),
+            _SectionLabel(AppStrings.settingsAbout.tr()),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedHeadset,
+              title: AppStrings.contactUs.tr(),
+              onTap: () => AppNavigator.push(const ContactUsScreen()),
+            ),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedInformationCircle,
+              title: AppStrings.aboutUs.tr(),
+              onTap: () => AppNavigator.push(const AboutUsScreen()),
+            ),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedStar,
+              title: AppStrings.rateApplication.tr(),
+              onTap: () => _rateApplication(context),
+            ),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedSecurityCheck,
+              title: AppStrings.privacyPolicy.tr(),
+              onTap: () => AppNavigator.push(const PrivacyPolicyScreen()),
+            ),
+            _SettingsTile(
+              icon: HugeIcons.strokeRoundedFile01,
+              title: AppStrings.termsConditions.tr(),
+              onTap: () => AppNavigator.push(const TermsConditionsScreen()),
+            ),
+            if (isLoggedIn)
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedLogout03,
+                title: AppStrings.logout.tr(),
+                showArrow: false,
+                onTap: () => _confirmLogout(context),
+              )
+            else
+              _SettingsTile(
+                icon: HugeIcons.strokeRoundedLogout03,
+                title: AppStrings.login.tr(),
+                showArrow: false,
+                onTap: () =>
+                    AppNavigator.pushAndRemoveUntil(const LoginScreen()),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  final UserModel? user;
-  const _ProfileCard({required this.user});
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
 
   @override
   Widget build(BuildContext context) {
-    final profileImage = user?.profileImage;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceVariant,
-            ),
-            child: ClipOval(
-              child: (profileImage != null && profileImage.isNotEmpty)
-                  ? Image.network(
-                      profileImage,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.person, color: AppColors.textSecondary, size: 30),
-                    )
-                  : const Icon(Icons.person, color: AppColors.textSecondary, size: 30),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user?.displayName ?? '—',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                if (user?.hasEmail == true)
-                  Text(
-                    user!.email!,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
-                    overflow: TextOverflow.ellipsis,
-                  )
-                else if (user?.hasMobileNumber == true)
-                  Text(
-                    user!.mobileNumber!,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
-                  ),
-              ],
-            ),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
       ),
     );
   }
 }
 
-class _GuestCard extends StatelessWidget {
+class _SettingsTile extends StatelessWidget {
+  final List<List<dynamic>> icon;
+  final String title;
+  final VoidCallback onTap;
+  final bool showArrow;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.showArrow = true,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.person_outline, color: AppColors.primary, size: 40),
-          const SizedBox(height: 12),
-          Text(
-            AppStrings.guestModeTitle.tr(),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        child: Row(
+          children: [
+            HugeIcon(icon: icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: showArrow ? AppColors.textPrimary : AppColors.primary,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            AppStrings.guestModeSubtitle.tr(),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 13, color: AppColors.textSecondary, height: 1.5),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: CustomButton(
-              text: AppStrings.login.tr(),
-              onPressed: () =>
-                  AppNavigator.pushAndRemoveUntil(const LoginScreen()),
-            ),
-          ),
-        ],
+            if (showArrow)
+              Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(
+                  color: AppColors.accentPale,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isRtl ? Icons.arrow_back : Icons.arrow_forward,
+                  size: 12,
+                  color: AppColors.primary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

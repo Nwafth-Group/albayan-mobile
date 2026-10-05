@@ -7,15 +7,19 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../utils/constants.dart';
+import '../../../../widgets/promo_banner.dart';
 import '../../data/models/article_model.dart';
 
 class AboutArticleTab extends StatelessWidget {
   final ArticleModel article;
 
-  const AboutArticleTab({
-    super.key,
-    required this.article,
-  });
+  const AboutArticleTab({super.key, required this.article});
+
+  static const _headingStyle = TextStyle(
+    fontSize: AppDimensions.fontSizeLarge,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -28,31 +32,32 @@ class AboutArticleTab extends StatelessWidget {
         AppDimensions.paddingLarge,
       ),
       children: [
+        const AdPromoBanner(
+          padding: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
+        ),
+
         // Author
         if (author != null) ...[
-          Text(
-            AppStrings.author.tr(),
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.paddingMedium),
+          Text(AppStrings.author.tr(), style: _headingStyle),
+          const SizedBox(height: 12),
           Row(
             children: [
               CircleAvatar(
-                radius: 26,
+                radius: 38,
                 backgroundColor: AppColors.surfaceVariant,
                 backgroundImage:
-                (author.image != null && author.image!.isNotEmpty)
+                    (author.image != null && author.image!.isNotEmpty)
                     ? NetworkImage(author.image!)
                     : null,
                 child: (author.image == null || author.image!.isEmpty)
-                    ? const Icon(Icons.person, color: AppColors.textLight)
+                    ? const Icon(
+                        Icons.person,
+                        size: 36,
+                        color: AppColors.textLight,
+                      )
                     : null,
               ),
-              const SizedBox(width: AppDimensions.paddingMedium),
+              const SizedBox(width: 18),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,11 +66,11 @@ class AboutArticleTab extends StatelessWidget {
                       author.displayName,
                       style: const TextStyle(
                         fontSize: AppDimensions.fontSizeMedium,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -74,19 +79,18 @@ class AboutArticleTab extends StatelessWidget {
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
+                          horizontal: 18,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           AppStrings.visit.tr(),
                           style: const TextStyle(
                             color: AppColors.white,
-                            fontSize: AppDimensions.fontSizeSmall,
-                            fontWeight: FontWeight.w600,
+                            fontSize: AppDimensions.fontSizeMedium,
                           ),
                         ),
                       ),
@@ -96,51 +100,34 @@ class AboutArticleTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.paddingLarge),
+          const SizedBox(height: 20),
         ],
 
         // Overview
         if (article.summary != null && article.summary!.trim().isNotEmpty) ...[
-          Text(
-            AppStrings.overviewOfArticle.tr(),
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(AppStrings.overviewOfArticle.tr(), style: _headingStyle),
           const SizedBox(height: AppDimensions.paddingSmall),
           Text(
             article.summary!,
             style: const TextStyle(
-              fontSize: AppDimensions.fontSizeMedium,
+              fontSize: 13.5,
               color: AppColors.textSecondary,
               height: 1.6,
             ),
           ),
-          const SizedBox(height: AppDimensions.paddingLarge),
+          const SizedBox(height: 20),
         ],
 
         // Category / keywords
         if (article.keywords.isNotEmpty) ...[
-          Text(
-            AppStrings.category.tr(),
-            style: const TextStyle(
-              fontSize: AppDimensions.fontSizeLarge,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.paddingMedium),
+          Text(AppStrings.category.tr(), style: _headingStyle),
+          const SizedBox(height: 12),
           Wrap(
             spacing: AppDimensions.paddingSmall,
             runSpacing: AppDimensions.paddingSmall,
             children: [
-              for (var i = 0; i < article.keywords.length; i++)
-                _KeywordChip(
-                  label: article.keywords[i].name,
-                  highlighted: i == 0,
-                ),
+              for (final keyword in article.keywords)
+                _KeywordChip(label: keyword.name),
             ],
           ),
         ],
@@ -151,24 +138,19 @@ class AboutArticleTab extends StatelessWidget {
 
 class _KeywordChip extends StatelessWidget {
   final String label;
-  final bool highlighted;
-  const _KeywordChip({required this.label, this.highlighted = false});
+  const _KeywordChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: AppDimensions.fontSizeMedium,
-          color: highlighted ? AppColors.primary : AppColors.textSecondary,
-          fontWeight: highlighted ? FontWeight.w600 : FontWeight.w400,
-        ),
+        style: const TextStyle(fontSize: 13.5, color: AppColors.primary),
       ),
     );
   }

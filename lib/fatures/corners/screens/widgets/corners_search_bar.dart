@@ -30,7 +30,7 @@ class CornersSearchBar extends StatelessWidget {
           child: Container(
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.cardColor,
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: AppColors.primary, width: 1),
             ),
@@ -48,14 +48,18 @@ class CornersSearchBar extends StatelessWidget {
                 hintText: AppStrings.searchHint.tr(),
                 hintStyle: const TextStyle(color: AppColors.textLight),
                 border: InputBorder.none,
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
                 suffixIcon: Padding(
                   padding: const EdgeInsets.all(13),
                   child: ImageAsset(AppImages.search, width: 22, height: 22),
                 ),
-                suffixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
+                suffixIconConstraints: const BoxConstraints(
+                  minWidth: 0,
+                  minHeight: 0,
+                ),
               ),
             ),
           ),
@@ -72,7 +76,7 @@ class CornersSearchBar extends StatelessWidget {
                 width: 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.cardColor,
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.primary, width: 1),
                 ),
