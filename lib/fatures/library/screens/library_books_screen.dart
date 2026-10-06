@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_books_screen.dart
 // ============================================
@@ -13,8 +12,13 @@ import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../data/datasource/library_remote_data_source.dart';
+import '../../../utils/helpers.dart';
+import '../../reader/data/reader_local_storage.dart';
+import '../../reader/screens/reader_screen.dart';
+import '../data/models/library_book_model.dart';
 import 'cubit/library_books_cubit.dart';
 import 'widgets/library_book_card.dart';
+import 'widgets/library_refreshable.dart';
 
 class LibraryBooksScreen extends StatelessWidget {
   const LibraryBooksScreen({super.key});
@@ -54,6 +58,21 @@ class _LibraryBooksViewState extends State<_LibraryBooksView> {
     super.dispose();
   }
 
+  /// Opens an owned book in the reader, then refreshes its progress bar.
+  Future<void> _openReader(LibraryBookModel book) async {
+    final readerBook = LibraryBooksCubit.readerBookOf(book);
+    readerLog('library → read: id=${book.id} file_type=${book.fileType} '
+        'file_url=${book.fileUrl}');
+    if (readerBook == null) {
+      readerLog('✖ no file_url on this library book — nothing to open');
+      Helpers.showError(AppStrings.readerNoFile.tr());
+      return;
+    }
+    final cubit = context.read<LibraryBooksCubit>();
+    await ReaderScreen.open(readerBook);
+    if (mounted) cubit.syncProgress();
+  }
+
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 300;
@@ -76,18 +95,24 @@ class _LibraryBooksViewState extends State<_LibraryBooksView> {
                 return const LoadingIndicator();
 
               case LibraryBooksStatus.failure:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.somethingWentWrong.tr(),
-                  message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                  actionText: AppStrings.retry.tr(),
-                  onAction: () => context.read<LibraryBooksCubit>().refresh(),
+                return LibraryRefreshable(
+                  onRefresh: () => context.read<LibraryBooksCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.somethingWentWrong.tr(),
+                    message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                    actionText: AppStrings.retry.tr(),
+                    onAction: () => context.read<LibraryBooksCubit>().load(),
+                  ),
                 );
 
               case LibraryBooksStatus.empty:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.noBooks.tr(),
+                return LibraryRefreshable(
+                  onRefresh: () => context.read<LibraryBooksCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.noBooks.tr(),
+                  ),
                 );
 
               case LibraryBooksStatus.success:
@@ -109,30 +134,32 @@ class _LibraryBooksViewState extends State<_LibraryBooksView> {
                         sliver: SliverGrid(
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: AppDimensions.paddingMedium,
-                            mainAxisSpacing: AppDimensions.paddingMedium,
-                            childAspectRatio: 0.54,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final book = state.books[index];
-                              return LibraryBookCard(
-                                book: book,
-                                onDelete: () => context
-                                    .read<LibraryBooksCubit>()
-                                    .remove(book.id),
-                              );
-                            },
-                            childCount: state.books.length,
-                          ),
+                                crossAxisCount: 2,
+                                crossAxisSpacing: AppDimensions.paddingMedium,
+                                mainAxisSpacing: AppDimensions.paddingMedium,
+                                childAspectRatio: 0.54,
+                              ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final book = state.books[index];
+                            return LibraryBookCard(
+                              book: book,
+                              onTap: () => _openReader(book),
+                              onDelete: () => context
+                                  .read<LibraryBooksCubit>()
+                                  .remove(book.id),
+                            );
+                          }, childCount: state.books.length),
                         ),
                       ),
                       if (state.isLoadingMore)
                         const SliverToBoxAdapter(
                           child: Padding(
                             padding: EdgeInsets.symmetric(
-                                vertical: AppDimensions.paddingLarge),
+                              vertical: AppDimensions.paddingLarge,
+                            ),
                             child: Center(
                               child: SizedBox(
                                 width: 24,

@@ -19,6 +19,9 @@ class ReaderState extends Equatable {
   final ReaderSettings settings;
   final String? error;
 
+  /// The raw exception, shown under the message in debug builds only.
+  final String? debugDetails;
+
   const ReaderState({
     this.status = ReaderStatus.downloading,
     this.progress = 0,
@@ -29,6 +32,7 @@ class ReaderState extends Equatable {
     this.highlights = const [],
     this.settings = const ReaderSettings(),
     this.error,
+    this.debugDetails,
   });
 
   bool get isCurrentPageBookmarked =>
@@ -44,6 +48,7 @@ class ReaderState extends Equatable {
     List<ReaderHighlight>? highlights,
     ReaderSettings? settings,
     String? error,
+    String? debugDetails,
   }) {
     return ReaderState(
       status: status ?? this.status,
@@ -55,6 +60,7 @@ class ReaderState extends Equatable {
       highlights: highlights ?? this.highlights,
       settings: settings ?? this.settings,
       error: error,
+      debugDetails: debugDetails,
     );
   }
 
@@ -70,5 +76,6 @@ class ReaderState extends Equatable {
         settings.isContinuous,
         settings.isHorizontal,
         error,
+        debugDetails,
       ];
 }

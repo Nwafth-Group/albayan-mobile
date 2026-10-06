@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/widgets/library_article_card.dart
 // ============================================
@@ -123,8 +122,11 @@ class _Cover extends StatelessWidget {
   }
 
   Widget _ph() => Container(
-        color: AppColors.surfaceVariant,
-        child: const Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 24),
-      );
+    color: AppColors.surfaceVariant,
+    child: const Icon(
+      Icons.menu_book_outlined,
+      color: AppColors.textLight,
+      size: 24,
+    ),
+  );
 }

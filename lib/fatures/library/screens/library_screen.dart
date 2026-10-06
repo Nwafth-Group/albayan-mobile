@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_screen.dart
 // ============================================
@@ -24,6 +23,7 @@ import 'library_books_screen.dart';
 import 'library_documents_screen.dart';
 import 'library_magazine_screen.dart';
 import 'widgets/library_section_card.dart';
+import 'widgets/library_refreshable.dart';
 import 'widgets/library_tabs.dart';
 
 class LibraryScreen extends StatelessWidget {
@@ -86,9 +86,7 @@ class _LibraryViewState extends State<_LibraryView> {
   Widget _buildTabContent() {
     switch (_tabIndex) {
       case 0:
-        return _MyLibraryTab(
-          onOpenSection: (type) => _openSection(type),
-        );
+        return _MyLibraryTab(onOpenSection: (type) => _openSection(type));
       case 1:
         return const _CategoriesTab();
       default:
@@ -126,18 +124,25 @@ class _MyLibraryTab extends StatelessWidget {
             return const LoadingIndicator();
 
           case LibrarySummaryStatus.failure:
-            return EmptyStateWidget(
-              image: AppImages.noData,
-              message: AppStrings.somethingWentWrong.tr(),
-              message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-              actionText: AppStrings.retry.tr(),
-              onAction: () => context.read<LibrarySummaryCubit>().load(),
+            return LibraryRefreshable(
+              onRefresh: () => context.read<LibrarySummaryCubit>().refresh(),
+              child: EmptyStateWidget(
+                image: AppImages.noData,
+                message: AppStrings.somethingWentWrong.tr(),
+                message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                actionText: AppStrings.retry.tr(),
+                onAction: () => context.read<LibrarySummaryCubit>().load(),
+              ),
             );
 
           case LibrarySummaryStatus.success:
-            return _SectionsGrid(
-              summary: state.summary,
-              onOpenSection: onOpenSection,
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () => context.read<LibrarySummaryCubit>().refresh(),
+              child: _SectionsGrid(
+                summary: state.summary,
+                onOpenSection: onOpenSection,
+              ),
             );
         }
       },
@@ -185,6 +190,7 @@ class _SectionsGrid extends StatelessWidget {
     // }
 
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.paddingMedium,
         0,
@@ -217,9 +223,9 @@ class _CategoriesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PersonalCategoriesCubit(
-        LibraryRemoteDataSourceImpl(ApiService()),
-      )..load(),
+      create: (_) =>
+          PersonalCategoriesCubit(LibraryRemoteDataSourceImpl(ApiService()))
+            ..load(),
       child: BlocBuilder<PersonalCategoriesCubit, PersonalCategoriesState>(
         builder: (context, state) {
           switch (state.status) {
@@ -228,56 +234,75 @@ class _CategoriesTab extends StatelessWidget {
               return const LoadingIndicator();
 
             case PersonalCategoriesStatus.failure:
-              return EmptyStateWidget(
-                image: AppImages.noData,
-                message: AppStrings.somethingWentWrong.tr(),
-                message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                actionText: AppStrings.retry.tr(),
-                onAction: () => context.read<PersonalCategoriesCubit>().load(),
+              return LibraryRefreshable(
+                onRefresh: () =>
+                    context.read<PersonalCategoriesCubit>().refresh(),
+                child: EmptyStateWidget(
+                  image: AppImages.noData,
+                  message: AppStrings.somethingWentWrong.tr(),
+                  message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                  actionText: AppStrings.retry.tr(),
+                  onAction: () =>
+                      context.read<PersonalCategoriesCubit>().load(),
+                ),
               );
 
             case PersonalCategoriesStatus.empty:
             case PersonalCategoriesStatus.success:
               final cards = [
-                (PersonalCategoryType.book, AppStrings.libraryBooks,
-                    AppStrings.libraryBooksCount),
-                (PersonalCategoryType.issue,
-                    AppStrings.libraryMagazineIssuesTab,
-                    AppStrings.libraryIssuesCount),
-                (PersonalCategoryType.article,
-                    AppStrings.libraryMagazineArticlesTab,
-                    AppStrings.libraryArticlesCount),
+                (
+                  PersonalCategoryType.book,
+                  AppStrings.libraryBooks,
+                  AppStrings.libraryBooksCount,
+                ),
+                (
+                  PersonalCategoryType.issue,
+                  AppStrings.libraryMagazineIssuesTab,
+                  AppStrings.libraryIssuesCount,
+                ),
+                (
+                  PersonalCategoryType.article,
+                  AppStrings.libraryMagazineArticlesTab,
+                  AppStrings.libraryArticlesCount,
+                ),
               ];
-              return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.paddingMedium,
-                  0,
-                  AppDimensions.paddingMedium,
-                  AppDimensions.paddingLarge,
+              return RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    context.read<PersonalCategoriesCubit>().refresh(),
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.paddingMedium,
+                    0,
+                    AppDimensions.paddingMedium,
+                    AppDimensions.paddingLarge,
+                  ),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppDimensions.paddingMedium,
+                    mainAxisSpacing: AppDimensions.paddingMedium,
+                    childAspectRatio: 1.3,
+                  ),
+                  itemCount: cards.length,
+                  itemBuilder: (context, i) {
+                    final (type, titleKey, countKey) = cards[i];
+                    return LibrarySectionCard(
+                      section: LibrarySectionModel(
+                        type: LibrarySectionType.magazine,
+                        titleKey: titleKey,
+                        countKey: countKey,
+                        count: state.counts.countOf(type),
+                      ),
+                      color: i.isEven
+                          ? AppColors.surfaceVariant
+                          : AppColors.surfaceDark,
+                      onTap: () => AppNavigator.push(
+                        PersonalCategoriesScreen(type: type),
+                      ),
+                    );
+                  },
                 ),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppDimensions.paddingMedium,
-                  mainAxisSpacing: AppDimensions.paddingMedium,
-                  childAspectRatio: 1.3,
-                ),
-                itemCount: cards.length,
-                itemBuilder: (context, i) {
-                  final (type, titleKey, countKey) = cards[i];
-                  return LibrarySectionCard(
-                    section: LibrarySectionModel(
-                      type: LibrarySectionType.magazine,
-                      titleKey: titleKey,
-                      countKey: countKey,
-                      count: state.counts.countOf(type),
-                    ),
-                    color: i.isEven
-                        ? AppColors.surfaceVariant
-                        : AppColors.surfaceDark,
-                    onTap: () =>
-                        AppNavigator.push(PersonalCategoriesScreen(type: type)),
-                  );
-                },
               );
           }
         },

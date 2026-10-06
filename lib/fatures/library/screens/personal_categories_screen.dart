@@ -13,6 +13,7 @@ import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import '../data/models/personal_category_model.dart';
+import 'widgets/library_refreshable.dart';
 import 'cubit/personal_categories_cubit.dart';
 
 String personalCategoryTitleKey(PersonalCategoryType type) {
@@ -50,27 +51,37 @@ class PersonalCategoriesScreen extends StatelessWidget {
                 case PersonalCategoriesStatus.loading:
                   return const LoadingIndicator();
                 case PersonalCategoriesStatus.failure:
-                  return EmptyStateWidget(
-                    image: AppImages.noData,
-                    message: AppStrings.somethingWentWrong.tr(),
-                    message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                    actionText: AppStrings.retry.tr(),
-                    onAction: () =>
-                        context.read<PersonalCategoriesCubit>().load(),
+                  return LibraryRefreshable(
+                    onRefresh: () =>
+                        context.read<PersonalCategoriesCubit>().refresh(),
+                    child: EmptyStateWidget(
+                      image: AppImages.noData,
+                      message: AppStrings.somethingWentWrong.tr(),
+                      message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                      actionText: AppStrings.retry.tr(),
+                      onAction: () =>
+                          context.read<PersonalCategoriesCubit>().load(),
+                    ),
                   );
                 case PersonalCategoriesStatus.empty:
-                  return EmptyStateWidget(
-                    image: AppImages.noData,
-                    message: AppStrings.libraryNoCategories.tr(),
+                  return LibraryRefreshable(
+                    onRefresh: () =>
+                        context.read<PersonalCategoriesCubit>().refresh(),
+                    child: EmptyStateWidget(
+                      image: AppImages.noData,
+                      message: AppStrings.libraryNoCategories.tr(),
+                    ),
                   );
                 case PersonalCategoriesStatus.success:
                   return RefreshIndicator(
                     color: AppColors.primary,
                     onRefresh: () =>
-                        context.read<PersonalCategoriesCubit>().load(),
+                        context.read<PersonalCategoriesCubit>().refresh(),
                     child: ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                      padding: const EdgeInsets.all(
+                        AppDimensions.paddingMedium,
+                      ),
                       itemCount: state.categories.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppDimensions.paddingSmall),
@@ -114,8 +125,9 @@ class _CategoryTile extends StatelessWidget {
               ),
             ),
             Text(
-              AppStrings.libraryItemsCount
-                  .tr(namedArgs: {'count': '${category.itemsCount}'}),
+              AppStrings.libraryItemsCount.tr(
+                namedArgs: {'count': '${category.itemsCount}'},
+              ),
               style: const TextStyle(
                 fontSize: AppDimensions.fontSizeMedium,
                 color: AppColors.textLight,

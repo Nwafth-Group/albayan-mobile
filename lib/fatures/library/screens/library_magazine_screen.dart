@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_magazine_screen.dart
 // ============================================
@@ -17,6 +16,7 @@ import '../data/datasource/library_remote_data_source.dart';
 import 'cubit/library_summary_cubit.dart';
 import 'library_articles_screen.dart';
 import 'library_issues_screen.dart';
+import 'widgets/library_refreshable.dart';
 import 'widgets/library_section_card.dart';
 import '../data/models/library_section_model.dart';
 
@@ -42,46 +42,58 @@ class LibraryMagazineScreen extends StatelessWidget {
                   return const LoadingIndicator();
 
                 case LibrarySummaryStatus.failure:
-                  return EmptyStateWidget(
-                    image: AppImages.noData,
-                    message: AppStrings.somethingWentWrong.tr(),
-                    message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                    actionText: AppStrings.retry.tr(),
-                    onAction: () =>
-                        context.read<LibrarySummaryCubit>().load(),
+                  return LibraryRefreshable(
+                    onRefresh: () =>
+                        context.read<LibrarySummaryCubit>().refresh(),
+                    child: EmptyStateWidget(
+                      image: AppImages.noData,
+                      message: AppStrings.somethingWentWrong.tr(),
+                      message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                      actionText: AppStrings.retry.tr(),
+                      onAction: () =>
+                          context.read<LibrarySummaryCubit>().load(),
+                    ),
                   );
 
                 case LibrarySummaryStatus.success:
-                  return GridView.count(
-                    padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppDimensions.paddingMedium,
-                    mainAxisSpacing: AppDimensions.paddingMedium,
-                    childAspectRatio: 1.3,
-                    children: [
-                      LibrarySectionCard(
-                        section: LibrarySectionModel(
-                          type: LibrarySectionType.magazine,
-                          titleKey: AppStrings.libraryMagazineIssuesTab,
-                          countKey: AppStrings.libraryIssuesCount,
-                          count: state.summary.magazineIssuesCount,
-                        ),
-                        color: AppColors.surfaceVariant,
-                        onTap: () =>
-                            AppNavigator.push(const LibraryIssuesScreen()),
+                  return RefreshIndicator(
+                    color: AppColors.primary,
+                    onRefresh: () =>
+                        context.read<LibrarySummaryCubit>().refresh(),
+                    child: GridView.count(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(
+                        AppDimensions.paddingMedium,
                       ),
-                      LibrarySectionCard(
-                        section: LibrarySectionModel(
-                          type: LibrarySectionType.magazine,
-                          titleKey: AppStrings.libraryMagazineArticlesTab,
-                          countKey: AppStrings.libraryArticlesCount,
-                          count: state.summary.magazineArticlesCount,
+                      crossAxisCount: 2,
+                      crossAxisSpacing: AppDimensions.paddingMedium,
+                      mainAxisSpacing: AppDimensions.paddingMedium,
+                      childAspectRatio: 1.3,
+                      children: [
+                        LibrarySectionCard(
+                          section: LibrarySectionModel(
+                            type: LibrarySectionType.magazine,
+                            titleKey: AppStrings.libraryMagazineIssuesTab,
+                            countKey: AppStrings.libraryIssuesCount,
+                            count: state.summary.magazineIssuesCount,
+                          ),
+                          color: AppColors.surfaceVariant,
+                          onTap: () =>
+                              AppNavigator.push(const LibraryIssuesScreen()),
                         ),
-                        color: AppColors.surfaceDark,
-                        onTap: () =>
-                            AppNavigator.push(const LibraryArticlesScreen()),
-                      ),
-                    ],
+                        LibrarySectionCard(
+                          section: LibrarySectionModel(
+                            type: LibrarySectionType.magazine,
+                            titleKey: AppStrings.libraryMagazineArticlesTab,
+                            countKey: AppStrings.libraryArticlesCount,
+                            count: state.summary.magazineArticlesCount,
+                          ),
+                          color: AppColors.surfaceDark,
+                          onTap: () =>
+                              AppNavigator.push(const LibraryArticlesScreen()),
+                        ),
+                      ],
+                    ),
                   );
               }
             },

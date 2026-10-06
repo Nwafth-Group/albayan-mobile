@@ -20,7 +20,7 @@ class IssueCard extends StatelessWidget {
     return DateFormat('MMM d, yyyy', 'en').format(issue.publishedAt!);
   }
 
-  String get _priceText => issue.price.toStringAsFixed(2);
+  String get _priceText => issue.effectivePrice.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +72,17 @@ class IssueCard extends StatelessWidget {
           else
             Row(
               children: [
+                if (issue.hasDiscount) ...[
+                  Text(
+                    issue.price.toStringAsFixed(2),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textLight,
+                      decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 Text(
                   _priceText,
                   style: const TextStyle(

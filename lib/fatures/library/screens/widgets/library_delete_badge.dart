@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/widgets/library_delete_badge.dart
 // ============================================

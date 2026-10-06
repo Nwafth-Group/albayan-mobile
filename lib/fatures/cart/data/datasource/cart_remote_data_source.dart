@@ -8,6 +8,7 @@ import 'package:albayan/utils/constants.dart';
 import '../models/cart_model.dart';
 import '../models/cart_payment_method.dart';
 import '../models/checkout_order_model.dart';
+import '../../utils/cart_events.dart';
 
 abstract class CartRemoteDataSource {
   /// GET /reader/cart
@@ -62,6 +63,8 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
       ApiConstants.cartItems,
       data: {'type': type, 'id': id, 'is_gift': isGift},
     );
+    // Only reached on success — ApiService throws on errors.
+    CartEvents.notifyChanged();
   }
 
   @override

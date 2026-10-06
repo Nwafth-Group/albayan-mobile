@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- API + PDF downloads (debug builds add this automatically, release doesn't). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Reader: voice search (speech_to_text). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="albayan"
         android:name="${applicationName}"
@@ -40,6 +44,26 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: links, phone calls, email (Contact / About us). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="mailto"/>
+        </intent>
+        <!-- Reader: speech recognition + text-to-speech engines (Android 11+). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>

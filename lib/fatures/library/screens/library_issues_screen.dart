@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_issues_screen.dart
 // ============================================
@@ -15,6 +14,7 @@ import '../../../widgets/loading_widget.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import 'cubit/library_issues_cubit.dart';
 import 'widgets/library_issue_card.dart';
+import 'widgets/library_refreshable.dart';
 
 class LibraryIssuesScreen extends StatelessWidget {
   const LibraryIssuesScreen({super.key});
@@ -76,26 +76,31 @@ class _LibraryIssuesViewState extends State<_LibraryIssuesView> {
                 return const LoadingIndicator();
 
               case LibraryIssuesStatus.failure:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.somethingWentWrong.tr(),
-                  message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                  actionText: AppStrings.retry.tr(),
-                  onAction: () => context.read<LibraryIssuesCubit>().refresh(),
+                return LibraryRefreshable(
+                  onRefresh: () => context.read<LibraryIssuesCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.somethingWentWrong.tr(),
+                    message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                    actionText: AppStrings.retry.tr(),
+                    onAction: () => context.read<LibraryIssuesCubit>().load(),
+                  ),
                 );
 
               case LibraryIssuesStatus.empty:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.libraryNoItems.tr(),
+                return LibraryRefreshable(
+                  onRefresh: () => context.read<LibraryIssuesCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.libraryNoItems.tr(),
+                  ),
                 );
 
               case LibraryIssuesStatus.success:
               case LibraryIssuesStatus.loadingMore:
                 return RefreshIndicator(
                   color: AppColors.primary,
-                  onRefresh: () =>
-                      context.read<LibraryIssuesCubit>().refresh(),
+                  onRefresh: () => context.read<LibraryIssuesCubit>().refresh(),
                   child: CustomScrollView(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -110,30 +115,31 @@ class _LibraryIssuesViewState extends State<_LibraryIssuesView> {
                         sliver: SliverGrid(
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: AppDimensions.paddingMedium,
-                            mainAxisSpacing: AppDimensions.paddingMedium,
-                            childAspectRatio: 0.72,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final issue = state.issues[index];
-                              return LibraryIssueCard(
-                                issue: issue,
-                                onDelete: () => context
-                                    .read<LibraryIssuesCubit>()
-                                    .remove(issue.id),
-                              );
-                            },
-                            childCount: state.issues.length,
-                          ),
+                                crossAxisCount: 2,
+                                crossAxisSpacing: AppDimensions.paddingMedium,
+                                mainAxisSpacing: AppDimensions.paddingMedium,
+                                childAspectRatio: 0.72,
+                              ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final issue = state.issues[index];
+                            return LibraryIssueCard(
+                              issue: issue,
+                              onDelete: () => context
+                                  .read<LibraryIssuesCubit>()
+                                  .remove(issue.id),
+                            );
+                          }, childCount: state.issues.length),
                         ),
                       ),
                       if (state.isLoadingMore)
                         const SliverToBoxAdapter(
                           child: Padding(
                             padding: EdgeInsets.symmetric(
-                                vertical: AppDimensions.paddingLarge),
+                              vertical: AppDimensions.paddingLarge,
+                            ),
                             child: Center(
                               child: SizedBox(
                                 width: 24,

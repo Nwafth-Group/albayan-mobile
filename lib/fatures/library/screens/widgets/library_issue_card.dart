@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/widgets/library_issue_card.dart
 // ============================================
@@ -40,8 +39,9 @@ class LibraryIssueCard extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
+                    ),
                     child: _Cover(url: issue.cover),
                   ),
                 ),
@@ -98,8 +98,11 @@ class _Cover extends StatelessWidget {
     return Container(
       color: AppColors.surfaceVariant,
       child: const Center(
-        child: Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 32),
+        child: Icon(
+          Icons.menu_book_outlined,
+          color: AppColors.textLight,
+          size: 32,
+        ),
       ),
     );
   }

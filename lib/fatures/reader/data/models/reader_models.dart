@@ -15,11 +15,34 @@ class ReaderBook {
   final String title;
   final String pdfUrl;
 
+  /// A free preview (`file_type: free`) rather than the full book.
+  final bool isSample;
+
   const ReaderBook({
     required this.id,
     required this.title,
     required this.pdfUrl,
+    this.isSample = false,
   });
+
+  /// From an API book's `file_url` / `file_type`. The sample and the full
+  /// book get different ids, so each keeps its own progress and bookmarks.
+  /// Returns null when there's no file to read.
+  static ReaderBook? fromFile({
+    required String id,
+    required String title,
+    required String? fileUrl,
+    String? fileType,
+  }) {
+    if (fileUrl == null || fileUrl.trim().isEmpty) return null;
+    final type = fileType ?? 'paid';
+    return ReaderBook(
+      id: '${id}_$type',
+      title: title,
+      pdfUrl: fileUrl.trim(),
+      isSample: type == 'free',
+    );
+  }
 }
 
 class ReaderBookmark {

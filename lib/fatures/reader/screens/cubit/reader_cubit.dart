@@ -27,10 +27,17 @@ class ReaderCubit extends Cubit<ReaderState> {
 
   /// Loads saved progress + settings, then the PDF (downloading if needed).
   Future<void> load() async {
+    readerLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    readerLog('📖 open "${book.title}"\n  id: ${book.id}\n  '
+        'sample: ${book.isSample}\n  url: ${book.pdfUrl}');
     emit(state.copyWith(status: ReaderStatus.downloading, progress: 0));
     try {
       final saved = await storage.loadProgress(book.id);
       final settings = await storage.loadSettings();
+      readerLog('saved progress: page ${saved.lastPage}/${saved.totalPages}, '
+          '${saved.bookmarks.length} bookmarks, '
+          '${saved.highlights.length} highlights; '
+          'continuous=${settings.isContinuous} horizontal=${settings.isHorizontal}');
       emit(state.copyWith(
         currentPage: saved.lastPage < 1 ? 1 : saved.lastPage,
         totalPages: saved.totalPages,
@@ -48,10 +55,16 @@ class ReaderCubit extends Cubit<ReaderState> {
         },
       );
       if (isClosed) return;
+      readerLog('handing file to the PDF viewer: ${file.path}');
       emit(state.copyWith(status: ReaderStatus.ready, file: file));
-    } catch (e) {
+    } catch (e, st) {
       if (isClosed || (e is DioException && CancelToken.isCancel(e))) return;
-      emit(state.copyWith(status: ReaderStatus.failure, error: _messageFor(e)));
+      readerLog('✖ open failed: ${e.runtimeType}: $e', error: e, stackTrace: st);
+      emit(state.copyWith(
+        status: ReaderStatus.failure,
+        error: _messageFor(e),
+        debugDetails: '${e.runtimeType}: $e',
+      ));
     }
   }
 
@@ -73,12 +86,18 @@ class ReaderCubit extends Cubit<ReaderState> {
 
   /// The viewer couldn't parse the file — drop the cached copy so a retry
   /// downloads it again instead of reopening the same broken file.
-  Future<void> onDocumentLoadFailed(String message) async {
+  Future<void> onDocumentLoadFailed(String error, String description) async {
+    readerLog('✖ PDF viewer could not load the file: $error — $description');
     await storage.deleteCachedFile(book);
-    emit(state.copyWith(status: ReaderStatus.failure, error: message));
+    emit(state.copyWith(
+      status: ReaderStatus.failure,
+      error: description,
+      debugDetails: 'SfPdfViewer: $error — $description',
+    ));
   }
 
   void onDocumentLoaded(int totalPages) {
+    readerLog('✔ PDF viewer loaded the document: $totalPages pages');
     if (totalPages == state.totalPages) return;
     emit(state.copyWith(totalPages: totalPages));
     _save();

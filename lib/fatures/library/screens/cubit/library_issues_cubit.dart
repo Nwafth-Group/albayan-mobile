@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/cubit/library_issues_cubit.dart
 // ============================================
@@ -21,7 +20,9 @@ class LibraryIssuesCubit extends Cubit<LibraryIssuesState> {
 
   Future<void> load() => _fetch(page: 1, reset: true);
 
-  Future<void> refresh() => _fetch(page: 1, reset: true);
+  /// Pull-to-refresh: re-fetches page 1 but keeps the current list on
+  /// screen (no full-screen loader) until the new page arrives.
+  Future<void> refresh() => _fetch(page: 1, reset: true, silent: true);
 
   Future<void> loadMore() async {
     if (_isFetching || !state.hasMore) return;
@@ -32,45 +33,57 @@ class LibraryIssuesCubit extends Cubit<LibraryIssuesState> {
   /// Local removal — no delete endpoint is available yet.
   void remove(String id) {
     final updated = state.issues.where((i) => i.id != id).toList();
-    emit(state.copyWith(
-      issues: updated,
-      status:
-          updated.isEmpty && state.status == LibraryIssuesStatus.success
-              ? LibraryIssuesStatus.empty
-              : state.status,
-    ));
+    emit(
+      state.copyWith(
+        issues: updated,
+        status: updated.isEmpty && state.status == LibraryIssuesStatus.success
+            ? LibraryIssuesStatus.empty
+            : state.status,
+      ),
+    );
   }
 
-  Future<void> _fetch({required int page, required bool reset}) async {
+  Future<void> _fetch({
+    required int page,
+    required bool reset,
+    bool silent = false,
+  }) async {
     if (_isFetching) return;
     _isFetching = true;
 
-    emit(state.copyWith(
-      status: reset
-          ? LibraryIssuesStatus.loading
-          : LibraryIssuesStatus.loadingMore,
-      error: null,
-    ));
+    if (!silent) {
+      emit(
+        state.copyWith(
+          status: reset
+              ? LibraryIssuesStatus.loading
+              : LibraryIssuesStatus.loadingMore,
+          error: null,
+        ),
+      );
+    }
 
     try {
       final result = await dataSource.getMagazineIssues(page: page);
-      final merged =
-          reset ? result.items : [...state.issues, ...result.items];
+      final merged = reset ? result.items : [...state.issues, ...result.items];
 
-      emit(state.copyWith(
-        status: merged.isEmpty
-            ? LibraryIssuesStatus.empty
-            : LibraryIssuesStatus.success,
-        issues: merged,
-        meta: result.meta,
-      ));
+      emit(
+        state.copyWith(
+          status: merged.isEmpty
+              ? LibraryIssuesStatus.empty
+              : LibraryIssuesStatus.success,
+          issues: merged,
+          meta: result.meta,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: state.issues.isEmpty
-            ? LibraryIssuesStatus.failure
-            : LibraryIssuesStatus.success,
-        error: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: state.issues.isEmpty
+              ? LibraryIssuesStatus.failure
+              : LibraryIssuesStatus.success,
+          error: e.toString(),
+        ),
+      );
     } finally {
       _isFetching = false;
     }

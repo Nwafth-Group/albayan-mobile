@@ -95,10 +95,11 @@ class AdPromoBanner extends StatefulWidget {
 
   static Future<List<HomeBannerItem>> _fetch() async {
     try {
+      // Section ids aren't fixed — look the banner section up by type.
       final section = await HomeRemoteDataSourceImpl(
         ApiService(),
-      ).getSection(ApiConstants.homeSectionBanners);
-      return section.banners;
+      ).getFirstSectionOfType('ad_banner');
+      return section?.banners ?? const [];
     } catch (_) {
       _cache = null; // let the next banner on screen retry
       return const [];

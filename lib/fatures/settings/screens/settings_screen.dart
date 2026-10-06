@@ -7,7 +7,7 @@ import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart
 import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
 import 'package:albayan/fatures/auth/screens/login_screen.dart';
-import 'package:albayan/fatures/issues/screens/issues_screen.dart';
+import 'package:albayan/fatures/issues/screens/archive_years_screen.dart';
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
@@ -131,7 +131,7 @@ class _SettingsBody extends StatelessWidget {
             _SettingsTile(
               icon: HugeIcons.strokeRoundedArchive,
               title: AppStrings.settingsArchive.tr(),
-              onTap: () => AppNavigator.push(const IssuesScreen()),
+              onTap: () => AppNavigator.push(const ArchiveYearsScreen()),
             ),
             if (isLoggedIn) ...[
               _SettingsTile(

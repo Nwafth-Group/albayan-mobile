@@ -17,6 +17,10 @@ class BookModel {
   final double rate;
   final int rateCount;
   final bool isFavorite;
+  /// Readable PDF (`file_url`) — a sample when [fileType] is `free`, the
+  /// full book when `paid` (owned). Null when the book has no file yet.
+  final String? fileUrl;
+  final String? fileType;
 
   const BookModel({
     required this.id,
@@ -30,6 +34,8 @@ class BookModel {
     required this.rate,
     required this.rateCount,
     required this.isFavorite,
+    this.fileUrl,
+    this.fileType,
   });
 
   /// Price the user actually pays.
@@ -52,10 +58,16 @@ class BookModel {
         rate: rate,
         rateCount: rateCount,
         isFavorite: isFavorite ?? this.isFavorite,
+        fileUrl: fileUrl,
+        fileType: fileType,
       );
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
     return BookModel(
+      fileUrl: (json['file_url']?.toString().trim().isEmpty ?? true)
+          ? null
+          : json['file_url'].toString().trim(),
+      fileType: json['file_type']?.toString(),
       id: json['id']?.toString() ?? '',
       bookId: json['book_id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',

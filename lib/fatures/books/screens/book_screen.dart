@@ -16,7 +16,11 @@ import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
+import '../../reader/data/models/reader_models.dart';
+import '../../reader/data/reader_local_storage.dart';
+import '../../reader/screens/reader_screen.dart';
 import '../data/datasource/books_remote_data_source.dart';
+import '../data/models/book_detail_model.dart';
 import 'cubit/book_cubit.dart';
 import 'widgets/about_book_tab.dart';
 import 'widgets/book_info_bar.dart';
@@ -191,7 +195,7 @@ class _BookViewState extends State<_BookView>
       actions: [
         _circleAction(
           child: ImageAsset(AppImages.openBook, width: 20, height: 20),
-          onTap: () {/* TODO: open reader */},
+          onTap: () => _openReader(book),
         ),
         _circleAction(
           child: book.isFavorite
@@ -265,6 +269,29 @@ class _BookViewState extends State<_BookView>
     );
   }
 
+  /// The file is a free preview and the reader doesn't own the book.
+  bool _isSample(BookDetailModel book) =>
+      book.version.fileType == 'free' && !book.isOwned;
+
+  /// Opens the book's PDF (`version.file_url`) in the reader.
+  void _openReader(BookDetailModel book) {
+    final readerBook = ReaderBook.fromFile(
+      id: book.version.id.isNotEmpty ? book.version.id : book.id,
+      title: book.version.name,
+      fileUrl: book.version.fileUrl,
+      fileType: book.version.fileType,
+    );
+    readerLog('book screen → read: version=${book.version.id} '
+        'file_type=${book.version.fileType} owned=${book.isOwned} '
+        'file_url=${book.version.fileUrl}');
+    if (readerBook == null) {
+      readerLog('✖ no file_url on this book version — nothing to open');
+      Helpers.showError(AppStrings.readerNoFile.tr());
+      return;
+    }
+    ReaderScreen.open(readerBook);
+  }
+
   Widget _circleAction({required Widget child, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.only(right: AppDimensions.paddingSmall),
@@ -310,10 +337,12 @@ class _BookViewState extends State<_BookView>
                     children: [
                       Expanded(
                         child: CustomButton(
-                          text: AppStrings.read.tr(),
+                          text: _isSample(book)
+                              ? AppStrings.readSample.tr()
+                              : AppStrings.read.tr(),
                           isOutlined: true,
                           textColor: AppColors.primary,
-                          onPressed: () {/* TODO: open reader */},
+                          onPressed: () => _openReader(book),
                         ),
                       ),
                       const SizedBox(width: AppDimensions.paddingMedium),

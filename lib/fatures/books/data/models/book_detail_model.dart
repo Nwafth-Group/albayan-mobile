@@ -24,6 +24,10 @@ class BookVersionModel {
   final String? explanation;
   final String? cover;
   final List<String> media;
+  /// Readable PDF (`file_url`) — a sample when [fileType] is `free`, the
+  /// full book when `paid` (owned). Null when the book has no file yet.
+  final String? fileUrl;
+  final String? fileType;
 
   const BookVersionModel({
     required this.id,
@@ -38,6 +42,8 @@ class BookVersionModel {
     required this.explanation,
     required this.cover,
     required this.media,
+    this.fileUrl,
+    this.fileType,
   });
 
   num get effectivePrice => finalPrice ?? price;
@@ -67,6 +73,8 @@ class BookVersionModel {
       explanation: json['explanation']?.toString(),
       cover: json['cover']?.toString(),
       media: media,
+      fileUrl: _nonEmpty(json['file_url']),
+      fileType: _nonEmpty(json['file_type']),
     );
   }
 
@@ -74,6 +82,11 @@ class BookVersionModel {
     if (v is int) return v;
     if (v is num) return v.toInt();
     return int.tryParse(v?.toString() ?? '') ?? 0;
+  }
+
+  static String? _nonEmpty(dynamic v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty) ? null : s;
   }
 }
 
@@ -89,6 +102,9 @@ class BookDetailModel {
   final double rate;
   final int rateCount;
   final bool isFavorite;
+
+  /// The reader owns the full book (`is_owned`).
+  final bool isOwned;
   final bool allowedCommenting;
   final bool allowedRating;
   final List<String> languageOptions;
@@ -106,6 +122,7 @@ class BookDetailModel {
     required this.rate,
     required this.rateCount,
     required this.isFavorite,
+    this.isOwned = false,
     required this.allowedCommenting,
     required this.allowedRating,
     required this.languageOptions,
@@ -159,6 +176,7 @@ class BookDetailModel {
       rate: _toDouble(json['rate']),
       rateCount: _toInt(json['rate_count']),
       isFavorite: json['is_favorite'] == true,
+      isOwned: json['is_owned'] == true,
       allowedCommenting: json['allowed_commenting'] == true,
       allowedRating: json['allowed_rating'] == true,
       languageOptions: rawLangs is List
@@ -196,6 +214,7 @@ class BookDetailModel {
       rate: rate,
       rateCount: rateCount,
       isFavorite: isFavorite ?? this.isFavorite,
+      isOwned: isOwned,
       allowedCommenting: allowedCommenting,
       allowedRating: allowedRating,
       languageOptions: languageOptions,

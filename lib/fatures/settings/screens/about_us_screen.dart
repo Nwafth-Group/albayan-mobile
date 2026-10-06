@@ -4,14 +4,34 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
+import '../../../utils/link_launcher.dart';
+import '../data/datasource/company_remote_data_source.dart';
+import '../data/models/company_info_model.dart';
+import 'cubit/company_info_cubit.dart';
+import 'widgets/company_widgets.dart';
 import 'widgets/settings_widgets.dart';
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          CompanyInfoCubit(CompanyRemoteDataSourceImpl(ApiService()))..load(),
+      child: const _AboutUsView(),
+    );
+  }
+}
+
+class _AboutUsView extends StatelessWidget {
+  const _AboutUsView();
 
   /// Keep in sync with `version:` in pubspec.yaml.
   static const _appVersion = '1.0.0';
@@ -30,6 +50,8 @@ class AboutUsScreen extends StatelessWidget {
       color: AppColors.textPrimary,
       height: 1.35,
     );
+
+    final info = context.watch<CompanyInfoCubit>().state.info;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -102,7 +124,18 @@ class AboutUsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 14),
+
+          // ── Company info (from /public/company-info) ──
+          if (info != null) ...[
+            CompanyDetailsCard(
+              info: info,
+              title: AppStrings.companyInfoTitle.tr(),
+              showCompany: true,
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 14),
 
           // ── Story video ──
           Text(
@@ -146,23 +179,8 @@ class AboutUsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 22),
 
-          // ── Social ──
-          // TODO: open the real social links (needs URLs + url_launcher).
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final (icon, color) in [
-                (HugeIcons.strokeRoundedFacebook01, const Color(0xFF1877F2)),
-                (HugeIcons.strokeRoundedNewTwitter, Colors.black),
-                (HugeIcons.strokeRoundedInstagram, const Color(0xFFE1306C)),
-                (HugeIcons.strokeRoundedLinkedin01, const Color(0xFF0A66C2)),
-              ])
-                IconButton(
-                  onPressed: _comingSoon,
-                  icon: HugeIcon(icon: icon, color: color, size: 26),
-                ),
-            ],
-          ),
+          // ── Social ── (only the networks the company has a link for)
+          if (info != null) _SocialRow(info: info),
           const SizedBox(height: 40),
           Text(
             AppStrings.copyrightText.tr(
@@ -236,6 +254,44 @@ class _FeatureCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SocialRow extends StatelessWidget {
+  final CompanyInfoModel info;
+  const _SocialRow({required this.info});
+
+  @override
+  Widget build(BuildContext context) {
+    final links = [
+      (
+        HugeIcons.strokeRoundedFacebook01,
+        const Color(0xFF1877F2),
+        info.facebook,
+      ),
+      (HugeIcons.strokeRoundedNewTwitter, Colors.black, info.twitter),
+      (
+        HugeIcons.strokeRoundedInstagram,
+        const Color(0xFFE1306C),
+        info.instagram,
+      ),
+      (
+        HugeIcons.strokeRoundedLinkedin01,
+        const Color(0xFF0A66C2),
+        info.linkedin,
+      ),
+    ].where((l) => l.$3 != null);
+    if (links.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final (icon, color, url) in links)
+          IconButton(
+            onPressed: () => LinkLauncher.openUrl(url),
+            icon: HugeIcon(icon: icon, color: color, size: 26),
+          ),
+      ],
     );
   }
 }

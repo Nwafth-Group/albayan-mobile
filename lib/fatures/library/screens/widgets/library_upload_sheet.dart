@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/widgets/library_upload_sheet.dart
 // ============================================
@@ -30,7 +29,8 @@ class _LibraryUploadSheet extends StatelessWidget {
         right: AppDimensions.paddingLarge,
         top: AppDimensions.paddingMedium,
         bottom:
-            MediaQuery.of(context).viewInsets.bottom + AppDimensions.paddingLarge,
+            MediaQuery.of(context).viewInsets.bottom +
+            AppDimensions.paddingLarge,
       ),
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -66,14 +66,10 @@ class _LibraryUploadSheet extends StatelessWidget {
             onTap: () => Navigator.of(context).pop(true),
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusMedium),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                 border: Border.all(color: AppColors.primary),
               ),
               child: Row(

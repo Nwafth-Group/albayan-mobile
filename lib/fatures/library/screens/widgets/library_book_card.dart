@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/widgets/library_book_card.dart
 // ============================================
@@ -40,8 +39,9 @@ class LibraryBookCard extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
+                    ),
                     child: _Cover(url: book.cover),
                   ),
                 ),
@@ -106,8 +106,11 @@ class _Cover extends StatelessWidget {
     return Container(
       color: AppColors.surfaceVariant,
       child: const Center(
-        child: Icon(Icons.menu_book_outlined,
-            color: AppColors.textLight, size: 32),
+        child: Icon(
+          Icons.menu_book_outlined,
+          color: AppColors.textLight,
+          size: 32,
+        ),
       ),
     );
   }

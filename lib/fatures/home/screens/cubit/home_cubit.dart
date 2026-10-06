@@ -5,7 +5,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../utils/constants.dart';
 import '../../data/datasource/home_remote_data_source.dart';
 import '../../data/models/home_section_model.dart';
 
@@ -15,19 +14,6 @@ class HomeCubit extends Cubit<HomeState> {
   final HomeRemoteDataSource dataSource;
 
   HomeCubit(this.dataSource) : super(const HomeState());
-
-  /// The specific home-section content endpoints this home page renders —
-  /// see the NOTE on `ApiConstants.homeSectionBanners` and siblings.
-  static const _sectionEndpoints = [
-    ApiConstants.homeSectionBanners,
-    ApiConstants.homeSectionCorners,
-    ApiConstants.homeSectionLatestIssues,
-    ApiConstants.homeSectionArticles,
-    ApiConstants.homeSectionWritersAuthors,
-    ApiConstants.homeSectionBestBooks,
-    ApiConstants.homeSectionFreshNews,
-    ApiConstants.homeSectionCustom,
-  ];
 
   /// First load — shows the full-screen loading state.
   Future<void> load() =>
@@ -52,12 +38,24 @@ class HomeCubit extends Cubit<HomeState> {
       emit(state.copyWith(status: HomeStatus.loading, error: null));
     }
 
-    final results = await Future.wait(_sectionEndpoints.map(_fetchOne));
-    final sections = results.whereType<HomeSectionModel>().toList();
+    // 1) Which sections the home page has, in the backend's order.
+    List<HomeSectionRef> refs;
+    try {
+      refs = await dataSource.getSectionList();
+    } catch (_) {
+      refs = const [];
+    }
+
+    // 2) Every section's content in parallel; order is kept by Future.wait.
+    final results = await Future.wait(refs.map((r) => _fetchOne(r.endpoint)));
+    final sections = results
+        .whereType<HomeSectionModel>()
+        .where((s) => !s.isEmpty)
+        .toList();
 
     if (sections.isEmpty) {
-      // Every single section call failed — likely a real connectivity/server
-      // issue rather than one bad section, so surface it.
+      // The list call or every section call failed — likely a real
+      // connectivity/server issue rather than one bad section, so surface it.
       emit(
         state.copyWith(
           status: state.sections.isEmpty

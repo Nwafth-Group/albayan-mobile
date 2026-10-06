@@ -9,6 +9,10 @@ class IssueModel {
   final String title;
   final DateTime? publishedAt;
   final num price;
+
+  /// Price after an active offer (`final_price`), when the API sends one.
+  final num? finalPrice;
+
   final bool isFree;
   final String accessState; // e.g. "Paid" / "Free"
   final bool individualPurchaseAllowed;
@@ -34,6 +38,7 @@ class IssueModel {
     required this.title,
     required this.publishedAt,
     required this.price,
+    this.finalPrice,
     required this.isFree,
     required this.accessState,
     required this.individualPurchaseAllowed,
@@ -49,6 +54,11 @@ class IssueModel {
     required this.articlesCount,
   });
 
+  /// What the reader actually pays.
+  num get effectivePrice => finalPrice ?? price;
+
+  bool get hasDiscount => finalPrice != null && finalPrice! < price;
+
   factory IssueModel.fromJson(Map<String, dynamic> json) {
     return IssueModel(
       id: json['id']?.toString() ?? '',
@@ -56,6 +66,9 @@ class IssueModel {
       title: json['title']?.toString() ?? '',
       publishedAt: _toDate(json['published_at']),
       price: (json['price'] is num) ? json['price'] as num : 0,
+      finalPrice: (json['final_price'] is num)
+          ? json['final_price'] as num
+          : null,
       isFree: json['is_free'] == true,
       accessState: json['access_state']?.toString() ?? '',
       individualPurchaseAllowed: json['individual_purchase_allowed'] == true,

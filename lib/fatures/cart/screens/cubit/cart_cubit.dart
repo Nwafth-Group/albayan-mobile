@@ -2,6 +2,8 @@
 // FILE: lib/fatures/cart/screens/cubit/cart_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,13 +11,25 @@ import '../../../../utils/helpers.dart';
 import '../../data/datasource/cart_remote_data_source.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/cart_model.dart';
+import '../../utils/cart_events.dart';
 
 part 'cart_state.dart';
 
 class CartCubit extends Cubit<CartState> {
   final CartRemoteDataSource dataSource;
 
-  CartCubit(this.dataSource) : super(const CartState());
+  StreamSubscription<void>? _cartChangesSub;
+
+  CartCubit(this.dataSource) : super(const CartState()) {
+    // Re-fetch the cart whenever an item is added from any screen.
+    _cartChangesSub = CartEvents.changes.listen((_) => _refreshSilently());
+  }
+
+  @override
+  Future<void> close() {
+    _cartChangesSub?.cancel();
+    return super.close();
+  }
 
   Future<void> load() => _fetch();
 
@@ -42,6 +56,7 @@ class CartCubit extends Cubit<CartState> {
   Future<void> _refreshSilently() async {
     try {
       final cart = await dataSource.getCart();
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: cart.isEmpty ? CartStatus.empty : CartStatus.success,
@@ -49,6 +64,7 @@ class CartCubit extends Cubit<CartState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(status: CartStatus.failure, error: e.toString()));
     }
   }

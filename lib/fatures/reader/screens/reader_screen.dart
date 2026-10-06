@@ -2,22 +2,28 @@
 // FILE: lib/fatures/reader/screens/reader_screen.dart
 // ============================================
 //
-// In-app PDF reader, ported from the E-Book app's DocumentScreen and styled
-// with Albayan's colors. Open it with:
+// In-app PDF reader. Open it with:
 //
 //   ReaderScreen.open(ReaderBook(id: ..., title: ..., pdfUrl: ...));
 //
-// Features: download + on-device cache, resume at the last page, search
-// with next/previous, bookmarks, text highlights (saved per book), copy,
-// zoom, go-to-page, page slider, continuous / page-by-page and vertical /
-// horizontal scrolling, and a tap-to-hide immersive mode.
+// Layout (per the design): a maroon header with the title, a search pill +
+// voice-search mic, and a toolbar (zoom in/out, read aloud, stop, scroll
+// direction, menu, current page); the page in the middle; a strip of page
+// thumbnails at the bottom. Tapping the page hides the header and strip.
+//
+// Also: download + on-device cache, resume at the last page, bookmarks,
+// text highlights, copy, go-to-page and continuous / page-by-page layout.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../utils/app_navigator.dart';
@@ -25,10 +31,14 @@ import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../data/models/reader_models.dart';
 import '../data/reader_local_storage.dart';
+import '../data/reader_page_tools.dart';
 import 'cubit/reader_cubit.dart';
 
 /// Text highlight color — Albayan's terracotta accent.
 const _highlightColor = AppColors.accentLight;
+
+/// Background of the bottom thumbnails strip.
+const _stripColor = Color(0xFFC9C9C9);
 
 class ReaderScreen extends StatelessWidget {
   final ReaderBook book;
@@ -61,40 +71,64 @@ class _ReaderViewState extends State<_ReaderView> {
   final _viewerKey = GlobalKey<SfPdfViewerState>();
   final _searchCtrl = TextEditingController();
   final _searchFocus = FocusNode();
+  final _stripScroll = ScrollController();
 
   PdfTextSearchResult? _search;
   OverlayEntry? _selectionMenu;
-  bool _searchOpen = false;
+  String? _selectedText;
   bool _showUI = true;
 
-  /// The page being dragged to on the slider (null when not dragging).
-  double? _sliderPage;
+  ReaderPageTools? _pages;
+
+  // Read aloud
+  final _tts = FlutterTts();
+  bool _speaking = false;
+
+  // Voice search
+  final _speech = stt.SpeechToText();
+  bool? _speechAvailable;
+  bool _listening = false;
 
   ReaderCubit get _cubit => context.read<ReaderCubit>();
+
+  // Thumbnail cell geometry (also used to scroll the strip to a page).
+  static const _thumbWidth = 84.0;
+  static const _thumbGap = 10.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts.setCompletionHandler(() => _setSpeaking(false));
+    _tts.setCancelHandler(() => _setSpeaking(false));
+    _tts.setErrorHandler((msg) {
+      readerLog('✖ read-aloud error: $msg');
+      _setSpeaking(false);
+    });
+  }
 
   @override
   void dispose() {
     _removeSelectionMenu();
     _search?.removeListener(_onSearchChanged);
+    _tts.stop();
+    _speech.cancel();
+    _pages?.dispose();
     _searchCtrl.dispose();
     _searchFocus.dispose();
+    _stripScroll.dispose();
     _pdf.dispose();
     super.dispose();
   }
 
   // ── Search ──────────────────────────────────────────────
 
-  void _openSearch() {
-    setState(() {
-      _searchOpen = true;
-      _showUI = true;
-    });
-    _searchFocus.requestFocus();
-  }
-
   void _runSearch(String query) {
     _clearSearchResult();
-    if (query.trim().isEmpty) return;
+    if (query.trim().isEmpty) {
+      setState(() {});
+      return;
+    }
+    readerLog('search: "$query"');
     _search = _pdf.searchText(query.trim())..addListener(_onSearchChanged);
     setState(() {});
   }
@@ -109,11 +143,90 @@ class _ReaderViewState extends State<_ReaderView> {
     _search = null;
   }
 
-  void _closeSearch() {
+  void _clearSearch() {
     _clearSearchResult();
     _searchCtrl.clear();
     FocusManager.instance.primaryFocus?.unfocus();
-    setState(() => _searchOpen = false);
+    setState(() {});
+  }
+
+  // ── Voice search ────────────────────────────────────────
+
+  Future<void> _toggleListening() async {
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+    _speechAvailable ??= await _speech.initialize(
+      onStatus: (status) {
+        readerLog('voice search status: $status');
+        if ((status == 'done' || status == 'notListening') && mounted) {
+          setState(() => _listening = false);
+        }
+      },
+      onError: (e) {
+        readerLog('✖ voice search error: ${e.errorMsg}');
+        if (mounted) setState(() => _listening = false);
+      },
+    );
+    if (!mounted) return;
+    if (_speechAvailable != true) {
+      _snack(AppStrings.readerMicUnavailable.tr());
+      _speechAvailable = null; // permission may be granted later — retry
+      return;
+    }
+    _clearSearchResult();
+    _searchCtrl.clear();
+    setState(() => _listening = true);
+    await _speech.listen(
+      listenOptions: stt.SpeechListenOptions(
+        localeId: context.locale.languageCode == 'ar' ? 'ar_SA' : 'en_US',
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+        listenMode: stt.ListenMode.search,
+      ),
+      onResult: (result) {
+        if (!mounted) return;
+        _searchCtrl.text = result.recognizedWords;
+        if (result.finalResult) {
+          setState(() => _listening = false);
+          _runSearch(result.recognizedWords);
+        }
+      },
+    );
+  }
+
+  // ── Read aloud ──────────────────────────────────────────
+
+  void _setSpeaking(bool value) {
+    if (mounted && _speaking != value) setState(() => _speaking = value);
+  }
+
+  /// Reads the selected text, or the whole current page.
+  Future<void> _speak() async {
+    final selected = _selectedText?.trim() ?? '';
+    final text = selected.isNotEmpty
+        ? selected
+        : await (_pages?.pageText(_cubit.state.currentPage) ?? Future.value(''));
+    if (!mounted) return;
+    if (text.isEmpty) {
+      _snack(AppStrings.readerNothingToRead.tr());
+      return;
+    }
+    final arabic = RegExp(r'[؀-ۿ]').hasMatch(text);
+    await _tts.stop();
+    await _tts.setLanguage(arabic ? 'ar-SA' : 'en-US');
+    await _tts.setSpeechRate(0.45);
+    readerLog('read aloud: ${text.length} chars (${arabic ? 'ar' : 'en'})');
+    _setSpeaking(true);
+    await _tts.speak(text);
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _tts.stop();
+    _setSpeaking(false);
   }
 
   // ── Zoom / navigation ───────────────────────────────────
@@ -124,12 +237,29 @@ class _ReaderViewState extends State<_ReaderView> {
 
   void _toggleBookmark() {
     final added = _cubit.toggleBookmark();
-    AppNavigator.showSnackBar(
+    _snack(
       added
           ? AppStrings.readerBookmarkAdded.tr()
           : AppStrings.readerBookmarkRemoved.tr(),
-      duration: const Duration(seconds: 2),
-      backgroundColor: AppColors.primary,
+    );
+  }
+
+  void _snack(String message) => AppNavigator.showSnackBar(
+        message,
+        duration: const Duration(seconds: 2),
+        backgroundColor: AppColors.primary,
+      );
+
+  /// Keeps the current page's thumbnail centered in the strip.
+  void _scrollStripTo(int page) {
+    if (!_stripScroll.hasClients) return;
+    const cell = _thumbWidth + _thumbGap;
+    final viewport = _stripScroll.position.viewportDimension;
+    final target = (page - 1) * cell - (viewport - cell) / 2;
+    _stripScroll.animateTo(
+      target.clamp(0.0, _stripScroll.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
     );
   }
 
@@ -177,14 +307,10 @@ class _ReaderViewState extends State<_ReaderView> {
       bounds: [left, top, right, bottom],
     ));
     _pdf.clearSelection();
-    AppNavigator.showSnackBar(
-      AppStrings.readerHighlightAdded.tr(),
-      duration: const Duration(seconds: 2),
-      backgroundColor: AppColors.primary,
-    );
+    _snack(AppStrings.readerHighlightAdded.tr());
   }
 
-  // ── Selection menu (copy / highlight) ───────────────────
+  // ── Selection menu (copy / highlight / read) ────────────
 
   void _removeSelectionMenu() {
     _selectionMenu?.remove();
@@ -194,6 +320,7 @@ class _ReaderViewState extends State<_ReaderView> {
   void _onTextSelectionChanged(PdfTextSelectionChangedDetails details) {
     final text = details.selectedText;
     final region = details.globalSelectedRegion;
+    _selectedText = text;
     if (text == null || text.trim().isEmpty || region == null) {
       _removeSelectionMenu();
       return;
@@ -204,11 +331,11 @@ class _ReaderViewState extends State<_ReaderView> {
   void _showSelectionMenu(String text, Rect region) {
     _removeSelectionMenu();
     final screen = MediaQuery.of(context).size;
-    const menuWidth = 210.0;
+    const menuWidth = 280.0;
     const menuHeight = 48.0;
 
-    var left = (region.center.dx - menuWidth / 2)
-        .clamp(16.0, screen.width - menuWidth - 16);
+    final left = (region.center.dx - menuWidth / 2)
+        .clamp(16.0, math.max(16.0, screen.width - menuWidth - 16));
     var top = region.top - menuHeight - 12;
     if (top < MediaQuery.of(context).padding.top + 8) {
       top = region.bottom + 12; // no room above — show it below
@@ -232,11 +359,7 @@ class _ReaderViewState extends State<_ReaderView> {
                   Clipboard.setData(ClipboardData(text: text));
                   _pdf.clearSelection();
                   _removeSelectionMenu();
-                  AppNavigator.showSnackBar(
-                    AppStrings.readerCopied.tr(),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: AppColors.primary,
-                  );
+                  _snack(AppStrings.readerCopied.tr());
                 },
               ),
               Container(width: 1, height: 24, color: Colors.white24),
@@ -244,6 +367,15 @@ class _ReaderViewState extends State<_ReaderView> {
                 icon: Icons.border_color_rounded,
                 label: AppStrings.readerHighlight.tr(),
                 onTap: () => _highlightSelection(text),
+              ),
+              Container(width: 1, height: 24, color: Colors.white24),
+              _MenuAction(
+                icon: Icons.volume_up_rounded,
+                label: AppStrings.readerReadAloud.tr(),
+                onTap: () {
+                  _removeSelectionMenu();
+                  _speak();
+                },
               ),
             ],
           ),
@@ -257,83 +389,146 @@ class _ReaderViewState extends State<_ReaderView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ReaderCubit, ReaderState>(
-      listenWhen: (a, b) => a.highlights.length != b.highlights.length,
-      // A removed highlight has to disappear from the page too.
-      listener: (_, state) => _applyHighlights(state.highlights),
-      builder: (context, state) {
-        final ready = state.status == ReaderStatus.ready;
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: (_showUI || !ready) ? _appBar(state) : null,
-          body: switch (state.status) {
-            ReaderStatus.downloading => _DownloadingView(
-                title: widget.book.title,
-                progress: state.progress,
-              ),
-            ReaderStatus.failure => EmptyStateWidget(
-                icon: Icons.menu_book_outlined,
-                message: AppStrings.readerOpenFailed.tr(),
-                message2: state.error,
-                actionText: AppStrings.retry.tr(),
-                onAction: _cubit.load,
-              ),
-            ReaderStatus.ready => _readerBody(state),
-          },
-        );
-      },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // White status-bar icons over the maroon header.
+      value: SystemUiOverlayStyle.light,
+      child: BlocConsumer<ReaderCubit, ReaderState>(
+        listenWhen: (a, b) =>
+            a.highlights.length != b.highlights.length ||
+            a.file?.path != b.file?.path ||
+            a.currentPage != b.currentPage,
+        listener: (_, state) {
+          if (state.file != null && _pages?.file.path != state.file!.path) {
+            _pages?.dispose();
+            _pages = ReaderPageTools(state.file!);
+          }
+          // A removed highlight has to disappear from the page too.
+          _applyHighlights(state.highlights);
+          _scrollStripTo(state.currentPage);
+        },
+        builder: (context, state) {
+          final ready = state.status == ReaderStatus.ready;
+          return Scaffold(
+            backgroundColor: AppColors.white,
+            body: Column(
+              children: [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  child: (_showUI || !ready)
+                      ? _header(state)
+                      : _statusBarSpacer(),
+                ),
+                Expanded(
+                  child: switch (state.status) {
+                    ReaderStatus.downloading => _DownloadingView(
+                        title: widget.book.title,
+                        progress: state.progress,
+                      ),
+                    ReaderStatus.failure => EmptyStateWidget(
+                        icon: Icons.menu_book_outlined,
+                        message: AppStrings.readerOpenFailed.tr(),
+                        // Debug builds also show the raw error.
+                        message2: [
+                          if (state.error != null) state.error!,
+                          if (kDebugMode && state.debugDetails != null)
+                            state.debugDetails!,
+                        ].join('\n\n'),
+                        actionText: AppStrings.retry.tr(),
+                        onAction: _cubit.load,
+                      ),
+                    ReaderStatus.ready => _readerBody(state),
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-  PreferredSizeWidget _appBar(ReaderState state) {
+  Widget _statusBarSpacer() => Container(
+        height: MediaQuery.of(context).padding.top,
+        color: AppColors.primary,
+      );
+
+  // ── Header: title, search + mic, toolbar ────────────────
+
+  Widget _header(ReaderState state) {
     final ready = state.status == ReaderStatus.ready;
-    return AppBar(
-      backgroundColor: AppColors.background,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-        onPressed: () => AppNavigator.pop(),
-      ),
-      titleSpacing: 0,
-      title: Text(
-        widget.book.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontSize: 17,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      actions: [
-        if (ready) ...[
-          _CircleIconButton(icon: Icons.search_rounded, onTap: _openSearch),
-          const SizedBox(width: 8),
-          _CircleIconButton(
-            icon: state.isCurrentPageBookmarked
-                ? Icons.bookmark_rounded
-                : Icons.bookmark_border_rounded,
-            onTap: _toggleBookmark,
+    return Container(
+      width: double.infinity,
+      color: AppColors.primary,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      child: Column(
+        children: [
+          // Back + title
+          SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => AppNavigator.pop(),
+                ),
+                Flexible(
+                  child: Text(
+                    widget.book.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                if (widget.book.isSample) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      AppStrings.readerSampleBadge.tr(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 16),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-          _CircleIconButton(
-            icon: Icons.more_horiz_rounded,
-            onTap: () => _showMenuSheet(),
-          ),
-          const SizedBox(width: AppDimensions.paddingMedium),
+          if (ready) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(child: _searchPill()),
+                  const SizedBox(width: 10),
+                  _micButton(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            _toolbar(state),
+          ],
+          const SizedBox(height: 6),
         ],
-      ],
-      bottom: (ready && _searchOpen)
-          ? PreferredSize(
-              preferredSize: const Size.fromHeight(64),
-              child: _searchBar(),
-            )
-          : null,
+      ),
     );
   }
 
-  Widget _searchBar() {
+  Widget _searchPill() {
     final result = _search;
     String? counter;
     if (result != null && result.isSearchCompleted) {
@@ -341,67 +536,167 @@ class _ReaderViewState extends State<_ReaderView> {
           ? AppStrings.readerNoMatches.tr()
           : '${result.currentInstanceIndex}/${result.totalInstanceCount}';
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.cardColor,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.primary),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 14),
-            const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: _searchCtrl,
-                focusNode: _searchFocus,
-                textInputAction: TextInputAction.search,
-                onSubmitted: _runSearch,
-                cursorColor: AppColors.primary,
+    final hasQuery = _searchCtrl.text.isNotEmpty || result != null;
+
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.cardColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextField(
+              controller: _searchCtrl,
+              focusNode: _searchFocus,
+              textInputAction: TextInputAction.search,
+              onSubmitted: _runSearch,
+              onChanged: (_) => setState(() {}),
+              cursorColor: AppColors.primary,
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeMedium,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                hintText: _listening
+                    ? AppStrings.readerListening.tr()
+                    : AppStrings.readerSearchHint.tr(),
+                hintStyle: const TextStyle(color: AppColors.textLight),
+              ),
+            ),
+          ),
+          if (counter != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 2),
+              child: Text(
+                counter,
                 style: const TextStyle(
-                  fontSize: AppDimensions.fontSizeMedium,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  isCollapsed: true,
-                  border: InputBorder.none,
-                  hintText: AppStrings.readerSearchHint.tr(),
-                  hintStyle: const TextStyle(color: AppColors.textLight),
+                  fontSize: AppDimensions.fontSizeSmall,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
-            if (counter != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 4),
-                child: Text(
-                  counter,
-                  style: const TextStyle(
-                    fontSize: AppDimensions.fontSizeSmall,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            if (result != null && result.hasResult) ...[
-              _SmallIcon(
-                icon: Icons.keyboard_arrow_up_rounded,
-                onTap: result.previousInstance,
-              ),
-              _SmallIcon(
-                icon: Icons.keyboard_arrow_down_rounded,
-                onTap: result.nextInstance,
-              ),
-            ],
-            _SmallIcon(icon: Icons.close_rounded, onTap: _closeSearch),
-            const SizedBox(width: 6),
+          if (result != null && result.hasResult) ...[
+            _PillIcon(
+              icon: Icons.keyboard_arrow_up_rounded,
+              onTap: result.previousInstance,
+            ),
+            _PillIcon(
+              icon: Icons.keyboard_arrow_down_rounded,
+              onTap: result.nextInstance,
+            ),
           ],
+          if (hasQuery)
+            _PillIcon(icon: Icons.close_rounded, onTap: _clearSearch)
+          else
+            _PillIcon(
+              icon: Icons.search_rounded,
+              onTap: () => _runSearch(_searchCtrl.text),
+            ),
+          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _micButton() {
+    return Tooltip(
+      message: AppStrings.readerVoiceSearch.tr(),
+      child: GestureDetector(
+        onTap: _toggleListening,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _listening ? AppColors.accent : AppColors.cardColor,
+            shape: BoxShape.circle,
+            boxShadow: _listening
+                ? [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.6),
+                      blurRadius: 14,
+                      spreadRadius: 3,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+            color: _listening ? Colors.white : AppColors.primary,
+            size: 24,
+          ),
         ),
       ),
     );
   }
+
+  Widget _toolbar(ReaderState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _ToolIcon(
+            icon: Icons.zoom_in_rounded,
+            tooltip: AppStrings.readerZoomIn.tr(),
+            onTap: () => _zoomBy(0.25),
+          ),
+          _ToolIcon(
+            icon: Icons.zoom_out_rounded,
+            tooltip: AppStrings.readerZoomOut.tr(),
+            onTap: () => _zoomBy(-0.25),
+          ),
+          _ToolIcon(
+            icon: Icons.volume_up_outlined,
+            tooltip: AppStrings.readerReadAloud.tr(),
+            active: _speaking,
+            onTap: _speak,
+          ),
+          _ToolIcon(
+            icon: Icons.volume_off_outlined,
+            tooltip: AppStrings.readerStopReading.tr(),
+            onTap: _speaking ? _stopSpeaking : null,
+          ),
+          _ToolIcon(
+            icon: state.settings.isHorizontal
+                ? Icons.swap_horiz_rounded
+                : Icons.swap_vert_rounded,
+            tooltip: AppStrings.readerScrollDirection.tr(),
+            onTap: _cubit.toggleDirection,
+          ),
+          _ToolIcon(
+            icon: Icons.menu_rounded,
+            tooltip: AppStrings.readerMore.tr(),
+            onTap: _showMenuSheet,
+          ),
+          InkWell(
+            onTap: state.totalPages > 1
+                ? () => _showGoToPage(state.totalPages)
+                : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Text(
+                'P${state.currentPage}',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Page + thumbnails strip ─────────────────────────────
 
   Widget _readerBody(ReaderState state) {
     final theme = Theme.of(context);
@@ -409,12 +704,12 @@ class _ReaderViewState extends State<_ReaderView> {
       children: [
         Positioned.fill(
           child: Theme(
-            // Tints the viewer's own chrome (scroll head, selection
-            // handles, page gutter) with Albayan's palette.
+            // Tints the viewer's own chrome (selection handles, page gutter)
+            // with Albayan's palette.
             data: theme.copyWith(
               colorScheme: theme.colorScheme.copyWith(
                 primary: AppColors.primary,
-                surface: AppColors.surfaceVariant,
+                surface: AppColors.background,
                 onSurface: AppColors.textPrimary,
               ),
               textSelectionTheme: TextSelectionThemeData(
@@ -442,9 +737,14 @@ class _ReaderViewState extends State<_ReaderView> {
               onDocumentLoaded: (details) {
                 _cubit.onDocumentLoaded(details.document.pages.count);
                 _applyHighlights(state.highlights);
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _scrollStripTo(_cubit.state.currentPage),
+                );
               },
-              onDocumentLoadFailed: (details) =>
-                  _cubit.onDocumentLoadFailed(details.description),
+              onDocumentLoadFailed: (details) => _cubit.onDocumentLoadFailed(
+                details.error,
+                details.description,
+              ),
               onPageChanged: (details) =>
                   _cubit.onPageChanged(details.newPageNumber),
               onTextSelectionChanged: _onTextSelectionChanged,
@@ -455,95 +755,43 @@ class _ReaderViewState extends State<_ReaderView> {
             ),
           ),
         ),
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOut,
-          left: 0,
-          right: 0,
-          bottom: _showUI ? 0 : -160,
-          child: _bottomBar(state),
-        ),
+        if (state.totalPages > 0)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            left: 0,
+            right: 0,
+            bottom: _showUI ? 0 : -220,
+            child: _thumbnailStrip(state),
+          ),
       ],
     );
   }
 
-  Widget _bottomBar(ReaderState state) {
-    final total = state.totalPages;
-    final shownPage = _sliderPage?.round() ?? state.currentPage;
+  Widget _thumbnailStrip(ReaderState state) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      color: _stripColor.withValues(alpha: 0.95),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  _CircleIconButton(
-                    icon: Icons.zoom_out_rounded,
-                    onTap: () => _zoomBy(-0.25),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: total > 1 ? () => _showGoToPage(total) : null,
-                      child: Text(
-                        total > 0
-                            ? AppStrings.readerPageOf.tr(namedArgs: {
-                                'page': '$shownPage',
-                                'total': '$total',
-                              })
-                            : '',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: AppDimensions.fontSizeMedium,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _CircleIconButton(
-                    icon: Icons.zoom_in_rounded,
-                    onTap: () => _zoomBy(0.25),
-                  ),
-                ],
-              ),
-              if (total > 1)
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 3,
-                    activeTrackColor: AppColors.primary,
-                    inactiveTrackColor: AppColors.surfaceVariant,
-                    thumbColor: AppColors.primary,
-                    overlayColor: AppColors.primary.withValues(alpha: 0.12),
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 7),
-                  ),
-                  child: Slider(
-                    min: 1,
-                    max: total.toDouble(),
-                    value: (_sliderPage ?? state.currentPage.toDouble())
-                        .clamp(1, total.toDouble()),
-                    onChanged: (v) => setState(() => _sliderPage = v),
-                    onChangeEnd: (v) {
-                      _pdf.jumpToPage(v.round());
-                      setState(() => _sliderPage = null);
-                    },
-                  ),
-                ),
-            ],
+        child: SizedBox(
+          height: 140,
+          child: ListView.separated(
+            controller: _stripScroll,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            itemCount: state.totalPages,
+            separatorBuilder: (_, _) => const SizedBox(width: _thumbGap),
+            itemBuilder: (context, i) {
+              final page = i + 1;
+              return _Thumbnail(
+                key: ValueKey(page),
+                page: page,
+                width: _thumbWidth,
+                selected: page == state.currentPage,
+                tools: _pages,
+                onTap: () => _pdf.jumpToPage(page),
+              );
+            },
           ),
         ),
       ),
@@ -672,6 +920,16 @@ class _ReaderViewState extends State<_ReaderView> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
           children: [
+            _SheetTile(
+              icon: state.isCurrentPageBookmarked
+                  ? Icons.bookmark_remove_outlined
+                  : Icons.bookmark_add_outlined,
+              title: state.isCurrentPageBookmarked
+                  ? AppStrings.readerRemoveBookmark.tr()
+                  : AppStrings.readerBookmarkPage.tr(),
+              trailing: 'P${state.currentPage}',
+              onTap: _toggleBookmark,
+            ),
             _SheetTile(
               icon: Icons.bookmarks_outlined,
               title: AppStrings.readerBookmarks.tr(),
@@ -811,6 +1069,175 @@ class _ReaderViewState extends State<_ReaderView> {
 // Small Albayan-styled pieces
 // ============================================
 
+/// One page in the bottom strip; renders its image lazily.
+class _Thumbnail extends StatefulWidget {
+  final int page;
+  final double width;
+  final bool selected;
+  final ReaderPageTools? tools;
+  final VoidCallback onTap;
+
+  const _Thumbnail({
+    super.key,
+    required this.page,
+    required this.width,
+    required this.selected,
+    required this.tools,
+    required this.onTap,
+  });
+
+  @override
+  State<_Thumbnail> createState() => _ThumbnailState();
+}
+
+class _ThumbnailState extends State<_Thumbnail> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Thumbnail old) {
+    super.didUpdateWidget(old);
+    if (old.tools != widget.tools) _load();
+  }
+
+  Future<void> _load() async {
+    final tools = widget.tools;
+    if (tools == null) return;
+    _bytes = tools.cachedThumbnail(widget.page);
+    if (_bytes != null) return;
+    final bytes = await tools.thumbnail(widget.page, width: widget.width * 2);
+    if (mounted && bytes != null) setState(() => _bytes = bytes);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Column(
+        children: [
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: widget.width,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                border: Border.all(
+                  color: widget.selected ? AppColors.primary : Colors.white,
+                  width: widget.selected ? 2.5 : 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: _bytes != null
+                    ? Image.memory(
+                        _bytes!,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      )
+                    : const Center(
+                        child: SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${widget.page}',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight:
+                  widget.selected ? FontWeight.w700 : FontWeight.w400,
+              color: widget.selected
+                  ? AppColors.primary
+                  : AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// White outlined icon in the maroon toolbar.
+class _ToolIcon extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final bool active;
+
+  const _ToolIcon({
+    required this.icon,
+    required this.tooltip,
+    this.onTap,
+    this.active = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active ? Colors.white.withValues(alpha: 0.2) : null,
+          ),
+          child: Icon(
+            icon,
+            size: 25,
+            color: enabled ? Colors.white : Colors.white.withValues(alpha: 0.45),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PillIcon extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _PillIcon({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 22, color: AppColors.primary),
+      ),
+    );
+  }
+}
+
 class _DownloadingView extends StatelessWidget {
   final String title;
   final double progress;
@@ -878,50 +1305,6 @@ class _DownloadingView extends StatelessWidget {
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 40,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: AppColors.accentPale,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 21, color: AppColors.primary),
-      ),
-    );
-  }
-}
-
-class _SmallIcon extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SmallIcon({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: Icon(icon, size: 22, color: AppColors.primary),
-      ),
-    );
-  }
-}
-
 class _MenuAction extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -939,7 +1322,7 @@ class _MenuAction extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

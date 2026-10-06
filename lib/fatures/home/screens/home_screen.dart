@@ -294,7 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return books
         .map(
           (b) => BookModel(
-            id: b.bookId,
+            // `id` (not `book_id`) is what the book details API expects.
+            id: b.id,
             image: b.image ?? '',
             title: b.name,
             author: b.author,

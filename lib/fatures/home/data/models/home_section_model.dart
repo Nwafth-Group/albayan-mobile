@@ -9,6 +9,8 @@
 // an unrecognized/`custom` type is kept as raw JSON in [HomeSectionModel.rawItems]
 // since its shape wasn't documented.
 
+import 'package:albayan/utils/constants.dart';
+
 num _num(dynamic v) {
   if (v is num) return v;
   return num.tryParse(v?.toString() ?? '') ?? 0;
@@ -23,6 +25,41 @@ int _int(dynamic v) {
 DateTime? _date(dynamic v) {
   if (v == null) return null;
   return DateTime.tryParse(v.toString())?.toLocal();
+}
+
+/// One entry of `GET /public/home-sections` → `data.items`:
+/// `{ "id", "type", "endpoint_url" }`.
+class HomeSectionRef {
+  final String id;
+  final String type;
+
+  /// Path to request with ApiService — relative to the API base url when
+  /// the backend's `endpoint_url` lives there, else the absolute url as-is.
+  final String endpoint;
+
+  const HomeSectionRef({
+    required this.id,
+    required this.type,
+    required this.endpoint,
+  });
+
+  factory HomeSectionRef.fromJson(Map<String, dynamic> json) {
+    final id = json['id']?.toString() ?? '';
+    final url = json['endpoint_url']?.toString().trim() ?? '';
+    String endpoint;
+    if (url.isEmpty) {
+      endpoint = '/public/home-sections/$id/content';
+    } else if (url.startsWith(ApiConstants.baseUrl)) {
+      endpoint = url.substring(ApiConstants.baseUrl.length);
+    } else {
+      endpoint = url;
+    }
+    return HomeSectionRef(
+      id: id,
+      type: json['type']?.toString() ?? '',
+      endpoint: endpoint,
+    );
+  }
 }
 
 /// The `section` object every home-section content response includes.
@@ -243,10 +280,10 @@ class HomeArticleItem {
 
 /// One `books` item.
 class HomeBookItem {
-  /// The home-section row id — NOT the book id to open.
+  /// The id to open `BookScreen` / call the book details API with.
   final String id;
 
-  /// The real book id, e.g. to open `BookScreen`.
+  /// `book_id` — the parent book record; not used for book details.
   final String bookId;
 
   final String name;

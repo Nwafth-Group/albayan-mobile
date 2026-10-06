@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_articles_screen.dart
 // ============================================
@@ -15,6 +14,7 @@ import '../../../widgets/loading_widget.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import 'cubit/library_articles_cubit.dart';
 import 'widgets/library_article_card.dart';
+import 'widgets/library_refreshable.dart';
 
 class LibraryArticlesScreen extends StatelessWidget {
   const LibraryArticlesScreen({super.key});
@@ -76,19 +76,26 @@ class _LibraryArticlesViewState extends State<_LibraryArticlesView> {
                 return const LoadingIndicator();
 
               case LibraryArticlesStatus.failure:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.somethingWentWrong.tr(),
-                  message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
-                  actionText: AppStrings.retry.tr(),
-                  onAction: () =>
+                return LibraryRefreshable(
+                  onRefresh: () =>
                       context.read<LibraryArticlesCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.somethingWentWrong.tr(),
+                    message2: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                    actionText: AppStrings.retry.tr(),
+                    onAction: () => context.read<LibraryArticlesCubit>().load(),
+                  ),
                 );
 
               case LibraryArticlesStatus.empty:
-                return EmptyStateWidget(
-                  image: AppImages.noData,
-                  message: AppStrings.libraryNoItems.tr(),
+                return LibraryRefreshable(
+                  onRefresh: () =>
+                      context.read<LibraryArticlesCubit>().refresh(),
+                  child: EmptyStateWidget(
+                    image: AppImages.noData,
+                    message: AppStrings.libraryNoItems.tr(),
+                  ),
                 );
 
               case LibraryArticlesStatus.success:
@@ -114,7 +121,8 @@ class _LibraryArticlesViewState extends State<_LibraryArticlesView> {
                       if (index >= state.articles.length) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(
-                              vertical: AppDimensions.paddingMedium),
+                            vertical: AppDimensions.paddingMedium,
+                          ),
                           child: Center(
                             child: SizedBox(
                               width: 24,

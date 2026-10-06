@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../fatures/auth/data/models/user_model.dart';
+import 'constants.dart' show lang;
 
 class SharedPrefHelper {
   static const String _tokenKey          = 'auth_token';
@@ -29,7 +30,10 @@ class SharedPrefHelper {
   }
 
   // ── Language ──────────────────────────────────────────────────
+  /// Saves the chosen language and applies it to the API `Accept-Language`
+  /// header right away, so requests made after switching use it.
   static Future<void> saveLng(String val) async {
+    lang = val;
     await _prefs.setString(_lngKey, val);
   }
 

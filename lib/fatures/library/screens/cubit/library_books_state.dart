@@ -1,11 +1,17 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/cubit/library_books_state.dart
 // ============================================
 
 part of 'library_books_cubit.dart';
 
-enum LibraryBooksStatus { initial, loading, loadingMore, success, empty, failure }
+enum LibraryBooksStatus {
+  initial,
+  loading,
+  loadingMore,
+  success,
+  empty,
+  failure,
+}
 
 class LibraryBooksState extends Equatable {
   final LibraryBooksStatus status;

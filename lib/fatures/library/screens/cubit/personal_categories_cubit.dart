@@ -17,31 +17,48 @@ class PersonalCategoriesCubit extends Cubit<PersonalCategoriesState> {
   /// With a [type], loads that type's category list; without one, loads the
   /// per-type counts shown on the Categories tab.
   PersonalCategoriesCubit(this.dataSource, {this.type})
-      : super(const PersonalCategoriesState());
+    : super(const PersonalCategoriesState());
 
-  Future<void> load() async {
-    emit(state.copyWith(status: PersonalCategoriesStatus.loading, error: null));
+  Future<void> load() => _fetch();
+
+  /// Pull-to-refresh: keeps the current data on screen while re-fetching.
+  Future<void> refresh() => _fetch(silent: true);
+
+  Future<void> _fetch({bool silent = false}) async {
+    if (!silent) {
+      emit(
+        state.copyWith(status: PersonalCategoriesStatus.loading, error: null),
+      );
+    }
     try {
       if (type == null) {
         final counts = await dataSource.getPersonalCategoryCounts();
-        emit(state.copyWith(
-          status: PersonalCategoriesStatus.success,
-          counts: counts,
-        ));
+        emit(
+          state.copyWith(
+            status: PersonalCategoriesStatus.success,
+            counts: counts,
+          ),
+        );
       } else {
         final items = await dataSource.getPersonalCategories(type!);
-        emit(state.copyWith(
-          status: items.isEmpty
-              ? PersonalCategoriesStatus.empty
-              : PersonalCategoriesStatus.success,
-          categories: items,
-        ));
+        emit(
+          state.copyWith(
+            status: items.isEmpty
+                ? PersonalCategoriesStatus.empty
+                : PersonalCategoriesStatus.success,
+            categories: items,
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        status: PersonalCategoriesStatus.failure,
-        error: e.toString(),
-      ));
+      // A failed pull-to-refresh keeps the data already on screen.
+      if (silent && state.status == PersonalCategoriesStatus.success) return;
+      emit(
+        state.copyWith(
+          status: PersonalCategoriesStatus.failure,
+          error: e.toString(),
+        ),
+      );
     }
   }
 }

@@ -7,6 +7,7 @@ import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/widgets/issues_filter.dart';
 
+import '../models/archive_year_model.dart';
 import '../models/issue_detail_model.dart';
 import '../models/issues_response.dart';
 
@@ -17,6 +18,12 @@ abstract class IssuesRemoteDataSource {
   });
 
   Future<IssueDetailModel> getIssueDetails(String id);
+
+  /// GET /public/issues/archive-years?page=&per_page=
+  Future<ArchiveYearsResponse> getArchiveYears({
+    required int page,
+    int perPage = 15,
+  });
 }
 
 class IssuesRemoteDataSourceImpl implements IssuesRemoteDataSource {
@@ -50,5 +57,22 @@ class IssuesRemoteDataSourceImpl implements IssuesRemoteDataSource {
       return IssueDetailModel.fromJson(data);
     }
     throw AppStrings.errorInvalidResponse.tr();
+  }
+
+  @override
+  Future<ArchiveYearsResponse> getArchiveYears({
+    required int page,
+    int perPage = 15,
+  }) async {
+    final response = await _api.get(
+      ApiConstants.issuesArchiveYears,
+      queryParameters: {'page': page, 'per_page': perPage},
+    );
+
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return ArchiveYearsResponse.fromData(data);
+    }
+    return ArchiveYearsResponse.fromData(const {});
   }
 }

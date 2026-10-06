@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/screens/library_documents_screen.dart
 // ============================================
@@ -18,8 +17,7 @@ class LibraryDocumentsScreen extends StatefulWidget {
   const LibraryDocumentsScreen({super.key});
 
   @override
-  State<LibraryDocumentsScreen> createState() =>
-      _LibraryDocumentsScreenState();
+  State<LibraryDocumentsScreen> createState() => _LibraryDocumentsScreenState();
 }
 
 class _LibraryDocumentsScreenState extends State<LibraryDocumentsScreen> {

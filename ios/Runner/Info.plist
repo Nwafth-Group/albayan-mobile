@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Albayan uses the microphone so you can search inside a book by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Albayan uses speech recognition to turn your voice into a search inside the book.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>whatsapp</string>
+	</array>
 </dict>
 </plist>

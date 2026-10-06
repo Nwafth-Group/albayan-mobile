@@ -17,13 +17,29 @@ class LibraryBookModel {
   /// Reading progress, 0.0 (not started) to 1.0 (finished).
   final double progress;
 
+  /// Readable PDF (`file_url`) — the full book for an owned title.
+  final String? fileUrl;
+  final String? fileType;
+
   const LibraryBookModel({
     required this.id,
     required this.title,
     required this.author,
     this.cover,
     this.progress = 0,
+    this.fileUrl,
+    this.fileType,
   });
+
+  LibraryBookModel copyWith({double? progress}) => LibraryBookModel(
+        id: id,
+        title: title,
+        author: author,
+        cover: cover,
+        progress: progress ?? this.progress,
+        fileUrl: fileUrl,
+        fileType: fileType,
+      );
 
   /// Parses one item of `GET /reader/my-library/books`.
   factory LibraryBookModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +55,10 @@ class LibraryBookModel {
       progress: (json['progress'] is num)
           ? (json['progress'] as num).toDouble()
           : double.tryParse(json['progress']?.toString() ?? '') ?? 0,
+      fileUrl: (json['file_url']?.toString().trim().isEmpty ?? true)
+          ? null
+          : json['file_url'].toString().trim(),
+      fileType: json['file_type']?.toString(),
     );
   }
 }
