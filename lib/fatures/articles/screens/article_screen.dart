@@ -13,6 +13,7 @@ import '../../../widgets/custom_button.dart';
 import '../../../widgets/detail_hero.dart';
 import '../../../widgets/detail_tabs.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/web_view_screen.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/articles_remote_data_source.dart';
@@ -196,7 +197,16 @@ class _ArticleViewState extends State<_ArticleView>
         DetailCircleAction(
           asset: AppImages.openBook,
           onTap: () {
-            /* TODO: open reader */
+            final url = article.url;
+            if (url == null || url.isEmpty) {
+              Helpers.showError(AppStrings.somethingWentWrong.tr());
+              return;
+            }
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => WebViewScreen(url: url, title: article.title),
+              ),
+            );
           },
         ),
         const SizedBox(width: AppDimensions.paddingSmall),

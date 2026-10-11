@@ -106,6 +106,7 @@ class _SettingsBody extends StatelessWidget {
           title: AppStrings.settingsTitle.tr(),
           showBack: onBack != null,
           onBack: onBack,
+          centerTitle: true,
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),

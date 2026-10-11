@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../../favorites/screens/favorites_tab.dart';
@@ -61,6 +62,14 @@ class _LibraryViewState extends State<_LibraryView> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        showBack: false,
+        centerTitle: true,
+        title: AppStrings.libraryTitle.tr(),
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w500,
+      ),
       body: SafeArea(
         child: Column(
           children: [

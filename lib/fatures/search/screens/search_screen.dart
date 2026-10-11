@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_icon.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
@@ -83,6 +84,14 @@ class _SearchViewState extends State<_SearchView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        showBack: false,
+        centerTitle: true,
+        title: AppStrings.search.tr(),
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w500,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,

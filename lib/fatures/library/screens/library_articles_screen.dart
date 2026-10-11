@@ -11,6 +11,7 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../../widgets/web_view_screen.dart';
 import '../data/datasource/library_remote_data_source.dart';
 import 'cubit/library_articles_cubit.dart';
 import 'widgets/library_article_card.dart';
@@ -138,6 +139,18 @@ class _LibraryArticlesViewState extends State<_LibraryArticlesView> {
                       final article = state.articles[index];
                       return LibraryArticleCard(
                         article: article,
+                        onTap: () {
+                          final url = article.url;
+                          if (url == null || url.isEmpty) return;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => WebViewScreen(
+                                url: url,
+                                title: article.title,
+                              ),
+                            ),
+                          );
+                        },
                         onDelete: () => context
                             .read<LibraryArticlesCubit>()
                             .remove(article.id),

@@ -23,6 +23,7 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final List<Widget> actions;
   final bool showBack;
+  final bool centerTitle;
 
   const SettingsAppBar({
     super.key,
@@ -30,6 +31,7 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.actions = const [],
     this.showBack = true,
+    this.centerTitle = false,
   });
 
   @override
@@ -54,6 +56,7 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
           color: AppColors.textPrimary,
         ),
       ),
+      centerTitle: centerTitle,
       actions: [...actions, const SizedBox(width: 8)],
     );
   }

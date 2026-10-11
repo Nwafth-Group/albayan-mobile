@@ -35,6 +35,7 @@ class ArticleModel {
   final String title;
   final String? subtitle;
   final String? summary;
+  final String? url;
   final String? image;
   final AuthorModel? author;
   final ArticleCornerRef? corner;
@@ -54,6 +55,7 @@ class ArticleModel {
     required this.title,
     required this.subtitle,
     required this.summary,
+    required this.url,
     required this.image,
     required this.author,
     required this.corner,
@@ -92,6 +94,7 @@ class ArticleModel {
       title: json['title']?.toString() ?? '',
       subtitle: json['subtitle']?.toString(),
       summary: json['summary']?.toString(),
+      url: json['url']?.toString(),
       image: json['image']?.toString(),
       author: json['author'] is Map<String, dynamic>
           ? AuthorModel.fromJson(json['author'])
@@ -126,6 +129,7 @@ class ArticleModel {
       title: title,
       subtitle: subtitle,
       summary: summary,
+      url: url,
       image: image,
       author: author,
       corner: corner,

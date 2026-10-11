@@ -14,6 +14,9 @@ class LibraryArticleModel {
   final String title;
   final String author;
   final String? image;
+
+  /// Web page of the article's readable content, opened in the in-app reader.
+  final String? url;
   final double rate;
   final DateTime date;
 
@@ -23,6 +26,7 @@ class LibraryArticleModel {
     required this.title,
     required this.author,
     this.image,
+    this.url,
     required this.rate,
     required this.date,
   });
@@ -40,6 +44,7 @@ class LibraryArticleModel {
           : (rawAuthor?.toString() ?? ''),
       image: (json['image'] ?? json['cover_image'] ?? json['cover'])
           ?.toString(),
+      url: json['url']?.toString(),
       rate: (json['rate'] is num)
           ? (json['rate'] as num).toDouble()
           : double.tryParse(json['rate']?.toString() ?? '') ?? 0,

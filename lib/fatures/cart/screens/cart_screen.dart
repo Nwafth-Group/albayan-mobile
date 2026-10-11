@@ -112,14 +112,15 @@ class _CartViewState extends State<_CartView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: widget.showAppBar
-          ? CustomAppBar(
-              title: AppStrings.myCart.tr(),
-              color: AppColors.textPrimary,
-              titleFontSize: AppDimensions.fontSizeXLarge,
-              titleFontWeight: FontWeight.w500,
-            )
-          : null,
+      appBar: CustomAppBar(
+        // As the bottom-nav tab there is nothing to pop, so hide the back arrow.
+        showBack: widget.showAppBar,
+        centerTitle: true,
+        title: AppStrings.myCart.tr(),
+        color: AppColors.textPrimary,
+        titleFontSize: AppDimensions.fontSizeXLarge,
+        titleFontWeight: FontWeight.w500,
+      ),
       body: BlocBuilder<CartCubit, CartState>(
         builder: (context, state) {
           switch (state.status) {

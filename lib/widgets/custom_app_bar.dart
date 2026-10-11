@@ -9,6 +9,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double titleFontSize;
   final FontWeight titleFontWeight;
   final List<Widget> actions;
+  final bool centerTitle;
 
   const CustomAppBar({
     Key? key,
@@ -18,6 +19,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleFontSize = 16,
     this.titleFontWeight = FontWeight.bold,
     this.actions = const [],
+    this.centerTitle = false,
   }) : super(key: key);
 
   @override
@@ -25,10 +27,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: color),
-          onPressed: () => AppNavigator.pop(),
-        ),
+        leading: showBack
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: color),
+                onPressed: () => AppNavigator.pop(),
+              )
+            : null,
+        automaticallyImplyLeading: showBack,
         title: title.isNotEmpty?Text(
           title,
           maxLines: 1,
@@ -38,7 +43,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             fontWeight: titleFontWeight,
             color: color,
           ),
-        ):null, actions: actions
+        ):null,
+        centerTitle: centerTitle,
+        actions: actions
     );
   }
 
