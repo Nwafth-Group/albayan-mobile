@@ -18,12 +18,18 @@ class ReaderBook {
   /// A free preview (`file_type: free`) rather than the full book.
   final bool isSample;
 
+  /// The book/book-version UUID as the backend knows it (no `_free`/`_paid`
+  /// suffix) — what the `/reader/my-library/books/sync` API expects as
+  /// `my_books[].id`. Falls back to [id] when not set explicitly.
+  final String apiBookId;
+
   const ReaderBook({
     required this.id,
     required this.title,
     required this.pdfUrl,
     this.isSample = false,
-  });
+    String? apiBookId,
+  }) : apiBookId = apiBookId ?? id;
 
   /// From an API book's `file_url` / `file_type`. The sample and the full
   /// book get different ids, so each keeps its own progress and bookmarks.
@@ -38,6 +44,7 @@ class ReaderBook {
     final type = fileType ?? 'paid';
     return ReaderBook(
       id: '${id}_$type',
+      apiBookId: id,
       title: title,
       pdfUrl: fileUrl.trim(),
       isSample: type == 'free',
@@ -61,6 +68,9 @@ class ReaderBookmark {
         createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
             DateTime.now(),
       );
+
+  /// Shape expected by `my_books[].bookmarks[]` on the sync endpoint.
+  Map<String, dynamic> toSyncJson() => {'page': page};
 }
 
 class ReaderHighlight {
@@ -90,6 +100,21 @@ class ReaderHighlight {
             .map((e) => (e as num).toDouble())
             .toList(),
       );
+
+  /// Shape expected by `my_books[].highlights[]` on the sync endpoint:
+  /// `bounds` as `{x, y, width, height}` rather than the local LTRB list.
+  Map<String, dynamic> toSyncJson() => {
+        'page': page,
+        'text': text,
+        'bounds': bounds.length == 4
+            ? {
+                'x': bounds[0],
+                'y': bounds[1],
+                'width': bounds[2] - bounds[0],
+                'height': bounds[3] - bounds[1],
+              }
+            : null,
+      };
 }
 
 /// Everything remembered locally for one book.
@@ -125,6 +150,44 @@ class ReaderProgress {
             .map(ReaderHighlight.fromJson)
             .toList(),
       );
+}
+
+// ── POST /reader/my-library/books/sync request body ──────────
+
+/// One `my_books[]` entry: a book's reading progress, highlights and
+/// bookmarks as the sync endpoint expects them. Built from a [ReaderBook]
+/// and its locally-saved [ReaderProgress].
+class BookSyncItem {
+  final String id;
+  final int currentPage;
+  final int? totalPages;
+  final List<ReaderHighlight> highlights;
+  final List<ReaderBookmark> bookmarks;
+
+  const BookSyncItem({
+    required this.id,
+    required this.currentPage,
+    this.totalPages,
+    this.highlights = const [],
+    this.bookmarks = const [],
+  });
+
+  factory BookSyncItem.fromBook(ReaderBook book, ReaderProgress progress) =>
+      BookSyncItem(
+        id: book.apiBookId,
+        currentPage: progress.lastPage,
+        totalPages: progress.totalPages > 0 ? progress.totalPages : null,
+        highlights: progress.highlights,
+        bookmarks: progress.bookmarks,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'current_page': currentPage,
+        if (totalPages != null) 'total_pages': totalPages,
+        'highlights': highlights.map((h) => h.toSyncJson()).toList(),
+        'bookmarks': bookmarks.map((b) => b.toSyncJson()).toList(),
+      };
 }
 
 /// Viewer preferences shared by every book.

@@ -69,6 +69,17 @@ class LoginOtpRequired extends AuthState {
   List<Object?> get props => [mobileNumber];
 }
 
+// ── Google Login ──────────────────────────────────────────────
+class GoogleLoginLoading extends AuthState {
+  const GoogleLoginLoading();
+}
+
+/// User closed the Google account picker / cancelled the flow —
+/// not a real error, so the UI should stay silent.
+class GoogleLoginCancelled extends AuthState {
+  const GoogleLoginCancelled();
+}
+
 // ── Register ──────────────────────────────────────────────────
 class RegisterLoading extends AuthState {
   const RegisterLoading();

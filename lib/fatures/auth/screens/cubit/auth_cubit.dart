@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/data/models/user_model.dart';
+import 'package:albayan/utils/google_auth_helper.dart';
 import 'package:albayan/utils/shared_pref_helper.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_state.dart';
@@ -51,6 +52,20 @@ class AuthCubit extends Cubit<AuthState> {
         mobileNumber: mobileNumber,
       );
       await _handleAuthResponse(response, mobileNumber: mobileNumber);
+    } catch (e) {
+      emit(LoginError(e.toString()));
+    }
+  }
+
+  // ── Login (Google) ─────────────────────────────────────────────
+  Future<void> loginWithGoogle() async {
+    emit(const GoogleLoginLoading());
+    try {
+      final idToken = await GoogleAuthHelper.signIn();
+      final response = await _dataSource.loginWithGoogle(idToken: idToken);
+      await _handleAuthResponse(response);
+    } on GoogleSignInCancelledException {
+      emit(const GoogleLoginCancelled());
     } catch (e) {
       emit(LoginError(e.toString()));
     }
@@ -237,10 +252,12 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       await _dataSource.logout();
       await SharedPrefHelper.logout();
+      await GoogleAuthHelper.signOut();
       emit(const LogoutSuccess());
     } catch (e) {
       // Even if the API call fails, clear local data and log out
       await SharedPrefHelper.logout();
+      await GoogleAuthHelper.signOut();
       emit(const LogoutSuccess());
     }
   }

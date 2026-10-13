@@ -230,30 +230,45 @@ class _LoginBodyState extends State<_LoginBody>
                   const SizedBox(height: 20),
 
                   // Social buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SocialButton(
-                          icon: Image.asset(AppImages.appleIcon,
-                              height: 22, fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.apple, size: 22)),
-                          label: AppStrings.continueWithApple.tr(),
-                          onTap: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _SocialButton(
-                          icon: Image.asset(AppImages.googleIcon,
-                              height: 22, fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.g_mobiledata, size: 22)),
-                          label: AppStrings.continueWithGoogle.tr(),
-                          onTap: () {},
-                        ),
-                      ),
-                    ],
+                  BlocBuilder<AuthCubit, AuthState>(
+                    buildWhen: (_, s) =>
+                        s is GoogleLoginLoading ||
+                        s is GoogleLoginCancelled ||
+                        s is LoginSuccess ||
+                        s is LoginError,
+                    builder: (context, state) {
+                      final isGoogleLoading = state is GoogleLoginLoading;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Image.asset(AppImages.appleIcon,
+                                  height: 22, fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.apple, size: 22)),
+                              label: AppStrings.continueWithApple.tr(),
+                              onTap: () {},
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Image.asset(AppImages.googleIcon,
+                                  height: 22, fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.g_mobiledata, size: 22)),
+                              label: AppStrings.continueWithGoogle.tr(),
+                              isLoading: isGoogleLoading,
+                              onTap: isGoogleLoading
+                                  ? null
+                                  : () => context
+                                      .read<AuthCubit>()
+                                      .loginWithGoogle(),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
 
@@ -847,9 +862,14 @@ class _OrDivider extends StatelessWidget {
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
-  final VoidCallback onTap;
-  const _SocialButton(
-      {required this.icon, required this.label, required this.onTap});
+  final VoidCallback? onTap;
+  final bool isLoading;
+  const _SocialButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -862,17 +882,26 @@ class _SocialButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          icon,
-          const SizedBox(width: 5),
-          Flexible(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary),
-                  overflow: TextOverflow.ellipsis)),
-        ]),
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary),
+                ),
+              )
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                icon,
+                const SizedBox(width: 5),
+                Flexible(
+                    child: Text(label,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary),
+                        overflow: TextOverflow.ellipsis)),
+              ]),
       ),
     );
   }

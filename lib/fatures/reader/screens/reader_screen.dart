@@ -26,9 +26,11 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../data/datasource/reader_remote_datasource.dart';
 import '../data/models/reader_models.dart';
 import '../data/reader_local_storage.dart';
 import '../data/reader_page_tools.dart';
@@ -52,7 +54,11 @@ class ReaderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ReaderCubit(ReaderLocalStorageImpl(), book: book)..load(),
+      create: (_) => ReaderCubit(
+        ReaderLocalStorageImpl(),
+        ReaderRemoteDataSourceImpl(ApiService()),
+        book: book,
+      )..load(),
       child: _ReaderView(book: book),
     );
   }

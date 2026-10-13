@@ -139,6 +139,15 @@ class AuthRemoteDataSource {
     });
   }
 
+  // ── Login (Google) ────────────────────────────────────────────
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+  }) async {
+    return _api.post(ApiConstants.googleAuth, data: {
+      'id_token': idToken,
+    });
+  }
+
   // ── Get Profile ───────────────────────────────────────────────
   Future<Map<String, dynamic>> getProfile() async {
     return _api.get(ApiConstants.profile);

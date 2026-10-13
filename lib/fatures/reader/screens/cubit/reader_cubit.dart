@@ -2,6 +2,7 @@
 // FILE: lib/fatures/reader/screens/cubit/reader_cubit.dart
 // ============================================
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../utils/constants.dart';
 
+import '../../data/datasource/reader_remote_datasource.dart';
 import '../../data/models/reader_models.dart';
 import '../../data/reader_local_storage.dart';
 
@@ -18,11 +20,13 @@ part 'reader_state.dart';
 
 class ReaderCubit extends Cubit<ReaderState> {
   final ReaderLocalStorage storage;
+  final ReaderRemoteDataSource remote;
   final ReaderBook book;
 
   CancelToken? _downloadToken;
+  Timer? _syncDebounce;
 
-  ReaderCubit(this.storage, {required this.book})
+  ReaderCubit(this.storage, this.remote, {required this.book})
       : super(const ReaderState());
 
   /// Loads saved progress + settings, then the PDF (downloading if needed).
@@ -160,21 +164,46 @@ class ReaderCubit extends Cubit<ReaderState> {
     storage.saveSettings(settings);
   }
 
-  void _save() {
-    storage.saveProgress(
-      book.id,
-      ReaderProgress(
+  ReaderProgress get _currentProgress => ReaderProgress(
         lastPage: state.currentPage,
         totalPages: state.totalPages,
         bookmarks: state.bookmarks,
         highlights: state.highlights,
-      ),
-    );
+      );
+
+  void _save() {
+    storage.saveProgress(book.id, _currentProgress);
+    _scheduleSync();
+  }
+
+  /// Pushes the current page, bookmarks and highlights to the backend a
+  /// short while after the last change, so rapid page turns coalesce into
+  /// one request instead of one per page.
+  ///
+  /// Only for books the reader owns: the sync endpoint requires the id to be
+  /// in the user's library, which a free sample (opened without owning the
+  /// book) never is — syncing it would just surface an API error.
+  void _scheduleSync() {
+    if (book.isSample) return;
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(seconds: 2), _syncNow);
+  }
+
+  Future<void> _syncNow() async {
+    try {
+      await remote.syncBooks([BookSyncItem.fromBook(book, _currentProgress)]);
+      readerLog('✔ synced reading progress to server');
+    } catch (e, st) {
+      readerLog('✖ sync failed: $e', error: e, stackTrace: st);
+    }
   }
 
   @override
   Future<void> close() {
     _downloadToken?.cancel();
+    final pending = _syncDebounce?.isActive ?? false;
+    _syncDebounce?.cancel();
+    if (pending) unawaited(_syncNow());
     return super.close();
   }
 }

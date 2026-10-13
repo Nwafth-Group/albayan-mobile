@@ -56,7 +56,6 @@ class DefaultFirebaseOptions {
     projectId: 'albayan-e-2026-5e885',
     storageBucket: 'albayan-e-2026-5e885.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAGJYwHIHRHkTyHseaRRu2nYDHJf3Sj2RY',
     appId: '1:842051961964:ios:bdc862564e8eeec4b40449',

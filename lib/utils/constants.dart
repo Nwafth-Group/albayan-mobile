@@ -4,6 +4,19 @@
 
 import 'package:flutter/material.dart';
 
+// Social Auth Configuration
+class SocialAuthConfig {
+  /// The "Web client (auto created by Google Service)" OAuth client ID from
+  /// Firebase Console → Project settings → Your apps → (scroll to) the
+  /// auto-generated Web client, OR Google Cloud Console → APIs & Services →
+  /// Credentials → OAuth 2.0 Client IDs → type "Web application".
+  /// Required on Android so Google Sign-In can mint a Firebase-verifiable
+  /// ID token. Only appears after an Android app's SHA-1 fingerprint has
+  /// been registered in Firebase (see setup steps provided separately).
+  static const String googleServerClientId =
+      'TODO_REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com';
+}
+
 // API Constants
 class ApiConstants {
   static String get baseUrl => 'http://3.70.168.206/api/v1';
@@ -26,6 +39,9 @@ class ApiConstants {
   static const String verifyForgotPasswordOtp =
       '/reader/auth/verify-forgot-password-otp';
   static const String resetPassword = '/reader/auth/reset-password';
+
+  // Social Auth
+  static const String googleAuth = '/reader/auth/google';
 
   // Issues Endpoints
   static const String issues = '/public/issues';
@@ -55,6 +71,7 @@ class ApiConstants {
   // Reader's Library Endpoints
   static const String myLibrary = '/reader/my-library';
   static const String myLibraryBooks = '/reader/my-library/books';
+  static const String myLibraryBooksSync = '/reader/my-library/books/sync';
   static const String myLibraryMagazineIssues =
       '/reader/my-library/magazine/issues';
   static const String myLibraryMagazineArticles =
