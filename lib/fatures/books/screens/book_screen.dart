@@ -368,7 +368,11 @@ class _BookViewState extends State<_BookView>
                       text: AppStrings.gift.tr(),
                       isOutlined: true,
                       textColor: AppColors.primary,
-                      onPressed: () {/* TODO: gift */},
+                      isLoading: isAddingGift,
+                      onPressed: () => addGiftToCart(
+                        type: CartItemType.book,
+                        id: book.id,
+                      ),
                     ),
                   ),
                 ],

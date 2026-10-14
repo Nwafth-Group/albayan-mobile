@@ -70,6 +70,7 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<void> removeItem(String cartItemId) async {
     await _api.delete('${ApiConstants.cartItems}/$cartItemId');
+    CartEvents.notifyChanged();
   }
 
   @override
@@ -89,6 +90,7 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
       data: {'payment_method': paymentMethod.apiValue},
     );
     final data = response['data'];
+    CartEvents.notifyChanged();
     if (data is Map<String, dynamic>) {
       return CheckoutOrderModel.fromJson(data);
     }

@@ -62,6 +62,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '842051961964',
     projectId: 'albayan-e-2026-5e885',
     storageBucket: 'albayan-e-2026-5e885.firebasestorage.app',
+    androidClientId: '842051961964-st82vik6hih73g32naav8hvkck9and0n.apps.googleusercontent.com',
+    iosClientId: '842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0.apps.googleusercontent.com',
     iosBundleId: 'com.example.albayan',
   );
 }

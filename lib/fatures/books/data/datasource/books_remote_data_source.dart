@@ -106,7 +106,7 @@ class BooksRemoteDataSourceImpl implements BooksRemoteDataSource {
     String? comment,
   }) async {
     await _api.post(
-      '${ApiConstants.books}/$id/comments',
+      '${ApiConstants.books}/$id/rate-comment',
       data: {
         'rating': rating,
         if (comment != null && comment.trim().isNotEmpty)

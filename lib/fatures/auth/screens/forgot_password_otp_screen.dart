@@ -129,7 +129,7 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultTheme = PinTheme(
+    final baseTheme = PinTheme(
       width: 56,
       height: 56,
       textStyle: const TextStyle(
@@ -232,44 +232,58 @@ class _ForgotPasswordOtpScreenState extends State<ForgotPasswordOtpScreen> {
                       const SizedBox(height: 32),
 
                       // Pinput
-                      Pinput(
-                        length: 5,
-                        controller: _pinController,
-                        focusNode: _focusNode,
-                        keyboardType: TextInputType.none,
-                        defaultPinTheme: defaultTheme,
-                        focusedPinTheme: defaultTheme.copyDecorationWith(
-                          border: Border.all(
-                              color: AppColors.primary, width: 2),
-                        ),
-                        submittedPinTheme: defaultTheme.copyDecorationWith(
-                          border: Border.all(
-                              color: AppColors.primary, width: 1.5),
-                          color: AppColors.cardColor,
-                        ),
-                        errorPinTheme: defaultTheme.copyDecorationWith(
-                          border: Border.all(
-                              color: AppColors.error, width: 1.5),
-                        ),
-                        forceErrorState: _hasError,
-                        showCursor: true,
-                        cursor: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              width: 20,
-                              height: 2,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(2),
+                      // Full width: equal boxes spread edge to edge.
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final box = ((constraints.maxWidth - 4 * 10) / 5)
+                              .clamp(44.0, 64.0);
+                          final defaultTheme =
+                              baseTheme.copyWith(width: box, height: box);
+                          return SizedBox(
+                            width: double.infinity,
+                            child:
+                            Pinput(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              length: 5,
+                              controller: _pinController,
+                              focusNode: _focusNode,
+                              keyboardType: TextInputType.none,
+                              defaultPinTheme: defaultTheme,
+                              focusedPinTheme: defaultTheme.copyDecorationWith(
+                                border: Border.all(
+                                    color: AppColors.primary, width: 2),
                               ),
+                              submittedPinTheme: defaultTheme.copyDecorationWith(
+                                border: Border.all(
+                                    color: AppColors.primary, width: 1.5),
+                                color: AppColors.cardColor,
+                              ),
+                              errorPinTheme: defaultTheme.copyDecorationWith(
+                                border: Border.all(
+                                    color: AppColors.error, width: 1.5),
+                              ),
+                              forceErrorState: _hasError,
+                              showCursor: true,
+                              cursor: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    width: 20,
+                                    height: 2,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onChanged: (_) =>
+                                  setState(() => _hasError = false),
+                              onCompleted: (_) => _onSubmit(),
                             ),
-                          ],
-                        ),
-                        onChanged: (_) =>
-                            setState(() => _hasError = false),
-                        onCompleted: (_) => _onSubmit(),
+                          );
+                        },
                       ),
 
                       if (_hasError) ...[

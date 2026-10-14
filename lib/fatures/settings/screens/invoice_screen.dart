@@ -4,87 +4,169 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../utils/api_client.dart';
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/empty_state_widget.dart';
+import '../../../widgets/loading_widget.dart';
+import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
+import 'cubit/invoice_cubit.dart';
+import 'invoice_pdf_screen.dart';
 import 'widgets/settings_widgets.dart';
 
+/// Shared "View Invoice" screen — opened from anywhere with just an
+/// [orderId]; it fetches `GET /reader/orders/{id}/invoice` itself rather
+/// than relying on the caller already having a full [OrderModel] loaded.
 class InvoiceScreen extends StatelessWidget {
-  final OrderModel order;
-  const InvoiceScreen({super.key, required this.order});
+  final String orderId;
+  const InvoiceScreen({super.key, required this.orderId});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => InvoiceCubit(
+        SettingsRemoteDataSourceImpl(ApiService()),
+        orderId: orderId,
+        languageCode: context.locale.languageCode,
+      )..load(),
+      child: const _InvoiceView(),
+    );
+  }
+}
+
+class _InvoiceView extends StatelessWidget {
+  const _InvoiceView();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const SettingsAppBar(title: ''),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: settingsCard(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _Header(order: order),
-                const SizedBox(height: 10),
-                const _DotDivider(),
-                const SizedBox(height: 12),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _InfoBox(
-                          icon: HugeIcons.strokeRoundedStore01,
-                          title: AppStrings.sellerInformation.tr(),
-                          lines: [
-                            (AppStrings.companyName.tr(), order.sellerName),
-                            (AppStrings.addressLabel.tr(), order.sellerAddress),
-                            (AppStrings.mobileNumber.tr(), order.sellerMobile),
-                            (AppStrings.taxNumber.tr(), order.sellerTaxNumber),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _InfoBox(
-                          icon: HugeIcons.strokeRoundedUserCircle,
-                          title: AppStrings.customerInformation.tr(),
-                          lines: [
-                            (AppStrings.customerName.tr(), order.customerName),
-                            if (order.customerAddress != null)
-                              (
-                                AppStrings.addressLabel.tr(),
-                                order.customerAddress!,
-                              ),
-                            if (order.customerMobile != null)
-                              (
-                                AppStrings.mobileNumber.tr(),
-                                order.customerMobile!,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
+      appBar: SettingsAppBar(
+        title: '',
+        actions: [
+          BlocBuilder<InvoiceCubit, InvoiceState>(
+            builder: (context, state) {
+              final order = state.order;
+              if (order == null) return const SizedBox.shrink();
+              return IconButton(
+                onPressed: () => AppNavigator.push(
+                  InvoicePdfScreen(
+                    orderId: order.id,
+                    invoiceNumber: order.invoiceNumber,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _Strip(order: order),
-                const SizedBox(height: 12),
-                _ItemsTable(items: order.items),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: _Totals(order: order),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDownload04,
+                  color: AppColors.primary,
+                  size: 22,
                 ),
-              ],
-            ),
+              );
+            },
           ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: BlocBuilder<InvoiceCubit, InvoiceState>(
+          builder: (context, state) {
+            switch (state.status) {
+              case InvoiceStatus.loading:
+                return const LoadingIndicator();
+              case InvoiceStatus.failure:
+                return EmptyStateWidget(
+                  icon: Icons.wifi_off_rounded,
+                  message: AppStrings.somethingWentWrong.tr(),
+                  message2: state.error,
+                  actionText: AppStrings.retry.tr(),
+                  onAction: () => context.read<InvoiceCubit>().load(),
+                );
+              case InvoiceStatus.success:
+                return _InvoiceBody(order: state.order!);
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _InvoiceBody extends StatelessWidget {
+  final OrderModel order;
+  const _InvoiceBody({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: settingsCard(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Header(order: order),
+            const SizedBox(height: 10),
+            const _DotDivider(),
+            const SizedBox(height: 12),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _InfoBox(
+                      icon: HugeIcons.strokeRoundedStore01,
+                      title: AppStrings.sellerInformation.tr(),
+                      lines: [
+                        (AppStrings.companyName.tr(), order.sellerName),
+                        (AppStrings.addressLabel.tr(), order.sellerAddress),
+                        if (order.sellerMobile != null)
+                          (AppStrings.mobileNumber.tr(), order.sellerMobile!),
+                        (AppStrings.taxNumber.tr(), order.sellerTaxNumber),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _InfoBox(
+                      icon: HugeIcons.strokeRoundedUserCircle,
+                      title: AppStrings.customerInformation.tr(),
+                      lines: [
+                        (AppStrings.customerName.tr(), order.customerName),
+                        if (order.customerEmail != null)
+                          (AppStrings.labelEmail.tr(), order.customerEmail!),
+                        if (order.customerAddress != null)
+                          (
+                            AppStrings.addressLabel.tr(),
+                            order.customerAddress!,
+                          ),
+                        if (order.customerMobile != null)
+                          (
+                            AppStrings.mobileNumber.tr(),
+                            order.customerMobile!,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _Strip(order: order),
+            if (order.items.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _ItemsTable(items: order.items),
+            ],
+            const SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: _Totals(order: order),
+            ),
+          ],
         ),
       ),
     );
@@ -209,16 +291,17 @@ class _InfoBox extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           for (final (label, value) in lines)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 12, bottom: 2),
-              child: Text(
-                '$label: $value',
-                style: const TextStyle(
-                  fontSize: 7,
-                  color: AppColors.textPrimary,
+            if (value.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12, bottom: 2),
+                child: Text(
+                  '$label: $value',
+                  style: const TextStyle(
+                    fontSize: 7,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-            ),
         ],
       ),
     );
@@ -336,7 +419,8 @@ class _ItemsTable extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(items[i].price.toStringAsFixed(2), style: cell),
+              // Unit price, then the line total after discounts.
+              Text(items[i].oldPrice.toStringAsFixed(2), style: cell),
               Text(
                 settingsMoney(items[i].price),
                 style: cell,

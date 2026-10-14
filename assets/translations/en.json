@@ -152,6 +152,7 @@
   "issue_index": "Issue Index",
   "editorial_staff": "Editorial Staff",
   "read": "Read",
+  "share": "Share",
   "add_to_cart": "Add to Cart",
   "added_to_cart": "Added to cart",
   "gift": "Gift",
@@ -492,5 +493,6 @@
   "reader_voice_search": "Voice search",
   "policy_not_available": "This content is not available right now",
   "archive_year_label": "{h} H / {g} G",
-  "no_archive_years": "No archive years available"
+  "no_archive_years": "No archive years available",
+  "gift_added_to_cart": "Gift added to cart"
 }

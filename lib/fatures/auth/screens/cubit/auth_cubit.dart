@@ -246,6 +246,25 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // ── Change Password ───────────────────────────────────────────
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    emit(const ChangePasswordLoading());
+    try {
+      await _dataSource.changePassword(
+        currentPassword:         currentPassword,
+        newPassword:             newPassword,
+        newPasswordConfirmation: newPasswordConfirmation,
+      );
+      emit(const ChangePasswordSuccess());
+    } catch (e) {
+      emit(ChangePasswordError(e.toString()));
+    }
+  }
+
   // ── Logout ────────────────────────────────────────────────────
   Future<void> logout() async {
     emit(const LogoutLoading());

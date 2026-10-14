@@ -12,7 +12,20 @@
           "package_name": "com.example.albayan"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "842051961964-st82vik6hih73g32naav8hvkck9and0n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.albayan",
+            "certificate_hash": "75546aeb685b33dffce46874be78a5235969bb48"
+          }
+        },
+        {
+          "client_id": "842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBk_hbVUP_0TioOz9RUyzATbNNKkAFNl-M"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.albayan"
+              }
+            }
+          ]
         }
       }
     }

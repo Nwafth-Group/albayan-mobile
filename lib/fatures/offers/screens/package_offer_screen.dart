@@ -163,9 +163,11 @@ class _PackageOfferViewState extends State<_PackageOfferView>
                         text: AppStrings.gift.tr(),
                         isOutlined: true,
                         textColor: AppColors.primary,
-                        onPressed: () {
-                          // TODO: gift flow
-                        },
+                        isLoading: isAddingGift,
+                        onPressed: () => addGiftToCart(
+                          type: CartItemType.package,
+                          id: offer.id,
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.paddingMedium),

@@ -14,7 +14,7 @@ class SocialAuthConfig {
   /// ID token. Only appears after an Android app's SHA-1 fingerprint has
   /// been registered in Firebase (see setup steps provided separately).
   static const String googleServerClientId =
-      'TODO_REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com';
+      '842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com';
 }
 
 // API Constants
@@ -33,6 +33,7 @@ class ApiConstants {
   static const String resendOtp = '/reader/auth/resend-otp';
   static const String logout = '/reader/auth/logout';
   static const String profile = '/reader/profile';
+  static const String changePassword = '/reader/profile/change-password';
 
   // Forgot / Reset Password
   static const String forgotPassword = '/reader/auth/forgot-password';
@@ -98,6 +99,11 @@ class ApiConstants {
   static const String cartApplyCoupon = '/reader/cart/apply-coupon';
   static const String cartRemoveCoupon = '/reader/cart/remove-coupon';
   static const String cartCheckout = '/reader/cart/checkout';
+  static const String orders = '/reader/orders';
+  static String orderInvoice(String orderId) =>
+      '/reader/orders/$orderId/invoice';
+  static String orderInvoicePdf(String orderId) =>
+      '/reader/orders/$orderId/invoice/pdf';
 
   // Policies (?policy_type=terms|privacy|financial)
   static const String policies = '/public/policies';
@@ -351,8 +357,10 @@ class AppStrings {
   static const String issueIndex = 'issue_index';
   static const String editorialStaff = 'editorial_staff';
   static const String read = 'read';
+  static const String share = 'share';
   static const String addToCart = 'add_to_cart';
   static const String addedToCart = 'added_to_cart';
+  static const String giftAddedToCart = 'gift_added_to_cart';
   static const String gift = 'gift';
   static const String hijriSuffix = 'hijri_suffix';
   static const String articlesCountLabel = 'articles_count';

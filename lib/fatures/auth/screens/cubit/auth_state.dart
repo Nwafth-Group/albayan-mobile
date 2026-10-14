@@ -220,6 +220,23 @@ class ResetPasswordError extends AuthState {
   List<Object?> get props => [message];
 }
 
+// ── Change Password ───────────────────────────────────────────
+class ChangePasswordLoading extends AuthState {
+  const ChangePasswordLoading();
+}
+
+class ChangePasswordSuccess extends AuthState {
+  const ChangePasswordSuccess();
+}
+
+class ChangePasswordError extends AuthState {
+  final String message;
+  const ChangePasswordError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 // ── Logout ────────────────────────────────────────────────────
 class LogoutLoading extends AuthState {
   const LogoutLoading();

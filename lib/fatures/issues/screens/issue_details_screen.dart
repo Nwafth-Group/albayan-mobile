@@ -291,9 +291,9 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
                 text: AppStrings.gift.tr(),
                 backgroundColor: AppColors.surfaceVariant,
                 textColor: AppColors.primary,
-                onPressed: () {
-                  // TODO: gift flow
-                },
+                isLoading: isAddingGift,
+                onPressed: () =>
+                    addGiftToCart(type: CartItemType.issue, id: detail.id),
               ),
             ),
           ],

@@ -152,6 +152,7 @@
   "issue_index": "فهرس العدد",
   "editorial_staff": "هيئة التحرير",
   "read": "قراءة",
+  "share": "مشاركة",
   "add_to_cart": "أضف إلى السلة",
   "added_to_cart": "تمت الإضافة إلى السلة",
   "gift": "إهداء",
@@ -492,5 +493,6 @@
   "reader_voice_search": "البحث الصوتي",
   "policy_not_available": "هذا المحتوى غير متوفر حالياً",
   "archive_year_label": "{h} هـ / {g} م",
-  "no_archive_years": "لا توجد سنوات في الأرشيف"
+  "no_archive_years": "لا توجد سنوات في الأرشيف",
+  "gift_added_to_cart": "تمت إضافة الهدية إلى السلة"
 }

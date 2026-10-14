@@ -103,7 +103,11 @@ class _CartViewState extends State<_CartView> {
         // Captured here (this context has the BlocProvider ancestor) since
         // ConfirmOrderScreen is pushed as a separate route and can't reach
         // this tab's CartCubit on its own.
-        onCheckoutComplete: cartCubit.clearAfterCheckout,
+        onCheckoutComplete: () {
+          cartCubit.clearAfterCheckout();
+          _promoController.clear();
+          if (mounted) setState(() => _promoError = null);
+        },
       ),
     );
   }

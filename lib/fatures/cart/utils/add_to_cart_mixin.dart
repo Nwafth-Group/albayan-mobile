@@ -23,26 +23,43 @@ mixin AddToCartStateMixin<T extends StatefulWidget> on State<T> {
       CartRemoteDataSourceImpl(ApiService());
 
   bool _addingToCart = false;
+  bool _addingGift = false;
+
+  /// Spinner state for the "Add to Cart" button.
   bool get isAddingToCart => _addingToCart;
+
+  /// Spinner state for the "Gift" button.
+  bool get isAddingGift => _addingGift;
+
+  void _setBusy(bool isGift, bool value) =>
+      isGift ? _addingGift = value : _addingToCart = value;
+
+  /// Gift button: the same `POST /reader/cart/items` with `is_gift: true`.
+  Future<void> addGiftToCart({
+    required CartItemType type,
+    required String id,
+  }) => addToCart(type: type, id: id, isGift: true);
 
   Future<void> addToCart({
     required CartItemType type,
     required String id,
     bool isGift = false,
   }) async {
-    if (_addingToCart) return;
-    setState(() => _addingToCart = true);
+    if (_addingToCart || _addingGift) return;
+    setState(() => _setBusy(isGift, true));
     try {
       await _cartDataSource.addItem(
         type: type.apiValue,
         id: id,
         isGift: isGift,
       );
-      AppNavigator.showSuccessSnackBar(AppStrings.addedToCart.tr());
+      AppNavigator.showSuccessSnackBar(
+        (isGift ? AppStrings.giftAddedToCart : AppStrings.addedToCart).tr(),
+      );
     } catch (_) {
       // ApiService already surfaced the error via a snackbar.
     } finally {
-      if (mounted) setState(() => _addingToCart = false);
+      if (mounted) setState(() => _setBusy(isGift, false));
     }
   }
 }

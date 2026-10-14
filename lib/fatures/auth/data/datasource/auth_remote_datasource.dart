@@ -153,6 +153,19 @@ class AuthRemoteDataSource {
     return _api.get(ApiConstants.profile);
   }
 
+  // ── Change Password ───────────────────────────────────────────
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    return _api.post(ApiConstants.changePassword, data: {
+      'current_password':          currentPassword,
+      'new_password':              newPassword,
+      'new_password_confirmation': newPasswordConfirmation,
+    });
+  }
+
   // ── Logout ────────────────────────────────────────────────────
   Future<void> logout() async {
     await _api.post(ApiConstants.logout);

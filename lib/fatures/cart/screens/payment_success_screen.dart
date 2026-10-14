@@ -5,8 +5,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
+import '../../settings/data/models/order_model.dart';
+import '../../settings/screens/invoice_pdf_screen.dart';
+import '../../settings/screens/order_details_screen.dart';
+import '../../settings/screens/orders_screen.dart';
 import '../data/models/checkout_order_model.dart';
 import '../utils/cart_format.dart';
 
@@ -15,6 +20,24 @@ class PaymentSuccessScreen extends StatelessWidget {
   final CheckoutOrderModel order;
 
   const PaymentSuccessScreen({super.key, required this.order});
+
+  /// Opens Order Details for the order just placed (it then refreshes
+  /// itself from `GET /reader/orders/{id}`). If checkout returned no order
+  /// body, falls back to the My Order list.
+  void _viewOrder(BuildContext context) {
+    if (order.id.isEmpty) {
+      AppNavigator.push(const OrdersScreen());
+      return;
+    }
+    AppNavigator.push(
+      OrderDetailsScreen(
+        order: OrderModel.fromCheckout(
+          order,
+          languageCode: context.locale.languageCode,
+        ),
+      ),
+    );
+  }
 
   List<(String, String)> get _details {
     final invoiceNumber = order.invoice?.invoiceNumber ?? '';
@@ -126,10 +149,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   Expanded(
                     child: CustomButton(
                       text: AppStrings.viewOrder.tr(),
-                      onPressed: () {
-                        // TODO: navigate to a real order-details/library
-                        // screen once orders are backed by a real API.
-                      },
+                      onPressed: () => _viewOrder(context),
                     ),
                   ),
                 ],
@@ -141,10 +161,15 @@ class PaymentSuccessScreen extends StatelessWidget {
                   text: AppStrings.downloadInvoice.tr(),
                   backgroundColor: AppColors.surfaceVariant,
                   textColor: AppColors.primary,
-                  onPressed: () {
-                    // TODO: generate/download the invoice once a backend
-                    // endpoint provides it.
-                  },
+                  // Only reachable after a paid checkout; needs the order id.
+                  onPressed: order.id.isEmpty
+                      ? null
+                      : () => AppNavigator.push(
+                          InvoicePdfScreen(
+                            orderId: order.id,
+                            invoiceNumber: order.invoice?.invoiceNumber ?? '',
+                          ),
+                        ),
                 ),
               ),
             ],

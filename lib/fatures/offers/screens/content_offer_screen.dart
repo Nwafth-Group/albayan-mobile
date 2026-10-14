@@ -227,9 +227,13 @@ class _ContentOfferViewState extends State<_ContentOfferView>
                         text: AppStrings.gift.tr(),
                         isOutlined: true,
                         textColor: AppColors.primary,
-                        onPressed: () {
-                          // TODO: gift flow
-                        },
+                        isLoading: isAddingGift,
+                        onPressed: () => addGiftToCart(
+                          type: isBook
+                              ? CartItemType.book
+                              : CartItemType.article,
+                          id: offer.id,
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppDimensions.paddingMedium),

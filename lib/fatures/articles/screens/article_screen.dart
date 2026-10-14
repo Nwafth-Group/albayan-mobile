@@ -274,9 +274,11 @@ class _ArticleViewState extends State<_ArticleView>
                       text: AppStrings.gift.tr(),
                       isOutlined: true,
                       textColor: AppColors.primary,
-                      onPressed: () {
-                        /* TODO: gift */
-                      },
+                      isLoading: isAddingGift,
+                      onPressed: () => addGiftToCart(
+                        type: CartItemType.article,
+                        id: article.id,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppDimensions.paddingSmall),

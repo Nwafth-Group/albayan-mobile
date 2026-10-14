@@ -134,6 +134,8 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -177,8 +179,8 @@ class _DetailRow extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              const Icon(
-                Icons.chevron_right_rounded,
+              Icon(
+                isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
                 color: AppColors.textLight,
                 size: 20,
               ),

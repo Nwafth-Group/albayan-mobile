@@ -2,24 +2,41 @@
 // FILE: lib/fatures/settings/screens/change_password_screen.dart
 // ============================================
 
+import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
+import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
+import 'package:albayan/fatures/main/screens/main_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
-import '../../../utils/shared_pref_helper.dart';
-import 'verification_code_screen.dart';
+import '../../../utils/helpers.dart';
 import 'widgets/settings_widgets.dart';
 
-class ChangePasswordScreen extends StatefulWidget {
+class ChangePasswordScreen extends StatelessWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => AuthCubit(AuthRemoteDataSource(ApiService())),
+      child: const _ChangePasswordBody(),
+    );
+  }
 }
 
-class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+class _ChangePasswordBody extends StatefulWidget {
+  const _ChangePasswordBody();
+
+  @override
+  State<_ChangePasswordBody> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<_ChangePasswordBody> {
   final _formKey = GlobalKey<FormState>();
   final _current = TextEditingController();
   final _new = TextEditingController();
@@ -53,65 +70,78 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    // TODO(api): send current/new password to the change-password endpoint
-    // (which sends the OTP) once it exists.
-    AppNavigator.push(VerificationCodeScreen(target: _maskedTarget()));
+    context.read<AuthCubit>().changePassword(
+      currentPassword: _current.text,
+      newPassword: _new.text,
+      newPasswordConfirmation: _confirm.text,
+    );
   }
 
-  /// "m********m@gmail.com" (or the masked phone number).
-  String _maskedTarget() {
-    final user = SharedPrefHelper.getUser();
-    final email = user?.email;
-    if (email != null && email.contains('@')) {
-      final at = email.indexOf('@');
-      final name = email.substring(0, at);
-      if (name.length <= 2) return email;
-      return '${name[0]}${'*' * (name.length - 2)}${name[name.length - 1]}'
-          '${email.substring(at)}';
+  Future<void> _onSuccess() async {
+    final backHome = await showSettingsSheet(
+      context,
+      title: AppStrings.successExclaim.tr(),
+      message: AppStrings.passwordChanged.tr(),
+      primaryText: AppStrings.backToHome.tr(),
+      isDismissible: false,
+    );
+    if (backHome == true && mounted) {
+      AppNavigator.pushAndRemoveUntil(const MainScreen());
     }
-    final phone = user?.mobileNumber ?? '';
-    if (phone.length > 4) {
-      return '${'*' * (phone.length - 4)}${phone.substring(phone.length - 4)}';
-    }
-    return phone;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: SettingsAppBar(title: AppStrings.changePassword.tr()),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            _PasswordField(
-              label: AppStrings.currentPassword.tr(),
-              hint: AppStrings.retypePasswordHint.tr(),
-              controller: _current,
-              validator: _required,
-            ),
-            const SizedBox(height: 16),
-            _PasswordField(
-              label: AppStrings.newPassword.tr(),
-              hint: AppStrings.newPasswordHint.tr(),
-              controller: _new,
-              validator: _newValidator,
-            ),
-            const SizedBox(height: 16),
-            _PasswordField(
-              label: AppStrings.confirmNewPassword.tr(),
-              hint: AppStrings.retypePasswordHint.tr(),
-              controller: _confirm,
-              validator: _confirmValidator,
-            ),
-          ],
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is ChangePasswordSuccess) {
+          _onSuccess();
+        } else if (state is ChangePasswordError) {
+          Helpers.showError(state.message);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: SettingsAppBar(title: AppStrings.changePassword.tr()),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              _PasswordField(
+                label: AppStrings.currentPassword.tr(),
+                hint: AppStrings.retypePasswordHint.tr(),
+                controller: _current,
+                validator: _required,
+              ),
+              const SizedBox(height: 16),
+              _PasswordField(
+                label: AppStrings.newPassword.tr(),
+                hint: AppStrings.newPasswordHint.tr(),
+                controller: _new,
+                validator: _newValidator,
+              ),
+              const SizedBox(height: 16),
+              _PasswordField(
+                label: AppStrings.confirmNewPassword.tr(),
+                hint: AppStrings.retypePasswordHint.tr(),
+                controller: _confirm,
+                validator: _confirmValidator,
+              ),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: SettingsBottomButton(
-        text: AppStrings.btnSave.tr(),
-        onPressed: _save,
+        bottomNavigationBar: BlocBuilder<AuthCubit, AuthState>(
+          buildWhen: (_, s) =>
+              s is ChangePasswordLoading ||
+              s is ChangePasswordSuccess ||
+              s is ChangePasswordError,
+          builder: (context, state) => SettingsBottomButton(
+            text: AppStrings.btnSave.tr(),
+            isLoading: state is ChangePasswordLoading,
+            onPressed: _save,
+          ),
+        ),
       ),
     );
   }

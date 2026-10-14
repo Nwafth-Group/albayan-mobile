@@ -12,12 +12,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../utils/share_helper.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../data/datasource/publishers_remote_data_source.dart';
 import '../data/models/publisher_detail_model.dart';
 import 'cubit/publisher_cubit.dart';
 import 'widgets/publisher_promo_card.dart';
-import 'widgets/publisher_social_footer.dart';
 
 class PublisherScreen extends StatelessWidget {
   final String publisherId;
@@ -65,6 +65,17 @@ class _PublisherViewState extends State<_PublisherView> {
     if (_scrollController.position.pixels >= threshold) {
       context.read<PublisherCubit>().loadMoreBooks();
     }
+  }
+
+  void _sharePublisher(PublisherDetailModel publisher) {
+    final lines = [
+      publisher.name,
+      if (publisher.description != null &&
+          publisher.description!.trim().isNotEmpty)
+        publisher.description!.trim(),
+      ...publisher.socialLinks.values,
+    ];
+    ShareHelper.share(lines.join('\n'));
   }
 
   void _scrollToBooks() {
@@ -168,23 +179,25 @@ class _PublisherViewState extends State<_PublisherView> {
                 ),
               ),
               _buildBooksGrid(context, state),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDimensions.paddingMedium,
-                    AppDimensions.paddingLarge,
-                    AppDimensions.paddingMedium,
-                    AppDimensions.paddingLarge,
-                  ),
-                  child: PublisherSocialFooter(
-                    socialLinks: publisher.socialLinks,
-                    email: publisher.email,
-                    onTapLink: (url) {
-                      // TODO: open external link (needs a url launcher dep).
-                    },
+              if (publisher.email != null && publisher.email!.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimensions.paddingMedium,
+                      AppDimensions.paddingLarge,
+                      AppDimensions.paddingMedium,
+                      AppDimensions.paddingLarge,
+                    ),
+                    child: Text(
+                      publisher.email!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: AppDimensions.fontSizeSmall,
+                        color: AppColors.textLight,
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },
@@ -258,9 +271,7 @@ class _PublisherViewState extends State<_PublisherView> {
       actions: [
         _circleAction(
           icon: Icons.ios_share,
-          onTap: () {
-            // TODO: share publisher (needs a share/url-launcher dep).
-          },
+          onTap: () => _sharePublisher(publisher),
         ),
         _circleAction(
           icon: Icons.favorite_border,

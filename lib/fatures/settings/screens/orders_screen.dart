@@ -4,35 +4,72 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hugeicons/hugeicons.dart';
 
+import '../../../utils/api_client.dart';
 import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
+import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state.dart';
+import '../../../widgets/loading_widget.dart';
+import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
+import 'cubit/orders_cubit.dart';
 import 'order_details_screen.dart';
 import 'widgets/settings_widgets.dart';
 
-class OrdersScreen extends StatefulWidget {
+/// My Order — `GET /reader/orders`, paginated.
+class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => OrdersCubit(
+        SettingsRemoteDataSourceImpl(ApiService()),
+        languageCode: context.locale.languageCode,
+      )..load(),
+      child: const _OrdersView(),
+    );
+  }
 }
 
-class _OrdersScreenState extends State<OrdersScreen> {
-  /// null = All.
+class _OrdersView extends StatefulWidget {
+  const _OrdersView();
+
+  @override
+  State<_OrdersView> createState() => _OrdersViewState();
+}
+
+class _OrdersViewState extends State<_OrdersView> {
+  final _scrollController = ScrollController();
+
+  /// null = All. The tabs filter the loaded orders by `payment_status`.
   OrderStatus? _filter;
 
-  // TODO(api): load from the orders endpoint once it exists.
-  final List<OrderModel> _orders = OrderModel.samples;
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      context.read<OrdersCubit>().loadMore();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final orders = _filter == null
-        ? _orders
-        : _orders.where((o) => o.status == _filter).toList();
-
     final tabs = <(String, OrderStatus?)>[
       (AppStrings.tabAll.tr(), null),
       (AppStrings.statusCompleted.tr(), OrderStatus.completed),
@@ -63,19 +100,114 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ),
           Expanded(
-            child: orders.isEmpty
-                ? EmptyState(
-                    icon: Icons.receipt_long_outlined,
-                    title: AppStrings.noOrders.tr(),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    itemCount: orders.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _OrderCard(order: orders[i]),
-                  ),
+            child: BlocBuilder<OrdersCubit, OrdersState>(
+              builder: (context, state) => _buildBody(context, state),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, OrdersState state) {
+    final cubit = context.read<OrdersCubit>();
+
+    switch (state.status) {
+      case OrdersStatus.initial:
+      case OrdersStatus.loading:
+        return const LoadingIndicator();
+
+      case OrdersStatus.failure:
+        return _Refreshable(
+          onRefresh: cubit.refresh,
+          child: EmptyState(
+            icon: Icons.error_outline,
+            title: AppStrings.somethingWentWrong.tr(),
+            subtitle: state.error ?? AppStrings.pleaseTryAgain.tr(),
+            action: CustomButton(
+              text: AppStrings.retry.tr(),
+              onPressed: cubit.load,
+            ),
+          ),
+        );
+
+      case OrdersStatus.empty:
+      case OrdersStatus.success:
+      case OrdersStatus.loadingMore:
+        final orders = _filter == null
+            ? state.orders
+            : state.orders.where((o) => o.status == _filter).toList();
+
+        // A filtered tab may be too short to scroll — keep paging in so
+        // matching orders on later pages still show up.
+        if (orders.length < 8 && state.hasMore && !state.isLoadingMore) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) cubit.loadMore();
+          });
+        }
+
+        if (orders.isEmpty && !state.hasMore) {
+          return _Refreshable(
+            onRefresh: cubit.refresh,
+            child: EmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: AppStrings.noOrders.tr(),
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: cubit.refresh,
+          child: ListView.separated(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: orders.length + (state.hasMore ? 1 : 0),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              if (i == orders.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return _OrderCard(order: orders[i]);
+            },
+          ),
+        );
+    }
+  }
+}
+
+class _Refreshable extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+  final Widget child;
+
+  const _Refreshable({required this.onRefresh, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        ),
       ),
     );
   }

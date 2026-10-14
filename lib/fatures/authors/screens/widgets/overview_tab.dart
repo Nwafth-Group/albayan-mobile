@@ -12,13 +12,13 @@ import '../../data/models/author_details_model.dart';
 class OverviewTab extends StatelessWidget {
   final AuthorDetailsModel author;
   final VoidCallback? onReadNow;
-  final void Function(String url)? onOpenSocial;
+  final VoidCallback? onShare;
 
   const OverviewTab({
     super.key,
     required this.author,
     this.onReadNow,
-    this.onOpenSocial,
+    this.onShare,
   });
 
   @override
@@ -112,67 +112,38 @@ class OverviewTab extends StatelessWidget {
           ),
         ],
 
-        // Social links
-        if (author.socialLinks.isNotEmpty) ...[
-          const SizedBox(height: AppDimensions.paddingLarge),
-          Row(
-            children: [
-              for (final entry in author.socialLinks.entries)
-                Padding(
-                  padding: const EdgeInsets.only(
-                    right: AppDimensions.paddingMedium,
-                  ),
-                  child: _SocialButton(
-                    platform: entry.key,
-                    onTap: () => onOpenSocial?.call(entry.value),
+        // Share
+        const SizedBox(height: AppDimensions.paddingLarge),
+        InkWell(
+          onTap: onShare,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingMedium,
+              vertical: AppDimensions.paddingSmall,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.ios_share, size: 18, color: AppColors.primary),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  AppStrings.share.tr(),
+                  style: const TextStyle(
+                    fontSize: AppDimensions.fontSizeSmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
-        ],
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final String platform;
-  final VoidCallback? onTap;
-  const _SocialButton({required this.platform, this.onTap});
-
-  IconData get _icon {
-    switch (platform.toLowerCase()) {
-      case 'facebook':
-        return Icons.facebook;
-      case 'twitter':
-      case 'x':
-        return Icons.alternate_email;
-      case 'instagram':
-        return Icons.camera_alt_outlined;
-      case 'linkedin':
-        return Icons.work_outline;
-      case 'youtube':
-        return Icons.play_circle_outline;
-      default:
-        return Icons.public;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          shape: BoxShape.circle,
         ),
-        child: Icon(_icon, size: 20, color: AppColors.primary),
-      ),
+      ],
     );
   }
 }

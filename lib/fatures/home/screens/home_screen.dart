@@ -732,7 +732,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLatestIssues() {
     final issues = _issueModels;
     return SizedBox(
-      height: 262,
+      height: 265,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

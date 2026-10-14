@@ -11,8 +11,10 @@ import 'package:albayan/fatures/articles/screens/article_screen.dart';
 import 'package:albayan/fatures/books/screens/book_screen.dart';
 import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
+import '../../../utils/share_helper.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../data/datasource/authors_remote_data_source.dart';
+import '../data/models/author_details_model.dart';
 import 'cubit/author_cubit.dart';
 import 'widgets/author_articles_tab.dart';
 import 'widgets/books_tab.dart';
@@ -122,7 +124,7 @@ class _AuthorViewState extends State<_AuthorView>
                 OverviewTab(
                   author: author,
                   onReadNow: () => _tabController.animateTo(2),
-                  onOpenSocial: (url) {/* TODO: launch url */},
+                  onShare: () => _shareAuthor(author),
                 ),
                 AuthorArticlesTab(
                   items: state.articles,
@@ -158,6 +160,16 @@ class _AuthorViewState extends State<_AuthorView>
         },
       ),
     );
+  }
+
+  void _shareAuthor(AuthorDetailsModel author) {
+    final lines = [
+      author.name,
+      if (author.biography != null && author.biography!.trim().isNotEmpty)
+        author.biography!.trim(),
+      ...author.socialLinks.values,
+    ];
+    ShareHelper.share(lines.join('\n'));
   }
 
   Widget _buildHeader(BuildContext context, AuthorState state) {

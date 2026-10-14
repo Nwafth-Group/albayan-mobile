@@ -46,13 +46,22 @@ final List<_NavItemData> _navItems = [
 ];
 
 class MainBottomNavBar extends StatelessWidget {
+  /// Index of the Cart tab within [_navItems] — kept in sync with the list
+  /// above so [cartBadgeCount] is drawn on the right chip.
+  static const int cartTabIndex = 3;
+
   final int selectedIndex;
   final ValueChanged<int> onTap;
+
+  /// Number of items in the cart, shown as a small badge over the Cart
+  /// tab's icon. 0 (or less) hides the badge.
+  final int cartBadgeCount;
 
   const MainBottomNavBar({
     Key? key,
     required this.selectedIndex,
     required this.onTap,
+    this.cartBadgeCount = 0,
   }) : super(key: key);
 
   @override
@@ -76,6 +85,7 @@ class MainBottomNavBar extends StatelessWidget {
                 item: _navItems[i],
                 isSelected: isSelected,
                 onTap: () => onTap(i),
+                badgeCount: i == cartTabIndex ? cartBadgeCount : 0,
               );
               return isSelected ? Expanded(child: chip) : chip;
             }),
@@ -90,11 +100,13 @@ class _NavChip extends StatelessWidget {
   final _NavItemData item;
   final bool isSelected;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const _NavChip({
     required this.item,
     required this.isSelected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -137,7 +149,7 @@ class _NavChip extends StatelessWidget {
   }
 
   Widget _icon({required Color color, required double size}) {
-    return Image.asset(
+    final icon = Image.asset(
       item.icon,
       width: size,
       height: size,
@@ -145,6 +157,48 @@ class _NavChip extends StatelessWidget {
       colorBlendMode: BlendMode.srcIn,
       errorBuilder: (_, __, ___) =>
           Icon(item.fallbackIcon, color: color, size: size),
+    );
+    if (badgeCount <= 0) return icon;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        icon,
+        PositionedDirectional(
+          end: -8,
+          top: -6,
+          child: _CountBadge(count: badgeCount),
+        ),
+      ],
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  final int count;
+
+  const _CountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16),
+      height: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.cardColor, width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 9 ? '9+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
+      ),
     );
   }
 }

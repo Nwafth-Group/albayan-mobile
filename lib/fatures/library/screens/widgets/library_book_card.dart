@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import '../../../../utils/constants.dart';
 import '../../../../widgets/progress_bar.dart';
 import '../../data/models/library_book_model.dart';
-import 'library_delete_badge.dart';
 
 class LibraryBookCard extends StatelessWidget {
   final LibraryBookModel book;
@@ -35,23 +34,14 @@ class LibraryBookCard extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 0.78,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusMedium,
-                    ),
-                    child: _Cover(url: book.cover),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: LibraryDeleteBadge(onTap: onDelete),
-                ),
-              ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                AppDimensions.radiusMedium,
+              ),
+              child: _Cover(url: book.cover),
             ),
+            // Delete badge hidden: deleting a library book isn't wired to
+            // the backend yet (LibraryBooksCubit.remove is local-only).
           ),
           const SizedBox(height: AppDimensions.paddingSmall),
           Text(
