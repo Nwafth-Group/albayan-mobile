@@ -5,6 +5,7 @@
 // Per-page helpers for an open PDF: small page images for the thumbnail
 // strip (pdfx) and plain page text for read-aloud (syncfusion_flutter_pdf).
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -35,9 +36,19 @@ class ReaderPageTools {
   Future<Uint8List?> thumbnail(int page, {double width = 140}) {
     final cached = _thumbs[page];
     if (cached != null) return Future.value(cached);
-    return _pending[page] ??= _enqueue(() => _render(page, width))
-        .whenComplete(() => _pending.remove(page));
+    return _pending[page] ??= _enqueue(
+      () => _render(page, width).timeout(
+        _renderTimeout,
+        onTimeout: () {
+          readerLog('✖ thumbnail $page timed out');
+          return null;
+        },
+      ),
+    ).whenComplete(() => _pending.remove(page));
   }
+
+  /// A single stuck render must not block every thumbnail queued after it.
+  static const _renderTimeout = Duration(seconds: 15);
 
   Future<T> _enqueue<T>(Future<T> Function() task) {
     final result = _queue.then((_) => task());

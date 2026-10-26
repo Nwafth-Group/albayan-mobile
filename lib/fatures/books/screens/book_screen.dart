@@ -16,6 +16,7 @@ import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
+import '../../library/utils/add_to_library_mixin.dart';
 import '../../reader/data/models/reader_models.dart';
 import '../../reader/data/reader_local_storage.dart';
 import '../../reader/screens/reader_screen.dart';
@@ -51,7 +52,10 @@ class _BookView extends StatefulWidget {
 }
 
 class _BookViewState extends State<_BookView>
-    with SingleTickerProviderStateMixin, AddToCartStateMixin {
+    with
+        SingleTickerProviderStateMixin,
+        AddToCartStateMixin,
+        AddToLibraryStateMixin {
   late final TabController _tabController;
 
   @override
@@ -164,6 +168,8 @@ class _BookViewState extends State<_BookView>
                       builder: (_) => BookScreen(bookId: b.id),
                     ),
                   ),
+                  onCartTap: (b) =>
+                      addToCart(type: CartItemType.book, id: b.id),
                 ),
               ],
             ),
@@ -273,6 +279,16 @@ class _BookViewState extends State<_BookView>
   bool _isSample(BookDetailModel book) =>
       book.version.fileType == 'free' && !book.isOwned;
 
+  /// Free book → "Read Now": add it to My Library (no checkout), then read.
+  Future<void> _readFree(BookDetailModel book) async {
+    await addFreeToLibrary(
+      type: LibraryItemType.book,
+      id: book.id,
+      alreadyInLibrary: book.isOwned,
+    );
+    if (mounted) _openReader(book);
+  }
+
   /// Opens the book's PDF (`version.file_url`) in the reader.
   void _openReader(BookDetailModel book) {
     final readerBook = ReaderBook.fromFile(
@@ -330,6 +346,23 @@ class _BookViewState extends State<_BookView>
                     onPressed: _openRating,
                   )
                 : const SizedBox.shrink())
+            : book.isFree
+            ? SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: AppStrings.readNow.tr(),
+                  isLoading: isAddingToLibrary,
+                  onPressed: () => _readFree(book),
+                ),
+              )
+            : book.isOwned
+            ? SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: AppStrings.readNow.tr(),
+                  onPressed: () => _openReader(book),
+                ),
+              )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

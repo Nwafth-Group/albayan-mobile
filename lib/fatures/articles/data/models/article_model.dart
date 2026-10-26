@@ -45,6 +45,9 @@ class ArticleModel {
   final double rate;
   final int rateCount;
   final bool isFavorite;
+
+  /// `is_owned` — already in the reader's library.
+  final bool isOwned;
   final bool allowedRating;
   final bool allowedCommenting;
   final List<KeywordModel> keywords;
@@ -65,6 +68,7 @@ class ArticleModel {
     required this.rate,
     required this.rateCount,
     required this.isFavorite,
+    this.isOwned = false,
     required this.allowedRating,
     required this.allowedCommenting,
     required this.keywords,
@@ -110,6 +114,7 @@ class ArticleModel {
       rate: _toDouble(json['rate']),
       rateCount: _toInt(json['rate_count']),
       isFavorite: json['is_favorite'] == true,
+      isOwned: json['is_owned'] == true,
       allowedRating: json['allowed_rating'] == true,
       allowedCommenting: json['allowed_commenting'] == true,
       keywords: rawKeywords is List
@@ -139,6 +144,7 @@ class ArticleModel {
       rate: rate,
       rateCount: rateCount,
       isFavorite: isFavorite ?? this.isFavorite,
+      isOwned: isOwned,
       allowedRating: allowedRating,
       allowedCommenting: allowedCommenting,
       keywords: keywords,

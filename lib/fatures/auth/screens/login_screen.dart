@@ -458,7 +458,7 @@ class _EmailForm extends StatelessWidget {
             if (v == null || v.isEmpty) {
               return AppStrings.validationPasswordRequired.tr();
             }
-            if (v.length < 8) return AppStrings.validationPasswordMin.tr();
+            if (v.length < 7) return AppStrings.validationPasswordMin.tr();
             return null;
           },
         ),

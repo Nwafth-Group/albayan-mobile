@@ -17,6 +17,9 @@ class BookModel {
   final double rate;
   final int rateCount;
   final bool isFavorite;
+  /// The reader already owns this book (`is_owned`) — purchase should be
+  /// disabled and "Read Now" shown instead.
+  final bool isOwned;
   /// Readable PDF (`file_url`) — a sample when [fileType] is `free`, the
   /// full book when `paid` (owned). Null when the book has no file yet.
   final String? fileUrl;
@@ -34,6 +37,7 @@ class BookModel {
     required this.rate,
     required this.rateCount,
     required this.isFavorite,
+    this.isOwned = false,
     this.fileUrl,
     this.fileType,
   });
@@ -58,6 +62,7 @@ class BookModel {
         rate: rate,
         rateCount: rateCount,
         isFavorite: isFavorite ?? this.isFavorite,
+        isOwned: isOwned,
         fileUrl: fileUrl,
         fileType: fileType,
       );
@@ -83,6 +88,7 @@ class BookModel {
           ? (json['rate_count'] as num).toInt()
           : int.tryParse(json['rate_count']?.toString() ?? '') ?? 0,
       isFavorite: json['is_favorite'] == true,
+      isOwned: json['is_owned'] == true,
     );
   }
 }

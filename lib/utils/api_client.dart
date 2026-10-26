@@ -6,13 +6,37 @@ import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'dart:developer' as developer;
 
+import '../fatures/auth/screens/login_screen.dart';
 import '../utils/constants.dart';
 import '../utils/shared_pref_helper.dart';
+import 'app_navigator.dart';
+import 'google_auth_helper.dart';
 import 'helpers.dart';
 
 class ApiService {
   late final Dio _dio;
   Dio get dio => _dio;
+
+  /// Guards against every in-flight request's 401 triggering its own
+  /// logout — several can fail at once, but only the first should act.
+  static bool _loggingOut = false;
+
+  /// The token is stale/invalid: clear the session fully (local storage +
+  /// Google sign-in) and send the user back to the login screen, the same
+  /// way a manual "Logout" from Settings does.
+  static Future<void> _forceLogout() async {
+    if (_loggingOut || !SharedPrefHelper.isLoggedIn()) return;
+    _loggingOut = true;
+    developer.log('🚪 session expired — logging out', name: 'API');
+    try {
+      await SharedPrefHelper.logout();
+      await GoogleAuthHelper.signOut();
+      Helpers.showError(AppStrings.sessionExpired.tr());
+      AppNavigator.pushAndRemoveUntil(const LoginScreen());
+    } finally {
+      _loggingOut = false;
+    }
+  }
 
   ApiService() {
     _dio = Dio(BaseOptions(
@@ -79,8 +103,8 @@ class ApiService {
           developer.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
           if (error.response?.statusCode == 401) {
-            developer.log('🚪 401 Unauthorized', name: 'API');
-            // TODO: AppNavigator.pushAndRemoveUntil(const LoginScreen());
+            developer.log('🚪 401 Unauthorized — forcing logout', name: 'API');
+            _forceLogout();
           }
           return handler.next(error);
         },

@@ -2,19 +2,33 @@
 // FILE: lib/fatures/library/screens/cubit/library_articles_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../issues/data/models/pagination_meta.dart';
 import '../../data/datasource/library_remote_data_source.dart';
+import '../../utils/library_events.dart';
 import '../../data/models/library_article_model.dart';
 
 part 'library_articles_state.dart';
 
 class LibraryArticlesCubit extends Cubit<LibraryArticlesState> {
+  StreamSubscription<void>? _libraryChangesSub;
+
+  @override
+  Future<void> close() {
+    _libraryChangesSub?.cancel();
+    return super.close();
+  }
+
   final LibraryRemoteDataSource dataSource;
 
-  LibraryArticlesCubit(this.dataSource) : super(const LibraryArticlesState());
+  LibraryArticlesCubit(this.dataSource) : super(const LibraryArticlesState()) {
+    // Refresh whenever a free item is added to My Library elsewhere.
+    _libraryChangesSub = LibraryEvents.changes.listen((_) => refresh());
+  }
 
   bool _isFetching = false;
 

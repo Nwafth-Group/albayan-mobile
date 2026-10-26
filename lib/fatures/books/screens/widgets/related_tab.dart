@@ -16,6 +16,7 @@ class RelatedTab extends StatelessWidget {
   final bool loadingMore;
   final VoidCallback onLoadMore;
   final void Function(BookModel) onItemTap;
+  final void Function(BookModel)? onCartTap;
 
   const RelatedTab({
     super.key,
@@ -23,6 +24,7 @@ class RelatedTab extends StatelessWidget {
     required this.loadingMore,
     required this.onLoadMore,
     required this.onItemTap,
+    this.onCartTap,
   });
 
   @override
@@ -72,9 +74,7 @@ class RelatedTab extends StatelessWidget {
           return BookGridCard(
             book: book,
             onTap: () => onItemTap(book),
-            onCartTap: () {
-              // TODO: add to cart.
-            },
+            onCartTap: onCartTap == null ? null : () => onCartTap!(book),
           );
         },
       ),

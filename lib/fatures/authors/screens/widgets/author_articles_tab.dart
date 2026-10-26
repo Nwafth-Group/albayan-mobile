@@ -20,6 +20,7 @@ class AuthorArticlesTab extends StatelessWidget {
   final ValueChanged<int> onYearSelected;
   final VoidCallback onLoadMore;
   final void Function(CornerArticleModel) onItemTap;
+  final void Function(CornerArticleModel)? onCartTap;
 
   const AuthorArticlesTab({
     super.key,
@@ -30,6 +31,7 @@ class AuthorArticlesTab extends StatelessWidget {
     required this.onYearSelected,
     required this.onLoadMore,
     required this.onItemTap,
+    this.onCartTap,
   });
 
   @override
@@ -65,6 +67,7 @@ class AuthorArticlesTab extends StatelessWidget {
                   CornerArticleCard(
                     article: a,
                     onTap: () => onItemTap(a),
+                    onCartTap: onCartTap == null ? null : () => onCartTap!(a),
                   ),
                 if (loadingMore)
                   const Padding(

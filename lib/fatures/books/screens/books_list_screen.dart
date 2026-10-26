@@ -13,6 +13,8 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/books_remote_data_source.dart';
 import 'book_screen.dart';
 import 'cubit/books_list_cubit.dart';
@@ -41,7 +43,8 @@ class _BooksListView extends StatefulWidget {
   State<_BooksListView> createState() => _BooksListViewState();
 }
 
-class _BooksListViewState extends State<_BooksListView> {
+class _BooksListViewState extends State<_BooksListView>
+    with AddToCartStateMixin {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
 
@@ -121,6 +124,7 @@ class _BooksListViewState extends State<_BooksListView> {
               scrollController: _scrollController,
               state: state,
               onRefresh: () => context.read<BooksListCubit>().refresh(),
+              onCartTap: (id) => addToCart(type: CartItemType.book, id: id),
             );
         }
       },
@@ -132,11 +136,13 @@ class _BooksGrid extends StatelessWidget {
   final ScrollController scrollController;
   final BooksListState state;
   final Future<void> Function() onRefresh;
+  final void Function(String id) onCartTap;
 
   const _BooksGrid({
     required this.scrollController,
     required this.state,
     required this.onRefresh,
+    required this.onCartTap,
   });
 
   @override
@@ -170,9 +176,7 @@ class _BooksGrid extends StatelessWidget {
                     onTap: () {
                       AppNavigator.push(BookScreen(bookId: book.id));
                     },
-                    onCartTap: () {
-                      // TODO: add to cart.
-                    },
+                    onCartTap: () => onCartTap(book.id),
                   );
                 },
                 childCount: state.books.length,

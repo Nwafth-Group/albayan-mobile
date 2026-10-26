@@ -57,7 +57,10 @@ class _ChangePasswordScreenState extends State<_ChangePasswordBody> {
   String? _newValidator(String? v) {
     final required = _required(v);
     if (required != null) return required;
-    if (v!.length < 8) return AppStrings.validationPasswordMin.tr();
+    if (v!.length < 7) return AppStrings.validationPasswordMin.tr();
+    if (!RegExp(r'[A-Za-z]').hasMatch(v)) {
+      return AppStrings.validationPasswordLetter.tr();
+    }
     return null;
   }
 

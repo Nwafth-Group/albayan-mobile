@@ -190,8 +190,14 @@ class ReaderCubit extends Cubit<ReaderState> {
   }
 
   Future<void> _syncNow() async {
+    final item = BookSyncItem.fromBook(book, _currentProgress);
     try {
-      await remote.syncBooks([BookSyncItem.fromBook(book, _currentProgress)]);
+      switch (book.kind) {
+        case ReaderContentKind.book:
+          await remote.syncBooks([item]);
+        case ReaderContentKind.document:
+          await remote.syncDocuments([item]);
+      }
       readerLog('✔ synced reading progress to server');
     } catch (e, st) {
       readerLog('✖ sync failed: $e', error: e, stackTrace: st);

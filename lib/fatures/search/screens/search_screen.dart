@@ -16,6 +16,8 @@ import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_icon.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/search_remote_data_source.dart';
 import '../data/models/search_initial_model.dart';
 import '../data/models/advanced_search_filter.dart';
@@ -45,7 +47,7 @@ class _SearchView extends StatefulWidget {
   State<_SearchView> createState() => _SearchViewState();
 }
 
-class _SearchViewState extends State<_SearchView> {
+class _SearchViewState extends State<_SearchView> with AddToCartStateMixin {
   final _searchController = TextEditingController();
 
   String? _selectedKeyword;
@@ -202,9 +204,8 @@ class _SearchViewState extends State<_SearchView> {
                   // TODO: wire favorite toggle once a favorite endpoint
                   // for search results is available.
                 },
-                onCartTap: () {
-                  // TODO: add to cart.
-                },
+                onCartTap: () =>
+                    addToCart(type: CartItemType.article, id: article.id),
               ),
             ),
       ],

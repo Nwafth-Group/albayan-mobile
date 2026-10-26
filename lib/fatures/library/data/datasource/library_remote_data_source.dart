@@ -32,6 +32,11 @@ abstract class LibraryRemoteDataSource {
   Future<List<PersonalCategoryModel>> getPersonalCategories(
     PersonalCategoryType type,
   );
+
+  /// POST /reader/my-library/toggle  body: { "type": "book|issue|article", "id" }
+  /// Toggles the item in/out of My Library. Returns whether it's in the
+  /// library afterwards when the API says so, otherwise null.
+  Future<bool?> toggleLibraryItem({required String type, required String id});
 }
 
 class LibraryRemoteDataSourceImpl implements LibraryRemoteDataSource {
@@ -109,5 +114,31 @@ class LibraryRemoteDataSourceImpl implements LibraryRemoteDataSource {
       queryParameters: {'type': type.value},
     );
     return PersonalCategoryModel.listFrom(response['data']);
+  }
+
+  @override
+  Future<bool?> toggleLibraryItem({
+    required String type,
+    required String id,
+  }) async {
+    final response = await _api.post(
+      ApiConstants.myLibraryToggle,
+      data: {'type': type, 'id': id},
+    );
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      for (final key in const [
+        'in_library',
+        'is_in_library',
+        'is_added',
+        'added',
+        'is_owned',
+        'attached',
+      ]) {
+        final v = data[key];
+        if (v is bool) return v;
+      }
+    }
+    return null;
   }
 }

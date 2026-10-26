@@ -24,6 +24,8 @@ import '../../articles/screens/widgets/star_row.dart';
 import '../../authors/data/models/book_model.dart';
 import '../../books/screens/book_screen.dart';
 import '../../books/screens/widgets/book_grid_card.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../../corners/data/models/corner_article_model.dart';
 import '../../corners/screens/widgets/corner_article_card.dart';
 import '../../issues/screens/issue_details_screen.dart';
@@ -181,7 +183,7 @@ class _ResultsTab extends StatefulWidget {
 }
 
 class _ResultsTabState extends State<_ResultsTab>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, AddToCartStateMixin {
   final _scrollController = ScrollController();
 
   @override
@@ -283,7 +285,8 @@ class _ResultsTabState extends State<_ResultsTab>
           onTap: () => AppNavigator.push(ArticleScreen(articleId: item.id)),
           onFavoriteTap: () =>
               context.read<SearchResultsCubit>().toggleFavorite(item),
-          onCartTap: () {},
+          onCartTap: () =>
+              addToCart(type: CartItemType.article, id: item.id),
         );
       },
     );
@@ -317,7 +320,8 @@ class _ResultsTabState extends State<_ResultsTab>
                     book: _toBook(item),
                     onTap: () =>
                         AppNavigator.push(BookScreen(bookId: item.id)),
-                    onCartTap: () {},
+                    onCartTap: () =>
+                        addToCart(type: CartItemType.book, id: item.id),
                   );
                 }
                 return _IssueResultCard(

@@ -21,6 +21,9 @@ import '../../../widgets/loading_widget.dart';
 import '../../../widgets/promo_banner.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
+import '../../library/utils/add_to_library_mixin.dart';
+import '../../library/screens/library_screen.dart';
+import '../../settings/screens/subscriptions_screen.dart';
 import '../data/datasource/issues_remote_data_source.dart';
 import '../data/models/issue_detail_model.dart';
 import 'cubit/issue_details_cubit.dart';
@@ -49,8 +52,20 @@ class _DetailsView extends StatefulWidget {
   State<_DetailsView> createState() => _DetailsViewState();
 }
 
-class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
+class _DetailsViewState extends State<_DetailsView>
+    with AddToCartStateMixin, AddToLibraryStateMixin {
   int _tab = 0; // 0 = Short Word, 1 = Issue Index
+
+  /// Free issue → "Read Now": add it to My Library (no checkout), then show
+  /// its articles (the Issue Index tab).
+  Future<void> _readFree(IssueDetailModel detail) async {
+    await addFreeToLibrary(
+      type: LibraryItemType.issue,
+      id: detail.id,
+      alreadyInLibrary: detail.isBought,
+    );
+    if (mounted) setState(() => _tab = 1);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,15 +123,15 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
                 actions: [
                   DetailCircleAction(
                     asset: AppImages.taj, // crown / subscription
-                    onTap: () {
-                      // TODO: subscription
-                    },
+                    onTap: () => AppNavigator.push(const SubscriptionsScreen()),
                   ),
                   DetailCircleAction(
                     asset: AppImages.openBook, // read
-                    onTap: () {
-                      // TODO: read
-                    },
+                    onTap: () => detail.isFree
+                        ? _readFree(detail)
+                        : detail.isBought
+                        ? AppNavigator.push(const LibraryScreen())
+                        : addToCart(type: CartItemType.issue, id: detail.id),
                   ),
                   DetailFavoriteAction(
                     isFavorite: detail.isFavorite,
@@ -250,10 +265,8 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
 
   // ── Buttons (shared) ────────────────────────────────────
   Widget _buttons(BuildContext context, IssueDetailModel detail) {
-    final cartText = detail.isFree
-        ? AppStrings.addToCart.tr()
-        : '${AppStrings.addToCart.tr()} '
-              '${detail.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}';
+    final cartText = '${AppStrings.addToCart.tr()} '
+        '${detail.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}';
 
     return Column(
       children: [
@@ -262,27 +275,36 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
             Expanded(
               flex: 1,
               child: CustomButton(
-                text: AppStrings.read.tr(),
-                isOutlined: true,
-                textColor: AppColors.primary,
-                onPressed: () {
-                  // TODO: open reader
-                },
+                text: detail.isFree
+                    ? AppStrings.readNow.tr()
+                    : AppStrings.read.tr(),
+                isOutlined: !detail.isFree,
+                textColor: detail.isFree ? null : AppColors.primary,
+                isLoading: detail.isFree && isAddingToLibrary,
+                onPressed: detail.isFree
+                    ? () => _readFree(detail)
+                    : () {
+                        // TODO: open reader
+                      },
               ),
             ),
-            const SizedBox(width: AppDimensions.paddingSmall),
-            Expanded(
-              flex: 2,
-              child: CustomButton(
-                text: cartText,
-                fontSize: AppDimensions.fontSizeMedium,
-                isLoading: isAddingToCart,
-                onPressed: () =>
-                    addToCart(type: CartItemType.issue, id: detail.id),
+            if (!detail.isFree) ...[
+              const SizedBox(width: AppDimensions.paddingSmall),
+              Expanded(
+                flex: 2,
+                child: CustomButton(
+                  text: cartText,
+                  fontSize: AppDimensions.fontSizeMedium,
+                  isLoading: isAddingToCart,
+                  onPressed: () =>
+                      addToCart(type: CartItemType.issue, id: detail.id),
+                ),
               ),
-            ),
+            ],
           ],
         ),
+        // Nothing to gift on free content.
+        if (!detail.isFree) ...[
         const SizedBox(height: AppDimensions.paddingSmall),
         Row(
           children: [
@@ -298,6 +320,7 @@ class _DetailsViewState extends State<_DetailsView> with AddToCartStateMixin {
             ),
           ],
         ),
+        ],
       ],
     );
   }

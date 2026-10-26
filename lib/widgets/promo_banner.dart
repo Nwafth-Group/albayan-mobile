@@ -20,29 +20,33 @@ import '../fatures/issues/screens/issue_details_screen.dart';
 import '../utils/api_client.dart';
 import '../utils/app_navigator.dart';
 import '../utils/constants.dart';
+import 'web_view_screen.dart';
 
-/// Opens whatever a home `ad_banner` item points at.
+/// Opens whatever a home `ad_banner` item points at: an in-app screen when
+/// it carries a known `item_type` + `item_ids` (books/corners/articles/
+/// issues), otherwise its `link_url` in the in-app web view (e.g. `general`
+/// banners) — never an external browser.
 void openHomeBannerItem(HomeBannerItem item) {
   final id = item.firstItemId;
-  if (id == null || id.isEmpty) return;
-  switch (item.itemType) {
-    case 'books':
-      AppNavigator.push(BookScreen(bookId: id));
-      break;
-    case 'corners':
-      AppNavigator.push(CornerScreen(cornerId: id));
-      break;
-    case 'articles':
-      AppNavigator.push(ArticleScreen(articleId: id));
-      break;
-    case 'issues':
-      AppNavigator.push(IssueDetailsScreen(issueId: id));
-      break;
-    default:
-      // `general` banners only carry an external `link_url` — opening it
-      // would need a url_launcher dependency this project doesn't have yet.
-      break;
+  if (id != null && id.isNotEmpty) {
+    switch (item.itemType) {
+      case 'books':
+        AppNavigator.push(BookScreen(bookId: id));
+        return;
+      case 'corners':
+        AppNavigator.push(CornerScreen(cornerId: id));
+        return;
+      case 'articles':
+        AppNavigator.push(ArticleScreen(articleId: id));
+        return;
+      case 'issues':
+        AppNavigator.push(IssueDetailsScreen(issueId: id));
+        return;
+    }
   }
+  final url = item.linkUrl;
+  if (url == null || url.trim().isEmpty) return;
+  AppNavigator.push(WebViewScreen(url: url.trim(), title: item.title));
 }
 
 /// A banner is just its image — the artwork from the API already contains
@@ -57,7 +61,12 @@ class PromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = Container(color: AppColors.surfaceVariant);
+    final placeholder = Image.asset(
+      AppImages.defaultBanner,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: height,
+    );
 
     return GestureDetector(
       onTap: onTap,

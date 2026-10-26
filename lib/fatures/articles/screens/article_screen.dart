@@ -16,6 +16,7 @@ import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/web_view_screen.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
+import '../../library/utils/add_to_library_mixin.dart';
 import '../data/datasource/articles_remote_data_source.dart';
 import 'cubit/article_cubit.dart';
 import 'widgets/about_article_tab.dart';
@@ -23,6 +24,7 @@ import 'widgets/article_info_bar.dart';
 import 'widgets/rate_experience_sheet.dart';
 import 'widgets/reviews_tab.dart';
 import 'widgets/similar_tab.dart';
+import '../data/models/article_model.dart';
 
 class ArticleScreen extends StatelessWidget {
   final String articleId;
@@ -48,7 +50,10 @@ class _ArticleView extends StatefulWidget {
 }
 
 class _ArticleViewState extends State<_ArticleView>
-    with SingleTickerProviderStateMixin, AddToCartStateMixin {
+    with
+        SingleTickerProviderStateMixin,
+        AddToCartStateMixin,
+        AddToLibraryStateMixin {
   /// Height of the cream sheet's rounded top that overlaps the hero.
   static const _sheetRadius = 28.0;
 
@@ -248,6 +253,32 @@ class _ArticleViewState extends State<_ArticleView>
   }
 
   // ---- Bottom bar (switches by tab) ----
+  /// Free article → "Read Now": add it to My Library (no checkout), then
+  /// show its content (the first tab).
+  Future<void> _readFree(ArticleModel article) async {
+    await addFreeToLibrary(
+      type: LibraryItemType.article,
+      id: article.id,
+      alreadyInLibrary: article.isOwned,
+    );
+    if (mounted) _tabController.animateTo(0);
+  }
+
+  /// Owned paid article → open its page in a WebView (articles are web
+  /// content, not a PDF read through the reader service).
+  void _openOwnedArticle(BuildContext context, ArticleModel article) {
+    final url = article.url;
+    if (url == null || url.isEmpty) {
+      Helpers.showError(AppStrings.somethingWentWrong.tr());
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WebViewScreen(url: url, title: article.title),
+      ),
+    );
+  }
+
   Widget? _buildBottomBar(BuildContext context) {
     final state = context.watch<ArticleCubit>().state;
     final article = state.article;
@@ -267,6 +298,23 @@ class _ArticleViewState extends State<_ArticleView>
                       onPressed: _openRating,
                     )
                   : const SizedBox.shrink())
+            : article.isFree
+            ? SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: AppStrings.readNow.tr(),
+                  isLoading: isAddingToLibrary,
+                  onPressed: () => _readFree(article),
+                ),
+              )
+            : article.isOwned
+            ? SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: AppStrings.readNow.tr(),
+                  onPressed: () => _openOwnedArticle(context, article),
+                ),
+              )
             : Row(
                 children: [
                   Expanded(

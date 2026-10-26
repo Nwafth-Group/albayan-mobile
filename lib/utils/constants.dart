@@ -71,8 +71,14 @@ class ApiConstants {
 
   // Reader's Library Endpoints
   static const String myLibrary = '/reader/my-library';
+  static const String myLibraryToggle = '/reader/my-library/toggle';
   static const String myLibraryBooks = '/reader/my-library/books';
   static const String myLibraryBooksSync = '/reader/my-library/books/sync';
+  static const String myLibraryDocuments = '/reader/my-library/documents';
+  static const String myLibraryDocumentsSync =
+      '/reader/my-library/documents/sync';
+  static String myLibraryDocumentDownload(String id) =>
+      '/reader/my-library/documents/$id/download';
   static const String myLibraryMagazineIssues =
       '/reader/my-library/magazine/issues';
   static const String myLibraryMagazineArticles =
@@ -154,6 +160,7 @@ class AppImages {
   static const String googleIcon = 'assets/icons/google.png';
   static const String guestIcon = 'assets/icons/guest.png';
   static const String successIllustration = 'assets/images/success.png';
+  static const String defaultBanner = 'assets/images/default_banner.png';
 
   static const String onboarding1 = 'assets/images/onboarding1.png';
   static const String onboarding2 = 'assets/images/onboarding2.png';
@@ -315,6 +322,8 @@ class AppStrings {
   static const String validationPasswordRequired =
       'validation_password_required';
   static const String validationPasswordMin = 'validation_password_min';
+  static const String validationPasswordLetter =
+      'validation_password_letter';
   static const String validationConfirmPasswordRequired =
       'validation_confirm_password_required';
   static const String validationPasswordMismatch =
@@ -361,6 +370,7 @@ class AppStrings {
   static const String addToCart = 'add_to_cart';
   static const String addedToCart = 'added_to_cart';
   static const String giftAddedToCart = 'gift_added_to_cart';
+  static const String addedToLibrary = 'added_to_library';
   static const String gift = 'gift';
   static const String hijriSuffix = 'hijri_suffix';
   static const String articlesCountLabel = 'articles_count';
@@ -534,6 +544,16 @@ class AppStrings {
   static const String libraryNoDocuments = 'library_no_documents';
   static const String libraryAddDocumentsTitle = 'library_add_documents_title';
   static const String libraryChooseFromPhone = 'library_choose_from_phone';
+  static const String libraryDocumentTitleLabel = 'library_document_title_label';
+  static const String libraryDocumentTitleHint = 'library_document_title_hint';
+  static const String libraryUpload = 'library_upload';
+  static const String libraryDocumentUploaded = 'library_document_uploaded';
+  static const String libraryDocumentDeleted = 'library_document_deleted';
+  static const String libraryDeleteDocumentTitle =
+      'library_delete_document_title';
+  static const String libraryDeleteDocumentMessage =
+      'library_delete_document_message';
+  static const String delete = 'delete';
 
   // ── Cart ──────────────────────────────────────────────────
   static const String cartTitle = 'cart_title';
@@ -677,6 +697,7 @@ class AppStrings {
   static const String errorServerTimeout = 'error_server_timeout';
   static const String errorNoInternet = 'error_no_internet';
   static const String errorUnexpected = 'error_unexpected';
+  static const String sessionExpired = 'session_expired';
   static const String errorInvalidResponse = 'error_invalid_response';
 
   // ── Book reader ───────────────────────────────────────────

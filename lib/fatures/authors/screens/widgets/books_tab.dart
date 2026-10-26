@@ -17,6 +17,7 @@ class BooksTab extends StatelessWidget {
   final VoidCallback onLoadMore;
   final void Function(BookModel) onItemTap;
   final void Function(BookModel)? onFavoriteTap;
+  final void Function(BookModel)? onCartTap;
 
   const BooksTab({
     super.key,
@@ -25,6 +26,7 @@ class BooksTab extends StatelessWidget {
     required this.onLoadMore,
     required this.onItemTap,
     this.onFavoriteTap,
+    this.onCartTap,
   });
 
   @override
@@ -53,6 +55,7 @@ class BooksTab extends StatelessWidget {
               onTap: () => onItemTap(b),
               onFavoriteTap:
                   onFavoriteTap == null ? null : () => onFavoriteTap!(b),
+              onCartTap: onCartTap == null ? null : () => onCartTap!(b),
             ),
           if (loadingMore)
             const Padding(

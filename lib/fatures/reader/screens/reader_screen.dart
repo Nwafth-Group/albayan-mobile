@@ -406,7 +406,10 @@ class _ReaderViewState extends State<_ReaderView> {
         listener: (_, state) {
           if (state.file != null && _pages?.file.path != state.file!.path) {
             _pages?.dispose();
-            _pages = ReaderPageTools(state.file!);
+            // setState: the listener runs after this frame was built, so
+            // without a rebuild the visible thumbnails keep `tools == null`
+            // and spin forever.
+            setState(() => _pages = ReaderPageTools(state.file!));
           }
           // A removed highlight has to disappear from the page too.
           _applyHighlights(state.highlights);
@@ -1099,6 +1102,10 @@ class _Thumbnail extends StatefulWidget {
 class _ThumbnailState extends State<_Thumbnail> {
   Uint8List? _bytes;
 
+  /// The render failed (even after a retry) — show a placeholder, not a
+  /// spinner that never ends.
+  bool _failed = false;
+
   @override
   void initState() {
     super.initState();
@@ -1114,10 +1121,19 @@ class _ThumbnailState extends State<_Thumbnail> {
   Future<void> _load() async {
     final tools = widget.tools;
     if (tools == null) return;
+    _failed = false;
     _bytes = tools.cachedThumbnail(widget.page);
     if (_bytes != null) return;
-    final bytes = await tools.thumbnail(widget.page, width: widget.width * 2);
-    if (mounted && bytes != null) setState(() => _bytes = bytes);
+    var bytes = await tools.thumbnail(widget.page, width: widget.width * 2);
+    // One retry — a render can fail while the document is still opening.
+    if (bytes == null && mounted && identical(tools, widget.tools)) {
+      bytes = await tools.thumbnail(widget.page, width: widget.width * 2);
+    }
+    if (!mounted || !identical(tools, widget.tools)) return;
+    setState(() {
+      _bytes = bytes;
+      _failed = bytes == null;
+    });
   }
 
   @override
@@ -1152,6 +1168,18 @@ class _ThumbnailState extends State<_Thumbnail> {
                         _bytes!,
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
+                      )
+                    : _failed
+                    ? GestureDetector(
+                        // Tap the page area to try rendering again.
+                        onTap: _load,
+                        child: const Center(
+                          child: Icon(
+                            Icons.description_outlined,
+                            size: 22,
+                            color: AppColors.textLight,
+                          ),
+                        ),
                       )
                     : const Center(
                         child: SizedBox(

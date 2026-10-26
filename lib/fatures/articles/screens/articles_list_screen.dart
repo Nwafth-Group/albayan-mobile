@@ -16,6 +16,8 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/articles_remote_data_source.dart';
 import 'cubit/articles_list_cubit.dart';
 
@@ -42,7 +44,8 @@ class _ArticlesListView extends StatefulWidget {
   State<_ArticlesListView> createState() => _ArticlesListViewState();
 }
 
-class _ArticlesListViewState extends State<_ArticlesListView> {
+class _ArticlesListViewState extends State<_ArticlesListView>
+    with AddToCartStateMixin {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
 
@@ -145,6 +148,8 @@ class _ArticlesListViewState extends State<_ArticlesListView> {
               scrollController: _scrollController,
               state: state,
               onRefresh: () => context.read<ArticlesListCubit>().refresh(),
+              onCartTap: (id) =>
+                  addToCart(type: CartItemType.article, id: id),
             );
         }
       },
@@ -156,11 +161,13 @@ class _ArticlesList extends StatelessWidget {
   final ScrollController scrollController;
   final ArticlesListState state;
   final Future<void> Function() onRefresh;
+  final void Function(String id) onCartTap;
 
   const _ArticlesList({
     required this.scrollController,
     required this.state,
     required this.onRefresh,
+    required this.onCartTap,
   });
 
   @override
@@ -190,9 +197,7 @@ class _ArticlesList extends StatelessWidget {
                       onFavoriteTap: () => context
                           .read<ArticlesListCubit>()
                           .toggleFavorite(article.id),
-                      onCartTap: () {
-                        // TODO: add to cart.
-                      },
+                      onCartTap: () => onCartTap(article.id),
                     ),
                   );
                 },

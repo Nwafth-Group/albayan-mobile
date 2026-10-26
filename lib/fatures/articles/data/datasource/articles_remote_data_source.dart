@@ -106,7 +106,7 @@ class ArticlesRemoteDataSourceImpl implements ArticlesRemoteDataSource {
     String? comment,
   }) async {
     await _api.post(
-      '${ApiConstants.articles}/$id/rate-comment',
+      '/reader/articles/$id/rate-comment',
       data: {
         'rating': rating,
         if (comment != null && comment.trim().isNotEmpty)

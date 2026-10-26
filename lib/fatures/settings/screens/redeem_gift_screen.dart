@@ -47,20 +47,9 @@ class _RedeemGiftScreenState extends State<RedeemGiftScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: AppColors.background,
-        elevation: 0,
+      appBar: SettingsAppBar(
+        title: AppStrings.redeemGift.tr(),
         centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text(
-          AppStrings.redeemGift.tr(),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 60, 16, 24),

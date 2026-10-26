@@ -179,7 +179,11 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
+    // Fixed height, not IntrinsicHeight: QrImageView is built with a
+    // LayoutBuilder, which can't report intrinsic sizes (that crashed the
+    // layout and then flooded the semantics `parentDataDirty` assertion).
+    return SizedBox(
+      height: 90,
       child: Row(
         children: [
           Expanded(
@@ -188,6 +192,7 @@ class _Header extends StatelessWidget {
           const VerticalDivider(color: AppColors.primary, width: 24),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -206,11 +211,14 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                QrImageView(
-                  // The ZATCA e-invoice payload when the API provides one.
-                  data: order.qrCode ?? order.invoiceNumber,
-                  size: 52,
-                  padding: EdgeInsets.zero,
+                SizedBox.square(
+                  dimension: 52,
+                  child: QrImageView(
+                    // The ZATCA e-invoice payload when the API provides one.
+                    data: order.qrCode ?? order.invoiceNumber,
+                    size: 52,
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
               ],
             ),

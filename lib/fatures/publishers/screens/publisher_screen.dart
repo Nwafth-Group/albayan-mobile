@@ -14,6 +14,8 @@ import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/share_helper.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/publishers_remote_data_source.dart';
 import '../data/models/publisher_detail_model.dart';
 import 'cubit/publisher_cubit.dart';
@@ -42,7 +44,8 @@ class _PublisherView extends StatefulWidget {
   State<_PublisherView> createState() => _PublisherViewState();
 }
 
-class _PublisherViewState extends State<_PublisherView> {
+class _PublisherViewState extends State<_PublisherView>
+    with AddToCartStateMixin {
   final _scrollController = ScrollController();
   final _relatedBooksKey = GlobalKey();
 
@@ -241,9 +244,8 @@ class _PublisherViewState extends State<_PublisherView> {
             return BookGridCard(
               book: book,
               onTap: () => AppNavigator.push(BookScreen(bookId: book.id)),
-              onCartTap: () {
-                // TODO: add to cart.
-              },
+              onCartTap: () =>
+                  addToCart(type: CartItemType.book, id: book.id),
             );
           },
           childCount: state.books.length,
@@ -273,12 +275,12 @@ class _PublisherViewState extends State<_PublisherView> {
           icon: Icons.ios_share,
           onTap: () => _sharePublisher(publisher),
         ),
-        _circleAction(
-          icon: Icons.favorite_border,
-          onTap: () {
-            // TODO: favorite endpoint not exposed for publishers yet.
-          },
-        ),
+        // _circleAction(
+        //   icon: Icons.favorite_border,
+        //   onTap: () {
+        //     // TODO: favorite endpoint not exposed for publishers yet.
+        //   },
+        // ),
         const SizedBox(width: AppDimensions.paddingMedium),
       ],
       flexibleSpace: FlexibleSpaceBar(

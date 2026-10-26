@@ -45,11 +45,12 @@ class BookGridCard extends StatelessWidget {
                     child: _Cover(url: book.image),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: _CartBadge(onTap: onCartTap),
-                ),
+                if (!book.isOwned)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _CartBadge(onTap: onCartTap),
+                  ),
               ],
             ),
           ),
@@ -90,6 +91,16 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (book.isOwned) {
+      return Text(
+        AppStrings.readNow.tr(),
+        style: const TextStyle(
+          fontSize: AppDimensions.fontSizeMedium,
+          fontWeight: FontWeight.w700,
+          color: AppColors.success,
+        ),
+      );
+    }
     if (book.isFree) {
       return Text(
         AppStrings.free.tr(),

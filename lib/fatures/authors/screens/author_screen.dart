@@ -13,6 +13,8 @@ import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/share_helper.dart';
 import '../../../widgets/empty_state_widget.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/authors_remote_data_source.dart';
 import '../data/models/author_details_model.dart';
 import 'cubit/author_cubit.dart';
@@ -46,7 +48,7 @@ class _AuthorView extends StatefulWidget {
 }
 
 class _AuthorViewState extends State<_AuthorView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AddToCartStateMixin {
   late final TabController _tabController;
 
   @override
@@ -140,6 +142,8 @@ class _AuthorViewState extends State<_AuthorView>
                       builder: (_) => ArticleScreen(articleId: a.id),
                     ),
                   ),
+                  onCartTap: (a) =>
+                      addToCart(type: CartItemType.article, id: a.id),
                 ),
                 BooksTab(
                   items: state.books,
@@ -153,6 +157,8 @@ class _AuthorViewState extends State<_AuthorView>
                   ),
                   onFavoriteTap: (b) =>
                       context.read<AuthorCubit>().toggleBookFavorite(b.id),
+                  onCartTap: (b) =>
+                      addToCart(type: CartItemType.book, id: b.id),
                 ),
               ],
             ),

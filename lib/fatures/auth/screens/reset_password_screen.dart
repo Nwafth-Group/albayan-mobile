@@ -146,8 +146,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       if (v == null || v.isEmpty) {
                         return AppStrings.validationPasswordRequired.tr();
                       }
-                      if (v.length < 8) {
+                      if (v.length < 7) {
                         return AppStrings.validationPasswordMin.tr();
+                      }
+                      if (!RegExp(r'[A-Za-z]').hasMatch(v)) {
+                        return AppStrings.validationPasswordLetter.tr();
                       }
                       return null;
                     },

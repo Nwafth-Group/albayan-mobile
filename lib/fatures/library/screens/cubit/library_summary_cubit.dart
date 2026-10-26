@@ -2,10 +2,13 @@
 // FILE: lib/fatures/library/screens/cubit/library_summary_cubit.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/datasource/library_remote_data_source.dart';
+import '../../utils/library_events.dart';
 import '../../data/models/library_summary_model.dart';
 
 part 'library_summary_state.dart';
@@ -13,7 +16,18 @@ part 'library_summary_state.dart';
 class LibrarySummaryCubit extends Cubit<LibrarySummaryState> {
   final LibraryRemoteDataSource dataSource;
 
-  LibrarySummaryCubit(this.dataSource) : super(const LibrarySummaryState());
+  LibrarySummaryCubit(this.dataSource) : super(const LibrarySummaryState()) {
+    // Refresh whenever a free item is added to My Library elsewhere.
+    _libraryChangesSub = LibraryEvents.changes.listen((_) => refresh());
+  }
+
+  StreamSubscription<void>? _libraryChangesSub;
+
+  @override
+  Future<void> close() {
+    _libraryChangesSub?.cancel();
+    return super.close();
+  }
 
   Future<void> load() => _fetch();
 

@@ -5,10 +5,12 @@
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
+import 'package:albayan/fatures/main/screens/main_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/api_client.dart';
 import '../../../widgets/custom_button.dart';
@@ -179,6 +181,16 @@ class _RegisterBodyState extends State<_RegisterBody>
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ));
+        } else if (state is LoginSuccess) {
+          // Google sign-up uses the same endpoint as Google sign-in — the
+          // backend creates the account on first use.
+          AppNavigator.pushAndRemoveUntil(const MainScreen());
+        } else if (state is LoginError) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(state.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ));
         }
       },
       child: Scaffold(
@@ -257,26 +269,41 @@ class _RegisterBodyState extends State<_RegisterBody>
                   const SizedBox(height: 28),
                   _OrDivider(label: AppStrings.orSignUpWith.tr()),
                   const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SocialButton(
-                          icon: Image.asset(AppImages.appleIcon, height: 22, fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.apple, size: 22)),
-                          label: AppStrings.continueWithApple.tr(),
-                          onTap: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _SocialButton(
-                          icon: Image.asset(AppImages.googleIcon, height: 22, fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 22)),
-                          label: AppStrings.continueWithGoogle.tr(),
-                          onTap: () {},
-                        ),
-                      ),
-                    ],
+                  BlocBuilder<AuthCubit, AuthState>(
+                    buildWhen: (_, s) =>
+                        s is GoogleLoginLoading ||
+                        s is GoogleLoginCancelled ||
+                        s is LoginSuccess ||
+                        s is LoginError,
+                    builder: (context, state) {
+                      final isGoogleLoading = state is GoogleLoginLoading;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Image.asset(AppImages.appleIcon, height: 22, fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.apple, size: 22)),
+                              label: AppStrings.continueWithApple.tr(),
+                              onTap: () {},
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Image.asset(AppImages.googleIcon, height: 22, fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 22)),
+                              label: AppStrings.continueWithGoogle.tr(),
+                              isLoading: isGoogleLoading,
+                              onTap: isGoogleLoading
+                                  ? null
+                                  : () => context
+                                      .read<AuthCubit>()
+                                      .loginWithGoogle(),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                 ],
@@ -704,7 +731,10 @@ class _EmailForm extends StatelessWidget {
                       color: AppColors.textLight, size: 22))),
           validator: (v) {
             if (v == null || v.isEmpty) return AppStrings.validationPasswordRequired.tr();
-            if (v.length < 8) return AppStrings.validationPasswordMin.tr();
+            if (v.length < 7) return AppStrings.validationPasswordMin.tr();
+            if (!RegExp(r'[A-Za-z]').hasMatch(v)) {
+              return AppStrings.validationPasswordLetter.tr();
+            }
             return null;
           },
         ),
@@ -928,8 +958,14 @@ class _OrDivider extends StatelessWidget {
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
-  final VoidCallback onTap;
-  const _SocialButton({required this.icon, required this.label, required this.onTap});
+  final VoidCallback? onTap;
+  final bool isLoading;
+  const _SocialButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -942,14 +978,23 @@ class _SocialButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          icon,
-          const SizedBox(width: 5),
-          Flexible(child: Text(label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary),
-              overflow: TextOverflow.ellipsis)),
-        ]),
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary),
+                ),
+              )
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                icon,
+                const SizedBox(width: 5),
+                Flexible(child: Text(label,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+                        color: AppColors.textPrimary),
+                    overflow: TextOverflow.ellipsis)),
+              ]),
       ),
     );
   }

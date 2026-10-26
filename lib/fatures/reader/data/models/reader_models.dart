@@ -8,6 +8,11 @@
 /// What the reader needs to open a book. Build it from any book/issue model
 /// once the API returns a PDF url, e.g.
 /// `ReaderBook(id: book.id, title: book.name, pdfUrl: book.pdfUrl!)`.
+/// What kind of content a [ReaderBook] syncs progress for — each has its own
+/// sync endpoint (`/reader/my-library/books/sync` vs
+/// `/reader/my-library/documents/sync`).
+enum ReaderContentKind { book, document }
+
 class ReaderBook {
   /// Stable id — used to remember progress, bookmarks and highlights, and to
   /// name the cached file. Use the same id every time for the same book.
@@ -23,11 +28,14 @@ class ReaderBook {
   /// `my_books[].id`. Falls back to [id] when not set explicitly.
   final String apiBookId;
 
+  final ReaderContentKind kind;
+
   const ReaderBook({
     required this.id,
     required this.title,
     required this.pdfUrl,
     this.isSample = false,
+    this.kind = ReaderContentKind.book,
     String? apiBookId,
   }) : apiBookId = apiBookId ?? id;
 
