@@ -161,6 +161,8 @@ class _ArticleViewState extends State<_ArticleView>
                       builder: (_) => ArticleScreen(articleId: a.id),
                     ),
                   ),
+                  onCartTap: (a) =>
+                      addToCart(type: CartItemType.article, id: a.id),
                 ),
               ],
             ),
@@ -201,7 +203,22 @@ class _ArticleViewState extends State<_ArticleView>
       actions: [
         DetailCircleAction(
           asset: AppImages.openBook,
-          onTap: () {
+          isLoading: isAddingToLibrary,
+          isActive: isInLibrary(
+            type: LibraryItemType.article,
+            id: article.id,
+            owned: article.isOwned,
+          ),
+          onTap: () async {
+            if (article.isFree) {
+              final added = await addFreeToLibrary(
+                type: LibraryItemType.article,
+                id: article.id,
+                alreadyInLibrary: article.isOwned,
+              );
+              if (!added || !context.mounted) return;
+              context.read<ArticleCubit>().markInLibrary();
+            }
             final url = article.url;
             if (url == null || url.isEmpty) {
               Helpers.showError(AppStrings.somethingWentWrong.tr());
@@ -256,12 +273,14 @@ class _ArticleViewState extends State<_ArticleView>
   /// Free article → "Read Now": add it to My Library (no checkout), then
   /// show its content (the first tab).
   Future<void> _readFree(ArticleModel article) async {
-    await addFreeToLibrary(
+    final added = await addFreeToLibrary(
       type: LibraryItemType.article,
       id: article.id,
       alreadyInLibrary: article.isOwned,
     );
-    if (mounted) _tabController.animateTo(0);
+    if (!mounted) return;
+    if (added) context.read<ArticleCubit>().markInLibrary();
+    _tabController.animateTo(0);
   }
 
   /// Owned paid article → open its page in a WebView (articles are web
@@ -335,7 +354,7 @@ class _ArticleViewState extends State<_ArticleView>
                     child: CustomButton(
                       text: article.isFree
                           ? AppStrings.addToCart.tr()
-                          : '${AppStrings.addToCart.tr()} ${article.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}',
+                          : '${AppStrings.addToCart.tr()} ${article.effectivePrice.toStringAsFixed(2)}${AppStrings.currencySar.tr()}',
                       isLoading: isAddingToCart,
                       onPressed: () =>
                           addToCart(type: CartItemType.article, id: article.id),

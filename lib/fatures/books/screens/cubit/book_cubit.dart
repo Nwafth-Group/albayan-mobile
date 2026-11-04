@@ -90,6 +90,13 @@ class BookCubit extends Cubit<BookState> {
     );
   }
 
+  /// The book was just added to My Library — the read icon turns active.
+  void markInLibrary() {
+    final b = state.book;
+    if (isClosed || b == null || b.isOwned) return;
+    emit(state.copyWith(book: b.copyWith(isOwned: true)));
+  }
+
   void _setFavorite(bool isFavorite) {
     final b = state.book;
     if (isClosed || b == null || b.isFavorite == isFavorite) return;

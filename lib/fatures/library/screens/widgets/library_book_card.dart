@@ -35,9 +35,7 @@ class LibraryBookCard extends StatelessWidget {
           AspectRatio(
             aspectRatio: 0.78,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(
-                AppDimensions.radiusMedium,
-              ),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
               child: _Cover(url: book.cover),
             ),
             // Delete badge hidden: deleting a library book isn't wired to

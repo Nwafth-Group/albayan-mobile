@@ -45,7 +45,7 @@ class BookGridCard extends StatelessWidget {
                     child: _Cover(url: book.image),
                   ),
                 ),
-                if (!book.isOwned)
+                if (!book.isOwned && !book.isFree)
                   Positioned(
                     top: 8,
                     right: 8,

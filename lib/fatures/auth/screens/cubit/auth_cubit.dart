@@ -2,6 +2,8 @@
 // FILE: lib/fatures/auth/screens/cubit/auth_cubit.dart
 // ============================================
 
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
@@ -243,6 +245,92 @@ class AuthCubit extends Cubit<AuthState> {
       emit(ProfileLoaded(user));
     } catch (e) {
       emit(ProfileError(e.toString()));
+    }
+  }
+
+  // ── Update Profile ────────────────────────────────────────────
+  Future<void> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String mobileNumber,
+    String? countryId,
+    File? image,
+  }) async {
+    final previousEmail = SharedPrefHelper.getUser()?.email ?? '';
+    emit(const ProfileUpdateLoading());
+    try {
+      final response = await _dataSource.updateProfile(
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        mobileNumber: mobileNumber,
+        countryId: countryId,
+        image: image,
+      );
+      final data = response['data'];
+      // The user may come back directly in `data` or nested in `data.user`.
+      final userJson = data is Map<String, dynamic>
+          ? (data['user'] as Map<String, dynamic>?) ??
+                (data.containsKey('id') ? data : null)
+          : null;
+
+      UserModel? user;
+      if (userJson != null) {
+        user = UserModel.fromJson(userJson);
+      } else {
+        // Fall back to a fresh fetch when the update response has no user.
+        final profile = await _dataSource.getProfile();
+        final profileJson = profile['data'] as Map<String, dynamic>?;
+        if (profileJson != null) user = UserModel.fromJson(profileJson);
+      }
+      if (user == null) {
+        emit(ProfileUpdateError(AppStrings.errorInvalidResponse.tr()));
+        return;
+      }
+      await SharedPrefHelper.saveUser(user);
+
+      final emailChanged =
+          email.trim().isNotEmpty &&
+          email.trim().toLowerCase() != previousEmail.trim().toLowerCase();
+      final verificationRequired =
+          emailChanged ||
+          (data is Map && data['status'] == 'verification_required');
+      emit(
+        ProfileUpdated(user, emailVerificationRequired: verificationRequired),
+      );
+    } catch (e) {
+      emit(ProfileUpdateError(e.toString()));
+    }
+  }
+
+  // ── Verify Profile Email ──────────────────────────────────────
+  Future<void> verifyProfileEmail({required String otpCode}) async {
+    emit(const ProfileEmailVerifyLoading());
+    try {
+      await _dataSource.verifyProfileEmail(otpCode: otpCode);
+      // Refresh the cached user so the new email shows everywhere.
+      try {
+        final profile = await _dataSource.getProfile();
+        final userJson = profile['data'] as Map<String, dynamic>?;
+        if (userJson != null) {
+          await SharedPrefHelper.saveUser(UserModel.fromJson(userJson));
+        }
+      } catch (_) {}
+      emit(const ProfileEmailVerified());
+    } catch (e) {
+      emit(ProfileEmailVerifyError(e.toString()));
+    }
+  }
+
+  // ── Resend Profile Email OTP ──────────────────────────────────
+  Future<void> resendProfileEmailOtp() async {
+    emit(const OtpResendLoading());
+    try {
+      await _dataSource.resendProfileEmailOtp();
+      emit(const OtpResendSuccess());
+    } catch (e) {
+      emit(OtpResendError(e.toString()));
     }
   }
 

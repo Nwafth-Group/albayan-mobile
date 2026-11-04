@@ -71,6 +71,9 @@ class CartModel {
 
   bool get isEmpty => items.isEmpty;
 
+  /// Every item is a gift — drives the cart's Gift switch.
+  bool get allGift => items.isNotEmpty && items.every((i) => i.isGift);
+
   factory CartModel.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'];
     final items = (rawItems is List)

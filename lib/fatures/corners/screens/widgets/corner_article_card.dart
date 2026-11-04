@@ -86,7 +86,11 @@ class CornerArticleCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (!article.isFree) ...[
+                            // No cart chip when the host screen doesn't
+                            // sell from its list (e.g. the corner page).
+                            if (onCartTap != null &&
+                                !article.isFree &&
+                                !article.isOwned) ...[
                               _ActionChip(
                                 onTap: onCartTap,
                                 child: Image.asset(
@@ -136,7 +140,17 @@ class CornerArticleCard extends StatelessWidget {
                           ),
                         ),
                         // Free articles show no price line.
-                        if (!article.isFree) ...[
+                        if (article.isOwned) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            AppStrings.readNow.tr(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ] else if (!article.isFree) ...[
                           const SizedBox(height: 4),
                           Text.rich(
                             TextSpan(

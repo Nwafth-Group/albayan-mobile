@@ -64,6 +64,22 @@ class IssueDetailsCubit extends Cubit<IssueDetailsState> {
     );
   }
 
+  /// The header book icon toggled the issue in / out of My Library.
+  void setInLibrary(bool inLibrary) {
+    final detail = state.detail;
+    if (isClosed || detail == null || detail.isInLibrary == inLibrary) return;
+    emit(state.copyWith(detail: detail.copyWith(isInLibrary: inLibrary)));
+  }
+
+  /// The issue was just added to My Library — the read icon turns active.
+  void markInLibrary() {
+    final detail = state.detail;
+    if (isClosed || detail == null || detail.isInLibrary) return;
+    emit(state.copyWith(
+      detail: detail.copyWith(isOwned: true, isInLibrary: true),
+    ));
+  }
+
   void _setFavorite(bool isFavorite) {
     final detail = state.detail;
     if (isClosed || detail == null || detail.isFavorite == isFavorite) return;

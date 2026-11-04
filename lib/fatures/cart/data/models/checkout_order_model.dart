@@ -43,6 +43,7 @@ class CheckoutOrderItem {
   /// Raw `title` — a string or a `{ar, en}` map; see [titleFor].
   final dynamic title;
 
+  final String? image;
   final num unitPrice;
   final num offerDiscount;
   final num couponDiscount;
@@ -55,6 +56,7 @@ class CheckoutOrderItem {
     required this.type,
     required this.isGift,
     required this.title,
+    this.image,
     required this.unitPrice,
     required this.offerDiscount,
     required this.couponDiscount,
@@ -71,12 +73,49 @@ class CheckoutOrderItem {
       type: CartItemTypeApiValue.fromApi(json['item_type']?.toString()),
       isGift: json['is_gift'] == true,
       title: json['title'],
+      image: _str(json['image'] ?? json['cover_image'] ?? json['cover']),
       unitPrice: _parseNum(json['unit_price']),
       offerDiscount: _parseNum(json['offer_discount']),
       couponDiscount: _parseNum(json['coupon_discount']),
       taxAmount: _parseNum(json['tax_amount']),
       finalPrice: _parseNum(json['final_price']),
     );
+  }
+}
+
+/// `gift_code` of a gift order:
+/// { "code", "status", "redeemed_at", "share_message" }
+class CheckoutGiftCode {
+  final String code;
+
+  /// "unused" / "used" ...
+  final String? status;
+  final DateTime? redeemedAt;
+
+  /// Ready-to-send text for the recipient (code + store links).
+  final String? shareMessage;
+
+  const CheckoutGiftCode({
+    required this.code,
+    this.status,
+    this.redeemedAt,
+    this.shareMessage,
+  });
+
+  /// Older responses sent the code as a plain string.
+  static CheckoutGiftCode? from(dynamic json) {
+    if (json is Map<String, dynamic>) {
+      final code = _str(json['code']);
+      if (code == null) return null;
+      return CheckoutGiftCode(
+        code: code,
+        status: _str(json['status']),
+        redeemedAt: DateTime.tryParse(json['redeemed_at']?.toString() ?? ''),
+        shareMessage: _str(json['share_message']),
+      );
+    }
+    final code = _str(json);
+    return code == null ? null : CheckoutGiftCode(code: code);
   }
 }
 
@@ -167,7 +206,7 @@ class CheckoutOrderModel {
   final DateTime? paidAt;
   final DateTime? createdAt;
   final bool isGift;
-  final String? giftCode;
+  final CheckoutGiftCode? giftCode;
   final String? couponCode;
   final List<CheckoutOrderItem> items;
   final CheckoutInvoice? invoice;
@@ -211,7 +250,7 @@ class CheckoutOrderModel {
       paidAt: DateTime.tryParse(json['paid_at']?.toString() ?? ''),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
       isGift: json['is_gift'] == true,
-      giftCode: _str(json['gift_code']),
+      giftCode: CheckoutGiftCode.from(json['gift_code']),
       couponCode: rawCoupon is Map<String, dynamic>
           ? _str(rawCoupon['code'])
           : _str(rawCoupon),

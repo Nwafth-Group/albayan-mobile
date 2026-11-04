@@ -12,8 +12,10 @@ import '../../settings/data/models/order_model.dart';
 import '../../settings/screens/invoice_pdf_screen.dart';
 import '../../settings/screens/order_details_screen.dart';
 import '../../settings/screens/orders_screen.dart';
+import '../../settings/screens/widgets/settings_widgets.dart';
 import '../data/models/checkout_order_model.dart';
 import '../utils/cart_format.dart';
+import 'widgets/gift_order_cards.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
   /// The order returned by `POST /reader/cart/checkout`.
@@ -59,6 +61,11 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gift = order.giftCode;
+    if (order.isGift && gift != null) {
+      return _buildGift(context, gift);
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -175,6 +182,62 @@ class PaymentSuccessScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Gift checkout: the code and the message to send the recipient instead
+  /// of the order details / invoice.
+  Widget _buildGift(BuildContext context, CheckoutGiftCode gift) {
+    final message = gift.shareMessage;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.paddingMedium,
+            60,
+            AppDimensions.paddingMedium,
+            AppDimensions.paddingLarge,
+          ),
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              size: 220,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: AppDimensions.paddingLarge),
+            Text(
+              AppStrings.paymentSuccessful.tr(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 24,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            Text(
+              AppStrings.paymentSuccessDesc.tr(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeLarge,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 40),
+            GiftCodeCard(code: gift.code),
+            if (message != null) ...[
+              const SizedBox(height: AppDimensions.paddingMedium),
+              GiftMessageCard(message: message),
+            ],
+          ],
+        ),
+      ),
+      bottomNavigationBar: SettingsButtonPair(
+        secondaryText: AppStrings.back.tr(),
+        primaryText: AppStrings.viewOrderDetails.tr(),
+        onSecondary: () => Navigator.of(context).popUntil((r) => r.isFirst),
+        onPrimary: () => _viewOrder(context),
       ),
     );
   }

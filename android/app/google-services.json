@@ -7,6 +7,50 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:842051961964:android:4b938670906968c4b40449",
+        "android_client_info": {
+          "package_name": "com.albayan.digitalmagazine"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "842051961964-h95uu4gtldefrcufb64hgmqvv9bvvj8h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.albayan.digitalmagazine",
+            "certificate_hash": "75546aeb685b33dffce46874be78a5235969bb48"
+          }
+        },
+        {
+          "client_id": "842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBk_hbVUP_0TioOz9RUyzATbNNKkAFNl-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "842051961964-8f1t5ed1mfrspr2ov6uvluvs15ak7ckh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.albayan.digitalmagazine"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:842051961964:android:700b6d117d983315b40449",
         "android_client_info": {
           "package_name": "com.example.albayan"
@@ -39,10 +83,10 @@
               "client_type": 3
             },
             {
-              "client_id": "842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0.apps.googleusercontent.com",
+              "client_id": "842051961964-8f1t5ed1mfrspr2ov6uvluvs15ak7ckh.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.albayan"
+                "bundle_id": "com.albayan.digitalmagazine"
               }
             }
           ]

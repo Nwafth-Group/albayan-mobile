@@ -200,8 +200,14 @@ class _BookViewState extends State<_BookView>
       centerTitle: false,
       actions: [
         _circleAction(
+          isActive: isInLibrary(
+            type: LibraryItemType.book,
+            id: book.id,
+            owned: book.isOwned,
+          ),
+          isLoading: isAddingToLibrary,
           child: ImageAsset(AppImages.openBook, width: 20, height: 20),
-          onTap: () => _openReader(book),
+          onTap: () => book.isFree ? _readFree(book) : _openReader(book),
         ),
         _circleAction(
           child: book.isFavorite
@@ -281,12 +287,14 @@ class _BookViewState extends State<_BookView>
 
   /// Free book → "Read Now": add it to My Library (no checkout), then read.
   Future<void> _readFree(BookDetailModel book) async {
-    await addFreeToLibrary(
+    final added = await addFreeToLibrary(
       type: LibraryItemType.book,
       id: book.id,
       alreadyInLibrary: book.isOwned,
     );
-    if (mounted) _openReader(book);
+    if (!mounted) return;
+    if (added) context.read<BookCubit>().markInLibrary();
+    _openReader(book);
   }
 
   /// Opens the book's PDF (`version.file_url`) in the reader.
@@ -308,19 +316,44 @@ class _BookViewState extends State<_BookView>
     ReaderScreen.open(readerBook);
   }
 
-  Widget _circleAction({required Widget child, VoidCallback? onTap}) {
+  /// [isActive] fills the circle maroon with a white book icon — the read
+  /// action once the book is in My Library.
+  Widget _circleAction({
+    required Widget child,
+    VoidCallback? onTap,
+    bool isActive = false,
+    bool isLoading = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: AppDimensions.paddingSmall),
       child: InkWell(
-        onTap: onTap,
+        onTap: isLoading ? null : onTap,
         customBorder: const CircleBorder(),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           width: 38,
           height: 38,
           alignment: Alignment.center,
-          decoration:
-              const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: child,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.white,
+            shape: BoxShape.circle,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                )
+              : isActive
+              ? const Icon(
+                  Icons.menu_book_rounded,
+                  size: 20,
+                  color: AppColors.white,
+                )
+              : child,
         ),
       ),
     );

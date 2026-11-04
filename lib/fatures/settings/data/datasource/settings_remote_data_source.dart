@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../cart/data/models/checkout_order_model.dart';
@@ -112,16 +113,16 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
         file.path,
         options: Options(headers: {'Accept': 'application/pdf'}),
       );
-    } on DioException catch (e) {
+    } on DioException {
       if (await file.exists()) await file.delete();
-      throw e.message ?? e.toString();
+      throw AppStrings.invoiceDownloadFailed.tr();
     }
 
     // Guard against an error page / JSON body saved as ".pdf".
     final bytes = await file.openRead(0, 4).first;
     if (String.fromCharCodes(bytes) != '%PDF') {
       await file.delete();
-      throw 'Invalid invoice file';
+      throw AppStrings.invoiceDownloadFailed.tr();
     }
     return file;
   }

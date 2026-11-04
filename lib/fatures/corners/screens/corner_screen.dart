@@ -13,9 +13,7 @@ import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/promo_banner.dart';
-import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/screens/cart_screen.dart';
-import '../../cart/utils/add_to_cart_mixin.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../data/datasource/corners_remote_data_source.dart';
 import 'cubit/corner_cubit.dart';
@@ -49,7 +47,7 @@ class _CornerView extends StatefulWidget {
   State<_CornerView> createState() => _CornerViewState();
 }
 
-class _CornerViewState extends State<_CornerView> with AddToCartStateMixin {
+class _CornerViewState extends State<_CornerView> {
   /// The promo banner sits after this many articles (per the design).
   static const _bannerAfter = 2;
 
@@ -216,8 +214,6 @@ class _CornerViewState extends State<_CornerView> with AddToCartStateMixin {
                       onFavoriteTap: () => context
                           .read<CornerCubit>()
                           .toggleFavorite(article.id),
-                      onCartTap: () =>
-                          addToCart(type: CartItemType.article, id: article.id),
                     );
                   }, childCount: articles.length + (hasBanner ? 1 : 0)),
                 ),

@@ -13,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../../../utils/api_client.dart';
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state.dart';
@@ -69,7 +70,13 @@ class _InvoicePdfView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<InvoicePdfCubit, InvoicePdfState>(
+    return BlocConsumer<InvoicePdfCubit, InvoicePdfState>(
+      listenWhen: (prev, curr) =>
+          prev.status != curr.status &&
+          curr.status == InvoicePdfStatus.success,
+      listener: (_, __) => AppNavigator.showSuccessSnackBar(
+        AppStrings.invoiceDownloaded.tr(),
+      ),
       builder: (context, state) {
         return Scaffold(
           backgroundColor: AppColors.background,

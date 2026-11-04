@@ -23,11 +23,9 @@ class PersonalCategoriesCubit extends Cubit<PersonalCategoriesState> {
   }
 
   final LibraryRemoteDataSource dataSource;
-  final PersonalCategoryType? type;
 
-  /// With a [type], loads that type's category list; without one, loads the
-  /// per-type counts shown on the Categories tab.
-  PersonalCategoriesCubit(this.dataSource, {this.type})
+  /// Loads the reader's personal categories shown on the Categories tab.
+  PersonalCategoriesCubit(this.dataSource)
     : super(const PersonalCategoriesState()) {
     // Refresh whenever a free item is added to My Library elsewhere.
     _libraryChangesSub = LibraryEvents.changes.listen((_) => refresh());
@@ -45,25 +43,15 @@ class PersonalCategoriesCubit extends Cubit<PersonalCategoriesState> {
       );
     }
     try {
-      if (type == null) {
-        final counts = await dataSource.getPersonalCategoryCounts();
-        emit(
-          state.copyWith(
-            status: PersonalCategoriesStatus.success,
-            counts: counts,
-          ),
-        );
-      } else {
-        final items = await dataSource.getPersonalCategories(type!);
-        emit(
-          state.copyWith(
-            status: items.isEmpty
-                ? PersonalCategoriesStatus.empty
-                : PersonalCategoriesStatus.success,
-            categories: items,
-          ),
-        );
-      }
+      final items = await dataSource.getPersonalCategories();
+      emit(
+        state.copyWith(
+          status: items.isEmpty
+              ? PersonalCategoriesStatus.empty
+              : PersonalCategoriesStatus.success,
+          categories: items,
+        ),
+      );
     } catch (e) {
       // A failed pull-to-refresh keeps the data already on screen.
       if (silent && state.status == PersonalCategoriesStatus.success) return;
@@ -73,6 +61,48 @@ class PersonalCategoriesCubit extends Cubit<PersonalCategoriesState> {
           error: e.toString(),
         ),
       );
+    }
+  }
+
+  /// Creates a category and appends it. Returns false on failure (the
+  /// ApiService has already surfaced the error message).
+  Future<bool> create(String name) async {
+    try {
+      final created = await dataSource.createPersonalCategory(name);
+      if (created.id.isEmpty) {
+        await refresh();
+      } else {
+        emit(
+          state.copyWith(
+            status: PersonalCategoriesStatus.success,
+            categories: [...state.categories, created],
+          ),
+        );
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Deletes a category and drops it from the list. Returns false on failure.
+  Future<bool> delete(String categoryId) async {
+    try {
+      await dataSource.deletePersonalCategory(categoryId);
+      final remaining = state.categories
+          .where((c) => c.id != categoryId)
+          .toList();
+      emit(
+        state.copyWith(
+          status: remaining.isEmpty
+              ? PersonalCategoriesStatus.empty
+              : PersonalCategoriesStatus.success,
+          categories: remaining,
+        ),
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

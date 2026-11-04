@@ -51,19 +51,19 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBk_hbVUP_0TioOz9RUyzATbNNKkAFNl-M',
-    appId: '1:842051961964:android:700b6d117d983315b40449',
+    appId: '1:842051961964:android:4b938670906968c4b40449',
     messagingSenderId: '842051961964',
     projectId: 'albayan-e-2026-5e885',
     storageBucket: 'albayan-e-2026-5e885.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAGJYwHIHRHkTyHseaRRu2nYDHJf3Sj2RY',
-    appId: '1:842051961964:ios:bdc862564e8eeec4b40449',
+    appId: '1:842051961964:ios:02f01184233645edb40449',
     messagingSenderId: '842051961964',
     projectId: 'albayan-e-2026-5e885',
     storageBucket: 'albayan-e-2026-5e885.firebasestorage.app',
-    androidClientId: '842051961964-st82vik6hih73g32naav8hvkck9and0n.apps.googleusercontent.com',
-    iosClientId: '842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0.apps.googleusercontent.com',
-    iosBundleId: 'com.example.albayan',
+    androidClientId: '842051961964-h95uu4gtldefrcufb64hgmqvv9bvvj8h.apps.googleusercontent.com',
+    iosClientId: '842051961964-8f1t5ed1mfrspr2ov6uvluvs15ak7ckh.apps.googleusercontent.com',
+    iosBundleId: 'com.albayan.digitalmagazine',
   );
 }

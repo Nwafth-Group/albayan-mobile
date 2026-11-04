@@ -16,12 +16,14 @@ class FavoriteItemCard extends StatelessWidget {
   final FavoriteItemModel item;
   final VoidCallback? onTap;
   final VoidCallback? onUnfavorite;
+  final VoidCallback? onCartTap;
 
   const FavoriteItemCard({
     super.key,
     required this.item,
     this.onTap,
     this.onUnfavorite,
+    this.onCartTap,
   });
 
   String get _typeLabel {
@@ -96,6 +98,27 @@ class FavoriteItemCard extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            if (!item.isFree && !item.isOwned) ...[
+                              InkWell(
+                                onTap: onCartTap,
+                                customBorder: const CircleBorder(),
+                                child: Container(
+                                  width: 22,
+                                  height: 22,
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.cardColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.shopping_cart_outlined,
+                                    size: 13,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
                             InkWell(
                               onTap: onUnfavorite,
                               customBorder: const CircleBorder(),
@@ -140,7 +163,17 @@ class FavoriteItemCard extends StatelessWidget {
                           ),
                         ],
                         // Free items show no price line.
-                        if (!item.isFree) ...[
+                        if (item.isOwned) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            AppStrings.readNow.tr(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ] else if (!item.isFree) ...[
                           const SizedBox(height: 4),
                           Text.rich(
                             TextSpan(

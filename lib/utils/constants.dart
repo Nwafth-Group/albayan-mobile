@@ -34,6 +34,9 @@ class ApiConstants {
   static const String logout = '/reader/auth/logout';
   static const String profile = '/reader/profile';
   static const String changePassword = '/reader/profile/change-password';
+  static const String verifyProfileEmail = '/reader/profile/verify-email';
+  static const String resendProfileEmailOtp =
+      '/reader/profile/resend-email-otp';
 
   // Forgot / Reset Password
   static const String forgotPassword = '/reader/auth/forgot-password';
@@ -84,8 +87,12 @@ class ApiConstants {
   static const String myLibraryMagazineArticles =
       '/reader/my-library/magazine/articles';
   static const String personalCategories = '/reader/personal-categories';
-  static const String personalCategoriesCounts =
-      '/reader/personal-categories/counts';
+  static String personalCategory(String id) =>
+      '/reader/personal-categories/$id';
+  static String personalCategoryItems(String id) =>
+      '/reader/personal-categories/$id/items';
+  static String personalCategoryToggleItem(String id) =>
+      '/reader/personal-categories/$id/toggle-item';
 
   // Offers Endpoints
   static const String offers = '/public/offers';
@@ -110,6 +117,12 @@ class ApiConstants {
       '/reader/orders/$orderId/invoice';
   static String orderInvoicePdf(String orderId) =>
       '/reader/orders/$orderId/invoice/pdf';
+
+  // Subscriptions Endpoints
+  static const String subscriptionPlans = '/public/subscriptions/plans';
+  static const String currentSubscription = '/reader/subscriptions/current';
+  static const String subscriptionHistory = '/reader/subscriptions/history';
+  static const String purchaseSubscription = '/reader/subscriptions/purchase';
 
   // Policies (?policy_type=terms|privacy|financial)
   static const String policies = '/public/policies';
@@ -367,10 +380,22 @@ class AppStrings {
   static const String editorialStaff = 'editorial_staff';
   static const String read = 'read';
   static const String share = 'share';
+  static const String shareBook = 'share_book';
+  static const String isbn = 'isbn';
   static const String addToCart = 'add_to_cart';
   static const String addedToCart = 'added_to_cart';
   static const String giftAddedToCart = 'gift_added_to_cart';
+  static const String cartSendAsGift = 'cart_send_as_gift';
+  static const String cartSendAsGiftDesc = 'cart_send_as_gift_desc';
+  static const String cartSendingAsGift = 'cart_sending_as_gift';
+  static const String cartGiftOffDesc = 'cart_gift_off_desc';
+  static const String cartGiftMixedDesc = 'cart_gift_mixed_desc';
+  static const String cartGiftUpdating = 'cart_gift_updating';
+  static const String invoiceDownloadFailed = 'invoice_download_failed';
+  static const String invoiceDownloaded = 'invoice_downloaded';
+  static const String invoiceSaved = 'invoice_saved';
   static const String addedToLibrary = 'added_to_library';
+  static const String removedFromLibrary = 'removed_from_library';
   static const String gift = 'gift';
   static const String hijriSuffix = 'hijri_suffix';
   static const String articlesCountLabel = 'articles_count';
@@ -532,6 +557,38 @@ class AppStrings {
   static const String libraryItemsCount =
       'library_items_count'; // "{count} Items"
   static const String libraryNoCategories = 'library_no_categories';
+  static const String categoryNoBooks = 'category_no_books';
+  static const String categoryNoIssues = 'category_no_issues';
+  static const String categoryNoArticles = 'category_no_articles';
+  static const String libraryNoCategoryTitle = 'library_no_category_title';
+  static const String libraryAddNewCategory = 'library_add_new_category';
+  static const String libraryCategoryNameHint = 'library_category_name_hint';
+  static const String libraryCategoryCreated = 'library_category_created';
+  static const String libraryCategoryDeleted = 'library_category_deleted';
+  static const String libraryDeleteCategoryTitle =
+      'library_delete_category_title';
+  static const String libraryDeleteCategoryMessage =
+      'library_delete_category_message';
+  static const String libraryDeleteCategoryErrorTitle =
+      'library_delete_category_error_title';
+  static const String libraryDeleteCategoryNotEmpty =
+      'library_delete_category_not_empty';
+  static const String libraryYesDelete = 'library_yes_delete';
+  static const String librarySave = 'library_save';
+  static const String categoryNoBookTitle = 'category_no_book_title';
+  static const String categoryNoIssueTitle = 'category_no_issue_title';
+  static const String categoryNoArticleTitle = 'category_no_article_title';
+  static const String categoryAddNewBook = 'category_add_new_book';
+  static const String categoryAddNewIssue = 'category_add_new_issue';
+  static const String categoryAddNewArticle = 'category_add_new_article';
+  static const String categoryAddBookTo =
+      'category_add_book_to'; // "Add Book to {name}"
+  static const String categoryAddIssueTo = 'category_add_issue_to';
+  static const String categoryAddArticleTo = 'category_add_article_to';
+  static const String categoryChooseFromLibrary =
+      'category_choose_from_library';
+  static const String categoryItemsAdded = 'category_items_added';
+  static const String categoryItemRemoved = 'category_item_removed';
   static const String libraryNoFavorites = 'library_no_favorites';
   static const String libraryNoItems = 'library_no_items';
   static const String libraryMagazineIssuesTab = 'library_magazine_issues_tab';
@@ -613,6 +670,30 @@ class AppStrings {
   static const String manageSubscription = 'manage_subscription';
   static const String noSubscriptionTitle = 'no_subscription_title';
   static const String noSubscriptionDesc = 'no_subscription_desc';
+  static const String planMonthly = 'plan_monthly';
+  static const String planQuarterly = 'plan_quarterly';
+  static const String planSemiAnnual = 'plan_semi_annual';
+  static const String subExpired = 'sub_expired';
+  static const String subCancelled = 'sub_cancelled';
+  static const String subPending = 'sub_pending';
+  static const String subCurrentPlan = 'sub_current_plan';
+  static const String subscriptionHistory = 'subscription_history';
+  static const String upgradePlanTitle = 'upgrade_plan_title';
+  static const String choosePlanTitle = 'choose_plan_title';
+  static const String upgradePlanDesc = 'upgrade_plan_desc';
+  static const String subscribeNow = 'subscribe_now';
+  static const String subPurchaseSuccess = 'sub_purchase_success';
+  static const String noPlansAvailable = 'no_plans_available';
+  static const String viewAllSubscriptions = 'view_all_subscriptions';
+  static const String noSubscriptionHistory = 'no_subscription_history';
+  static const String noActiveSubscriptions = 'no_active_subscriptions';
+  static const String noExpiredSubscriptions = 'no_expired_subscriptions';
+  static const String subFeatureIssues = 'sub_feature_issues';
+  static const String subFeatureArchive = 'sub_feature_archive';
+  static const String subFeatureAutoRenew = 'sub_feature_auto_renew';
+  static const String subFeatureTrial = 'sub_feature_trial';
+  static const String subFeatureNoTrial = 'sub_feature_no_trial';
+  static const String subFeaturePlatforms = 'sub_feature_platforms';
   static const String statusCompleted = 'status_completed';
   static const String statusProcessing = 'status_processing';
   static const String statusCancelled = 'status_cancelled';
@@ -635,6 +716,11 @@ class AppStrings {
   static const String noPurchasesRestored = 'no_purchases_restored';
   static const String backToHome = 'back_to_home';
   static const String giftCode = 'gift_code';
+  static const String giftMessage = 'gift_message';
+  static const String getTheApp = 'get_the_app';
+  static const String androidLink = 'android_link';
+  static const String iosLink = 'ios_link';
+  static const String viewOrderDetails = 'view_order_details';
   static const String enterCode = 'enter_code';
   static const String redeem = 'redeem';
   static const String currentPassword = 'current_password';
@@ -646,6 +732,9 @@ class AppStrings {
   static const String verificationCode = 'verification_code';
   static const String otpSentTo = 'otp_sent_to';
   static const String codeSentPhone = 'code_sent_phone';
+  static const String codeSentEmail = 'code_sent_email';
+  static const String profileUpdated = 'profile_updated';
+  static const String emailVerified = 'email_verified';
   static const String resendIn = 'resend_in';
   static const String successExclaim = 'success_exclaim';
   static const String passwordChanged = 'password_changed';
@@ -678,6 +767,7 @@ class AppStrings {
   static const String guestModeSubtitle = 'guest_mode_subtitle';
   static const String login = 'login';
   static const String loginToUseFavorites = 'login_to_use_favorites';
+  static const String loginToViewLibrary = 'login_to_view_library';
 
   // ── Home ──────────────────────────────────────────────────
   static const String homeGreeting = 'home_greeting'; // "Hello, {name}"

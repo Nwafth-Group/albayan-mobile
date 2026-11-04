@@ -22,6 +22,13 @@ abstract class CartRemoteDataSource {
     bool isGift = false,
   });
 
+  /// PATCH /reader/cart/items/{cartItemId}/gift  body: { "is_gift": bool }
+  Future<void> setItemGift(String cartItemId, bool isGift);
+
+  /// Sets every item in [cart] (fetched when omitted) to [isGift], patching
+  /// only the items that differ.
+  Future<void> setAllItemsGift(bool isGift, {CartModel? cart});
+
   /// DELETE /reader/cart/items/{cartItemId}
   Future<void> removeItem(String cartItemId);
 
@@ -47,10 +54,11 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   Future<CartModel> getCart() async {
     final response = await _api.get(ApiConstants.cart);
     final data = response['data'];
-    if (data is Map<String, dynamic>) {
-      return CartModel.fromJson(data);
-    }
-    return CartModel.empty;
+    final cart = data is Map<String, dynamic>
+        ? CartModel.fromJson(data)
+        : CartModel.empty;
+    CartEvents.publish(cart);
+    return cart;
   }
 
   @override
@@ -59,12 +67,40 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
     required String id,
     bool isGift = false,
   }) async {
-    await _api.post(
+    final response = await _api.post(
       ApiConstants.cartItems,
       data: {'type': type, 'id': id, 'is_gift': isGift},
     );
     // Only reached on success — ApiService throws on errors.
+
+    // The cart is all-gift or all-normal: a gift add turns every item into
+    // a gift, a normal add turns every item back. The response already
+    // carries the whole cart, so only mismatched items are patched.
+    try {
+      final data = response['data'];
+      await setAllItemsGift(
+        isGift,
+        cart: data is Map<String, dynamic> ? CartModel.fromJson(data) : null,
+      );
+    } catch (_) {
+      // The item itself was added; ApiService already showed the error.
+    }
     CartEvents.notifyChanged();
+  }
+
+  @override
+  Future<void> setItemGift(String cartItemId, bool isGift) async {
+    await _api.patch(
+      '${ApiConstants.cartItems}/$cartItemId/gift',
+      data: {'is_gift': isGift},
+    );
+  }
+
+  @override
+  Future<void> setAllItemsGift(bool isGift, {CartModel? cart}) async {
+    final current = cart ?? await getCart();
+    final mismatched = current.items.where((i) => i.isGift != isGift);
+    await Future.wait([for (final i in mismatched) setItemGift(i.id, isGift)]);
   }
 
   @override

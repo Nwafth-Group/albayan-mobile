@@ -25,6 +25,9 @@ class BookModel {
   final String? fileUrl;
   final String? fileType;
 
+  /// `is_free` — the backend marks the book free regardless of price.
+  final bool freeFlag;
+
   const BookModel({
     required this.id,
     required this.bookId,
@@ -40,6 +43,7 @@ class BookModel {
     this.isOwned = false,
     this.fileUrl,
     this.fileType,
+    this.freeFlag = false,
   });
 
   /// Price the user actually pays.
@@ -48,7 +52,7 @@ class BookModel {
   bool get hasDiscount =>
       finalPrice != null && finalPrice! < price;
 
-  bool get isFree => effectivePrice <= 0;
+  bool get isFree => freeFlag || effectivePrice <= 0;
 
   BookModel copyWith({bool? isFavorite}) => BookModel(
         id: id,
@@ -65,6 +69,7 @@ class BookModel {
         isOwned: isOwned,
         fileUrl: fileUrl,
         fileType: fileType,
+        freeFlag: freeFlag,
       );
 
   factory BookModel.fromJson(Map<String, dynamic> json) {
@@ -89,6 +94,7 @@ class BookModel {
           : int.tryParse(json['rate_count']?.toString() ?? '') ?? 0,
       isFavorite: json['is_favorite'] == true,
       isOwned: json['is_owned'] == true,
+      freeFlag: json['is_free'] == true,
     );
   }
 }

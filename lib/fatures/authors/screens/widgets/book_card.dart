@@ -65,7 +65,7 @@ class BookCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (!book.isFree)
+                        if (!book.isFree && !book.isOwned)
                           _Mini(icon: Icons.shopping_cart_outlined, onTap: onCartTap),
                         _Mini(
                           icon: book.isFavorite
@@ -111,6 +111,16 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (book.isOwned) {
+      return Text(
+        AppStrings.readNow.tr(),
+        style: const TextStyle(
+          fontSize: AppDimensions.fontSizeSmall,
+          fontWeight: FontWeight.w700,
+          color: AppColors.success,
+        ),
+      );
+    }
     if (book.isFree) {
       return Text(
         AppStrings.free.tr(),

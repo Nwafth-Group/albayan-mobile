@@ -1,4 +1,3 @@
-
 // ============================================
 // FILE: lib/fatures/library/data/datasource/library_remote_data_source.dart
 // ============================================
@@ -25,13 +24,30 @@ abstract class LibraryRemoteDataSource {
   /// GET /reader/my-library/magazine/articles?page=
   Future<LibraryArticlesResponse> getMagazineArticles({required int page});
 
-  /// GET /reader/personal-categories/counts
-  Future<PersonalCategoryCounts> getPersonalCategoryCounts();
+  /// GET /reader/personal-categories
+  Future<List<PersonalCategoryModel>> getPersonalCategories();
 
-  /// GET /reader/personal-categories?type=
-  Future<List<PersonalCategoryModel>> getPersonalCategories(
-    PersonalCategoryType type,
-  );
+  /// GET /reader/personal-categories/{id}/items?type=&page=
+  Future<PersonalCategoryItemsResponse> getPersonalCategoryItems(
+    String categoryId, {
+    required PersonalCategoryType type,
+    required int page,
+  });
+
+  /// POST /reader/personal-categories  body: { "name" }
+  Future<PersonalCategoryModel> createPersonalCategory(String name);
+
+  /// DELETE /reader/personal-categories/{id}
+  Future<void> deletePersonalCategory(String categoryId);
+
+  /// POST /reader/personal-categories/{id}/toggle-item
+  /// body: { "item_id", "type": "book|issue|article" }
+  /// Adds the item to the category, or removes it if it's already there.
+  Future<void> toggleCategoryItem(
+    String categoryId, {
+    required PersonalCategoryType type,
+    required String itemId,
+  });
 
   /// POST /reader/my-library/toggle  body: { "type": "book|issue|article", "id" }
   /// Toggles the item in/out of My Library. Returns whether it's in the
@@ -96,24 +112,52 @@ class LibraryRemoteDataSourceImpl implements LibraryRemoteDataSource {
   }
 
   @override
-  Future<PersonalCategoryCounts> getPersonalCategoryCounts() async {
-    final response = await _api.get(ApiConstants.personalCategoriesCounts);
-    final data = response['data'];
-    if (data is Map<String, dynamic>) {
-      return PersonalCategoryCounts.fromJson(data);
-    }
-    return PersonalCategoryCounts.empty;
+  Future<List<PersonalCategoryModel>> getPersonalCategories() async {
+    final response = await _api.get(ApiConstants.personalCategories);
+    return PersonalCategoryModel.listFrom(response['data']);
   }
 
   @override
-  Future<List<PersonalCategoryModel>> getPersonalCategories(
-    PersonalCategoryType type,
-  ) async {
+  Future<PersonalCategoryItemsResponse> getPersonalCategoryItems(
+    String categoryId, {
+    required PersonalCategoryType type,
+    required int page,
+  }) async {
     final response = await _api.get(
-      ApiConstants.personalCategories,
-      queryParameters: {'type': type.value},
+      ApiConstants.personalCategoryItems(categoryId),
+      queryParameters: {'type': type.value, 'page': page},
     );
-    return PersonalCategoryModel.listFrom(response['data']);
+    return PersonalCategoryItemsResponse.fromData(response['data'], type);
+  }
+
+  @override
+  Future<PersonalCategoryModel> createPersonalCategory(String name) async {
+    final response = await _api.post(
+      ApiConstants.personalCategories,
+      data: {'name': name},
+    );
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return PersonalCategoryModel.fromJson(data);
+    }
+    return PersonalCategoryModel(id: '', name: name);
+  }
+
+  @override
+  Future<void> deletePersonalCategory(String categoryId) async {
+    await _api.delete(ApiConstants.personalCategory(categoryId));
+  }
+
+  @override
+  Future<void> toggleCategoryItem(
+    String categoryId, {
+    required PersonalCategoryType type,
+    required String itemId,
+  }) async {
+    await _api.post(
+      ApiConstants.personalCategoryToggleItem(categoryId),
+      data: {'item_id': itemId, 'type': type.value},
+    );
   }
 
   @override

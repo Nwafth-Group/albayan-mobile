@@ -85,6 +85,13 @@ class ArticleCubit extends Cubit<ArticleState> {
     );
   }
 
+  /// The article was just added to My Library — the read icon turns active.
+  void markInLibrary() {
+    final a = state.article;
+    if (isClosed || a == null || a.isOwned) return;
+    emit(state.copyWith(article: a.copyWith(isOwned: true)));
+  }
+
   void _setFavorite(bool isFavorite) {
     final a = state.article;
     if (isClosed || a == null || a.isFavorite == isFavorite) return;

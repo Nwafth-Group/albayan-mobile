@@ -27,10 +27,7 @@ abstract class LibraryDocumentsRemoteDataSource {
 
   /// GET /reader/my-library/documents/{id}/download — downloads the file
   /// into the app's documents folder and returns the saved file.
-  Future<File> downloadDocument({
-    required String id,
-    required String fileName,
-  });
+  Future<File> downloadDocument({required String id, required String fileName});
 }
 
 class LibraryDocumentsRemoteDataSourceImpl
@@ -53,7 +50,10 @@ class LibraryDocumentsRemoteDataSourceImpl
   }) async {
     final data = FormData.fromMap({
       'files': [
-        await MultipartFile.fromFile(file.path, filename: file.uri.pathSegments.last),
+        await MultipartFile.fromFile(
+          file.path,
+          filename: file.uri.pathSegments.last,
+        ),
       ],
       'title': title,
     });

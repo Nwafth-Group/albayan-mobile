@@ -45,11 +45,12 @@ class LibraryIssueCard extends StatelessWidget {
                     child: _Cover(url: issue.cover),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: LibraryDeleteBadge(onTap: onDelete),
-                ),
+                if (onDelete != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: LibraryDeleteBadge(onTap: onDelete),
+                  ),
               ],
             ),
           ),

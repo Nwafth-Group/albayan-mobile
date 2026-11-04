@@ -50,10 +50,18 @@ class CartCubit extends Cubit<CartState> {
     }
   }
 
+  Future<void>? _silentRefresh;
+
   /// Re-fetches the cart without switching the screen to the full loading
   /// state — used after a mutation (remove item / coupon) so the list stays
   /// on screen while the summary (totals, coupon) refreshes underneath it.
-  Future<void> _refreshSilently() async {
+  /// Calls made while one is in flight share it instead of re-fetching.
+  Future<void> _refreshSilently() =>
+      _silentRefresh ??= _doRefreshSilently().whenComplete(
+        () => _silentRefresh = null,
+      );
+
+  Future<void> _doRefreshSilently() async {
     try {
       final cart = await dataSource.getCart();
       if (isClosed) return;
@@ -103,6 +111,32 @@ class CartCubit extends Cubit<CartState> {
     }
   }
 
+  /// Gift switch: sets every cart item to [isGift]
+  /// (`PATCH /reader/cart/items/{id}/gift`). Flips the items right away, then
+  /// reconciles with the server — on failure the refresh restores the real
+  /// state (ApiService already showed the error).
+  Future<void> setAllGift(bool isGift) async {
+    if (state.updatingGift || state.cart.isEmpty) return;
+    final previous = state.cart;
+    emit(state.copyWith(
+      updatingGift: true,
+      cart: CartModel(
+        cartId: previous.cartId,
+        itemsCount: previous.itemsCount,
+        items: [for (final i in previous.items) i.copyWith(isGift: isGift)],
+        couponCode: previous.couponCode,
+        summary: previous.summary,
+      ),
+    ));
+    try {
+      await dataSource.setAllItemsGift(isGift, cart: previous);
+    } catch (_) {
+      // Fall through to the refresh below.
+    }
+    await _refreshSilently();
+    if (!isClosed) emit(state.copyWith(updatingGift: false));
+  }
+
   /// POST /reader/cart/apply-coupon — returns an error message on failure,
   /// or null on success (the cart, including the applied coupon and the
   /// recalculated summary, is refreshed in place).
@@ -131,8 +165,9 @@ class CartCubit extends Cubit<CartState> {
   /// order should always leave the cart empty, so this clears it immediately
   /// (instead of waiting on a round trip) and then reconciles with the
   /// server in the background in case anything was left behind.
+  /// Checkout already fires [CartEvents.notifyChanged], which re-fetches
+  /// the cart — this only clears the list right away.
   void clearAfterCheckout() {
     emit(state.copyWith(status: CartStatus.empty, cart: CartModel.empty));
-    _refreshSilently();
   }
 }

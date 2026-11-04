@@ -61,8 +61,10 @@ class _LibraryBooksViewState extends State<_LibraryBooksView> {
   /// Opens an owned book in the reader, then refreshes its progress bar.
   Future<void> _openReader(LibraryBookModel book) async {
     final readerBook = LibraryBooksCubit.readerBookOf(book);
-    readerLog('library → read: id=${book.id} file_type=${book.fileType} '
-        'file_url=${book.fileUrl}');
+    readerLog(
+      'library → read: id=${book.id} file_type=${book.fileType} '
+      'file_url=${book.fileUrl}',
+    );
     if (readerBook == null) {
       readerLog('✖ no file_url on this library book — nothing to open');
       Helpers.showError(AppStrings.readerNoFile.tr());

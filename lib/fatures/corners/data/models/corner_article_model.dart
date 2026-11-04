@@ -14,6 +14,13 @@ class CornerArticleModel {
   final double rate;
   final bool isFavorite;
 
+  /// The reader already owns this article (`is_owned`) — purchase should
+  /// be disabled.
+  final bool isOwned;
+
+  /// `is_free` — the backend marks the article free regardless of price.
+  final bool freeFlag;
+
   const CornerArticleModel({
     required this.id,
     required this.title,
@@ -24,9 +31,11 @@ class CornerArticleModel {
     required this.publishedAt,
     required this.rate,
     required this.isFavorite,
+    this.isOwned = false,
+    this.freeFlag = false,
   });
 
-  bool get isFree => price <= 0;
+  bool get isFree => freeFlag || price <= 0;
 
   factory CornerArticleModel.fromJson(Map<String, dynamic> json) {
     return CornerArticleModel(
@@ -39,6 +48,8 @@ class CornerArticleModel {
       publishedAt: _toDate(json['published_at']),
       rate: _toDouble(json['rate']),
       isFavorite: json['is_favorite'] == true,
+      isOwned: json['is_owned'] == true,
+      freeFlag: json['is_free'] == true,
     );
   }
 
@@ -53,6 +64,8 @@ class CornerArticleModel {
       publishedAt: publishedAt,
       rate: rate,
       isFavorite: isFavorite ?? this.isFavorite,
+      isOwned: isOwned,
+      freeFlag: freeFlag,
     );
   }
 

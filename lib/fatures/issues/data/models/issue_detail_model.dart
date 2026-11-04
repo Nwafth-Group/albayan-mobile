@@ -13,7 +13,11 @@ class IssueDetailModel {
   final String accessState;
   final bool individualPurchaseAllowed;
   final bool isFavorite;
-  final bool isBought;
+  final bool isOwned;
+
+  /// In My Library (`is_owned`). Unlike [isOwned] this excludes
+  /// `is_bought`, so it follows the library toggle.
+  final bool isInLibrary;
 
   // Hijri
   final int hYear;
@@ -43,7 +47,8 @@ class IssueDetailModel {
     required this.accessState,
     required this.individualPurchaseAllowed,
     required this.isFavorite,
-    required this.isBought,
+    required this.isOwned,
+    this.isInLibrary = false,
     required this.hYear,
     required this.hMonthNumber,
     required this.hMonthNameAr,
@@ -70,7 +75,16 @@ class IssueDetailModel {
       accessState: json['access_state']?.toString() ?? '',
       individualPurchaseAllowed: json['individual_purchase_allowed'] == true,
       isFavorite: json['is_favorite'] == true,
-      isBought: json['is_bought'] == true,
+      // Owned/bought, or (free) added to My Library.
+      isOwned: json['is_owned'] == true ||
+          json['is_bought'] == true ||
+          json['is_in_library'] == true ||
+          json['in_library'] == true ||
+          json['in_my_library'] == true,
+      isInLibrary: json['is_owned'] == true ||
+          json['is_in_library'] == true ||
+          json['in_library'] == true ||
+          json['in_my_library'] == true,
       hYear: _toInt(json['h_year']),
       hMonthNumber: _toInt(json['h_month_number']),
       hMonthNameAr: json['h_month_name_ar']?.toString() ?? '',
@@ -91,7 +105,11 @@ class IssueDetailModel {
     );
   }
 
-  IssueDetailModel copyWith({bool? isFavorite, bool? isBought}) {
+  IssueDetailModel copyWith({
+    bool? isFavorite,
+    bool? isOwned,
+    bool? isInLibrary,
+  }) {
     return IssueDetailModel(
       id: id,
       issueNumber: issueNumber,
@@ -102,7 +120,8 @@ class IssueDetailModel {
       accessState: accessState,
       individualPurchaseAllowed: individualPurchaseAllowed,
       isFavorite: isFavorite ?? this.isFavorite,
-      isBought: isBought ?? this.isBought,
+      isOwned: isOwned ?? this.isOwned,
+      isInLibrary: isInLibrary ?? this.isInLibrary,
       hYear: hYear,
       hMonthNumber: hMonthNumber,
       hMonthNameAr: hMonthNameAr,

@@ -82,8 +82,7 @@ class PersonalDocumentModel {
       title: json['title']?.toString() ?? '',
       currentPage: (progressMap['current_page'] as num?)?.toInt() ?? 1,
       totalPages: (progressMap['total_pages'] as num?)?.toInt() ?? 0,
-      progressPercentage:
-          (progressMap['progress_percentage'] as num?) ?? 0,
+      progressPercentage: (progressMap['progress_percentage'] as num?) ?? 0,
       lastReadAt: DateTime.tryParse(
         progressMap['last_read_at']?.toString() ?? '',
       ),

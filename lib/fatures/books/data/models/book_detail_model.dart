@@ -29,6 +29,9 @@ class BookVersionModel {
   final String? fileUrl;
   final String? fileType;
 
+  /// `is_free` — the backend marks this version free regardless of price.
+  final bool freeFlag;
+
   const BookVersionModel({
     required this.id,
     required this.language,
@@ -44,11 +47,12 @@ class BookVersionModel {
     required this.media,
     this.fileUrl,
     this.fileType,
+    this.freeFlag = false,
   });
 
   num get effectivePrice => finalPrice ?? price;
   bool get hasDiscount => finalPrice != null && finalPrice! < price;
-  bool get isFree => effectivePrice <= 0;
+  bool get isFree => freeFlag || effectivePrice <= 0;
 
   factory BookVersionModel.fromJson(Map<String, dynamic> json) {
     final rawMedia = json['media'];
@@ -75,6 +79,7 @@ class BookVersionModel {
       media: media,
       fileUrl: _nonEmpty(json['file_url']),
       fileType: _nonEmpty(json['file_type']),
+      freeFlag: json['is_free'] == true,
     );
   }
 
@@ -110,6 +115,9 @@ class BookDetailModel {
   final List<String> languageOptions;
   final BookVersionModel version;
 
+  /// Top-level `is_free` on the book payload.
+  final bool freeFlag;
+
   const BookDetailModel({
     required this.id,
     required this.author,
@@ -127,13 +135,14 @@ class BookDetailModel {
     required this.allowedRating,
     required this.languageOptions,
     required this.version,
+    this.freeFlag = false,
   });
 
   String get title => version.name;
   String? get image => version.cover;
   num get effectivePrice => version.effectivePrice;
   bool get hasDiscount => version.hasDiscount;
-  bool get isFree => version.isFree;
+  bool get isFree => freeFlag || version.isFree;
 
   /// "Eng, Arb" style label from ['en','ar'].
   String get languageLabel {
@@ -176,7 +185,11 @@ class BookDetailModel {
       rate: _toDouble(json['rate']),
       rateCount: _toInt(json['rate_count']),
       isFavorite: json['is_favorite'] == true,
-      isOwned: json['is_owned'] == true,
+      // Owned, or (free) added to My Library.
+      isOwned: json['is_owned'] == true ||
+          json['is_in_library'] == true ||
+          json['in_library'] == true ||
+          json['in_my_library'] == true,
       allowedCommenting: json['allowed_commenting'] == true,
       allowedRating: json['allowed_rating'] == true,
       languageOptions: rawLangs is List
@@ -198,10 +211,11 @@ class BookDetailModel {
               cover: null,
               media: [],
             ),
+      freeFlag: json['is_free'] == true,
     );
   }
 
-  BookDetailModel copyWith({bool? isFavorite}) {
+  BookDetailModel copyWith({bool? isFavorite, bool? isOwned}) {
     return BookDetailModel(
       id: id,
       author: author,
@@ -214,11 +228,12 @@ class BookDetailModel {
       rate: rate,
       rateCount: rateCount,
       isFavorite: isFavorite ?? this.isFavorite,
-      isOwned: isOwned,
+      isOwned: isOwned ?? this.isOwned,
       allowedCommenting: allowedCommenting,
       allowedRating: allowedRating,
       languageOptions: languageOptions,
       version: version,
+      freeFlag: freeFlag,
     );
   }
 

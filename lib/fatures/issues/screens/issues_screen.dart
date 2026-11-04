@@ -18,7 +18,10 @@ import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../../../widgets/promo_banner.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/issues_remote_data_source.dart';
+import '../data/models/issue_model.dart';
 import 'cubit/issues_cubit.dart';
 
 class IssuesScreen extends StatelessWidget {
@@ -48,7 +51,7 @@ class _IssuesView extends StatefulWidget {
   State<_IssuesView> createState() => _IssuesViewState();
 }
 
-class _IssuesViewState extends State<_IssuesView> {
+class _IssuesViewState extends State<_IssuesView> with AddToCartStateMixin {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
 
@@ -168,6 +171,8 @@ class _IssuesViewState extends State<_IssuesView> {
               scrollController: _scrollController,
               state: state,
               onRefresh: () => context.read<IssuesCubit>().refresh(),
+              onCartTap: (issue) =>
+                  addToCart(type: CartItemType.issue, id: issue.id),
             );
         }
       },
@@ -179,11 +184,13 @@ class _IssuesGrid extends StatelessWidget {
   final ScrollController scrollController;
   final IssuesState state;
   final Future<void> Function() onRefresh;
+  final void Function(IssueModel)? onCartTap;
 
   const _IssuesGrid({
     required this.scrollController,
     required this.state,
     required this.onRefresh,
+    this.onCartTap,
   });
 
   @override
@@ -214,6 +221,7 @@ class _IssuesGrid extends StatelessWidget {
                 onTap: () {
                   AppNavigator.push(IssueDetailsScreen(issueId: issue.id));
                 },
+                onCartTap: onCartTap == null ? null : () => onCartTap!(issue),
               );
             }, childCount: state.issues.length),
           ),

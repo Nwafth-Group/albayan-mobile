@@ -31,9 +31,7 @@ class LibraryDocumentsCubit extends Cubit<LibraryDocumentsState> {
         ),
       );
     } catch (e) {
-      emit(
-        state.copyWith(status: LibraryDocumentsStatus.failure, error: '$e'),
-      );
+      emit(state.copyWith(status: LibraryDocumentsStatus.failure, error: '$e'));
     }
   }
 
@@ -79,13 +77,10 @@ class LibraryDocumentsCubit extends Cubit<LibraryDocumentsState> {
 
   Future<void> delete(String id) async {
     if (state.deletingIds.contains(id)) return;
-    emit(
-      state.copyWith(deletingIds: {...state.deletingIds, id}),
-    );
+    emit(state.copyWith(deletingIds: {...state.deletingIds, id}));
     try {
       await dataSource.deleteDocument(id);
-      final remaining =
-          state.documents.where((d) => d.id != id).toList();
+      final remaining = state.documents.where((d) => d.id != id).toList();
       emit(
         state.copyWith(
           documents: remaining,
@@ -96,11 +91,7 @@ class LibraryDocumentsCubit extends Cubit<LibraryDocumentsState> {
         ),
       );
     } catch (_) {
-      emit(
-        state.copyWith(
-          deletingIds: {...state.deletingIds}..remove(id),
-        ),
-      );
+      emit(state.copyWith(deletingIds: {...state.deletingIds}..remove(id)));
     }
   }
 }

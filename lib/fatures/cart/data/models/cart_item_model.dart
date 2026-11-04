@@ -85,6 +85,21 @@ class CartItemModel {
 
   bool get hasAuthor => author.trim().isNotEmpty;
 
+  CartItemModel copyWith({bool? isGift}) => CartItemModel(
+    id: id,
+    itemId: itemId,
+    type: type,
+    isGift: isGift ?? this.isGift,
+    subLabel: subLabel,
+    title: title,
+    image: image,
+    author: author,
+    oldPrice: oldPrice,
+    newPrice: newPrice,
+    offerDiscount: offerDiscount,
+    activeOffer: activeOffer,
+  );
+
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     num parseNum(dynamic v) {
       if (v is num) return v;

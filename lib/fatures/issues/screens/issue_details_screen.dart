@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 
 import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
+import '../../../utils/shared_pref_helper.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/detail_hero.dart';
@@ -22,7 +23,6 @@ import '../../../widgets/promo_banner.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../../library/utils/add_to_library_mixin.dart';
-import '../../library/screens/library_screen.dart';
 import '../../settings/screens/subscriptions_screen.dart';
 import '../data/datasource/issues_remote_data_source.dart';
 import '../data/models/issue_detail_model.dart';
@@ -56,16 +56,34 @@ class _DetailsViewState extends State<_DetailsView>
     with AddToCartStateMixin, AddToLibraryStateMixin {
   int _tab = 0; // 0 = Short Word, 1 = Issue Index
 
-  /// Free issue → "Read Now": add it to My Library (no checkout), then show
-  /// its articles (the Issue Index tab).
+  /// Free, bought or subscribed issue → add it to My Library (no checkout),
+  /// then show its articles (the Issue Index tab).
   Future<void> _readFree(IssueDetailModel detail) async {
-    await addFreeToLibrary(
+    final added = await addFreeToLibrary(
       type: LibraryItemType.issue,
       id: detail.id,
-      alreadyInLibrary: detail.isBought,
+      alreadyInLibrary: detail.isInLibrary,
     );
-    if (mounted) setState(() => _tab = 1);
+    if (!mounted) return;
+    if (added) context.read<IssueDetailsCubit>().markInLibrary();
+    setState(() => _tab = 1);
   }
+
+  /// Header book icon on a readable issue → add to / remove from My Library.
+  Future<void> _toggleLibrary(IssueDetailModel detail) async {
+    final inLibrary = await toggleLibrary(
+      type: LibraryItemType.issue,
+      id: detail.id,
+      inLibrary: detail.isInLibrary,
+    );
+    if (inLibrary != null && mounted) {
+      context.read<IssueDetailsCubit>().setInLibrary(inLibrary);
+    }
+  }
+
+  /// Owned issue → "Read Now": it's already in My Library, so just show its
+  /// articles (the Issue Index tab).
+  void _readOwned() => setState(() => _tab = 1);
 
   @override
   Widget build(BuildContext context) {
@@ -127,10 +145,18 @@ class _DetailsViewState extends State<_DetailsView>
                   ),
                   DetailCircleAction(
                     asset: AppImages.openBook, // read
-                    onTap: () => detail.isFree
-                        ? _readFree(detail)
-                        : detail.isBought
-                        ? AppNavigator.push(const LibraryScreen())
+                    isLoading: isAddingToLibrary,
+                    isActive: isInLibrary(
+                      type: LibraryItemType.issue,
+                      id: detail.id,
+                      owned: detail.isInLibrary,
+                    ),
+                    // Readable (free / bought / in library / subscriber) →
+                    // toggle it in My Library; otherwise buy it first.
+                    onTap: () => detail.isFree ||
+                            detail.isOwned ||
+                            SharedPrefHelper.getUser()?.haveSubscription == true
+                        ? _toggleLibrary(detail)
                         : addToCart(type: CartItemType.issue, id: detail.id),
                   ),
                   DetailFavoriteAction(
@@ -265,6 +291,18 @@ class _DetailsViewState extends State<_DetailsView>
 
   // ── Buttons (shared) ────────────────────────────────────
   Widget _buttons(BuildContext context, IssueDetailModel detail) {
+    // Free or already owned → just "Read Now"; nothing to buy or gift.
+    if (detail.isFree || detail.isOwned) {
+      return SizedBox(
+        width: double.infinity,
+        child: CustomButton(
+          text: AppStrings.readNow.tr(),
+          isLoading: detail.isFree && isAddingToLibrary,
+          onPressed: detail.isOwned ? _readOwned : () => _readFree(detail),
+        ),
+      );
+    }
+
     final cartText = '${AppStrings.addToCart.tr()} '
         '${detail.price.toStringAsFixed(2)}${AppStrings.currencySar.tr()}';
 
@@ -275,36 +313,27 @@ class _DetailsViewState extends State<_DetailsView>
             Expanded(
               flex: 1,
               child: CustomButton(
-                text: detail.isFree
-                    ? AppStrings.readNow.tr()
-                    : AppStrings.read.tr(),
-                isOutlined: !detail.isFree,
-                textColor: detail.isFree ? null : AppColors.primary,
-                isLoading: detail.isFree && isAddingToLibrary,
-                onPressed: detail.isFree
-                    ? () => _readFree(detail)
-                    : () {
-                        // TODO: open reader
-                      },
+                text: AppStrings.read.tr(),
+                isOutlined: true,
+                textColor: AppColors.primary,
+                onPressed: () {
+                  // TODO: open reader
+                },
               ),
             ),
-            if (!detail.isFree) ...[
-              const SizedBox(width: AppDimensions.paddingSmall),
-              Expanded(
-                flex: 2,
-                child: CustomButton(
-                  text: cartText,
-                  fontSize: AppDimensions.fontSizeMedium,
-                  isLoading: isAddingToCart,
-                  onPressed: () =>
-                      addToCart(type: CartItemType.issue, id: detail.id),
-                ),
+            const SizedBox(width: AppDimensions.paddingSmall),
+            Expanded(
+              flex: 2,
+              child: CustomButton(
+                text: cartText,
+                fontSize: AppDimensions.fontSizeMedium,
+                isLoading: isAddingToCart,
+                onPressed: () =>
+                    addToCart(type: CartItemType.issue, id: detail.id),
               ),
-            ],
+            ),
           ],
         ),
-        // Nothing to gift on free content.
-        if (!detail.isFree) ...[
         const SizedBox(height: AppDimensions.paddingSmall),
         Row(
           children: [
@@ -320,7 +349,6 @@ class _DetailsViewState extends State<_DetailsView>
             ),
           ],
         ),
-        ],
       ],
     );
   }

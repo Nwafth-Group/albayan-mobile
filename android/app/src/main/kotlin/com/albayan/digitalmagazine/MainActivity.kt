@@ -1,4 +1,4 @@
-package com.example.albayan
+package com.albayan.digitalmagazine
 
 import io.flutter.embedding.android.FlutterActivity
 

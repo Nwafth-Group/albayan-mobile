@@ -12,8 +12,14 @@ import '../fatures/issues/data/models/issue_model.dart';
 class IssueCard extends StatelessWidget {
   final IssueModel issue;
   final VoidCallback? onTap;
+  final VoidCallback? onCartTap;
 
-  const IssueCard({super.key, required this.issue, this.onTap});
+  const IssueCard({
+    super.key,
+    required this.issue,
+    this.onTap,
+    this.onCartTap,
+  });
 
   String get _dateText {
     if (issue.publishedAt == null) return '';
@@ -34,9 +40,21 @@ class IssueCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-              child: SizedBox(
-                width: double.infinity,
-                child: _CoverImage(url: issue.coverImage),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: _CoverImage(url: issue.coverImage),
+                    ),
+                  ),
+                  if (!issue.isFree && !issue.isOwned)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: _CartBadge(onTap: onCartTap),
+                    ),
+                ],
               ),
             ),
           ),
@@ -60,7 +78,16 @@ class IssueCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          if (issue.isFree)
+          if (issue.isOwned)
+            Text(
+              AppStrings.readNow.tr(),
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeMedium,
+                fontWeight: FontWeight.w600,
+                color: AppColors.success,
+              ),
+            )
+          else if (issue.isFree)
             Text(
               AppStrings.free.tr(),
               style: const TextStyle(
@@ -101,6 +128,33 @@ class IssueCard extends StatelessWidget {
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _CartBadge({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.shopping_cart_outlined,
+          size: 16,
+          color: AppColors.primary,
+        ),
       ),
     );
   }

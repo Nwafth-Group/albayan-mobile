@@ -72,8 +72,15 @@ class OrderModel {
   final num taxAmount;
   final num totalAmount;
   final String? currency;
+
+  /// Paid as a gift and has a code to hand to the recipient.
+  bool get hasGiftCode => isGift && (giftCode?.isNotEmpty ?? false);
+
   final bool isGift;
   final String? giftCode;
+
+  /// `gift_code.share_message` — the text to send the gift's recipient.
+  final String? giftMessage;
 
   // Invoice fields.
   final String invoiceNumber;
@@ -103,6 +110,7 @@ class OrderModel {
     this.currency,
     this.isGift = false,
     this.giftCode,
+    this.giftMessage,
     required this.invoiceNumber,
     this.qrCode,
     required this.sellerName,
@@ -179,6 +187,7 @@ class OrderModel {
             isGift: i.isGift,
             subLabel: typeLabel(i.type),
             title: i.titleFor(languageCode),
+            image: i.image,
             oldPrice: i.unitPrice,
             price: i.finalPrice,
           ),
@@ -191,7 +200,8 @@ class OrderModel {
       totalAmount: o.summary.totalAmount,
       currency: o.summary.currency,
       isGift: o.isGift,
-      giftCode: o.giftCode,
+      giftCode: o.giftCode?.code,
+      giftMessage: o.giftCode?.shareMessage,
       invoiceNumber: invoice?.invoiceNumber ?? '',
       qrCode: invoice?.qrCode,
       sellerName: invoice?.sellerNameFor(languageCode) ?? '',

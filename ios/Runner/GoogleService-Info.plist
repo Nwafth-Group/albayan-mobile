@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0.apps.googleusercontent.com</string>
+	<string>842051961964-8f1t5ed1mfrspr2ov6uvluvs15ak7ckh.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.842051961964-bsbe60t1ct1gcaljlkskc1me04ta7ma0</string>
+	<string>com.googleusercontent.apps.842051961964-8f1t5ed1mfrspr2ov6uvluvs15ak7ckh</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>842051961964-st82vik6hih73g32naav8hvkck9and0n.apps.googleusercontent.com</string>
+	<string>842051961964-h95uu4gtldefrcufb64hgmqvv9bvvj8h.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyAGJYwHIHRHkTyHseaRRu2nYDHJf3Sj2RY</string>
 	<key>GCM_SENDER_ID</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.albayan</string>
+	<string>com.albayan.digitalmagazine</string>
 	<key>PROJECT_ID</key>
 	<string>albayan-e-2026-5e885</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:842051961964:ios:bdc862564e8eeec4b40449</string>
+	<string>1:842051961964:ios:02f01184233645edb40449</string>
 </dict>
 </plist>

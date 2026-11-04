@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../utils/constants.dart';
+import '../../../../utils/share_helper.dart';
 import '../../data/models/book_detail_model.dart';
 import 'author_promo_card.dart';
 
@@ -96,8 +97,15 @@ class AboutBookTab extends StatelessWidget {
             const SizedBox(height: AppDimensions.paddingMedium),
           if (explanation != null && explanation.isNotEmpty)
             Text(explanation, style: _bodyStyle),
-          const SizedBox(height: AppDimensions.paddingLarge),
+          const SizedBox(height: AppDimensions.paddingMedium),
         ],
+
+        // Share
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: _ShareButton(onTap: () => _shareBook(book)),
+        ),
+        const SizedBox(height: AppDimensions.paddingLarge),
 
         // Discover the author promo
         if (author != null) ...[
@@ -150,6 +158,44 @@ class AboutBookTab extends StatelessWidget {
     );
   }
 
+  /// Title, author, publisher, categories, pages, language, ISBN, price and
+  /// a short description — what a reader needs to find the book.
+  static void _shareBook(BookDetailModel book) {
+    String? nonEmpty(String? v) =>
+        (v == null || v.trim().isEmpty) ? null : v.trim();
+
+    final description = nonEmpty(book.version.description);
+    final summary = (description != null && description.length > 300)
+        ? '${description.substring(0, 300).trimRight()}…'
+        : description;
+    final author = nonEmpty(book.author?.displayName);
+    final publisher = nonEmpty(book.publisher?.name);
+    final isbn = nonEmpty(book.version.isbn);
+    final price = book.isFree
+        ? AppStrings.free.tr()
+        : '${book.effectivePrice.toStringAsFixed(2)} '
+              '${AppStrings.currencySar.tr()}';
+
+    final lines = [
+      '📖 ${book.title}',
+      if (author != null) '${AppStrings.author.tr()}: $author',
+      if (publisher != null) '${AppStrings.publisher.tr()}: $publisher',
+      if (book.categories.isNotEmpty)
+        '${AppStrings.category.tr()}: '
+            '${book.categories.map((c) => c.name).join(', ')}',
+      if (book.version.pagesTotal > 0)
+        AppStrings.pagesLabel.tr(
+          namedArgs: {'count': '${book.version.pagesTotal}'},
+        ),
+      if (book.languageOptions.isNotEmpty)
+        '${AppStrings.language.tr()}: ${book.languageLabel}',
+      if (isbn != null) '${AppStrings.isbn.tr()}: $isbn',
+      '${AppStrings.price.tr()}: $price',
+      if (summary != null) ...['', summary],
+    ];
+    ShareHelper.share(lines.join('\n'), subject: book.title);
+  }
+
   Widget _sectionTitle(String text) => Text(
     text,
     style: const TextStyle(
@@ -164,6 +210,32 @@ class AboutBookTab extends StatelessWidget {
     color: AppColors.textSecondary,
     height: 1.6,
   );
+}
+
+class _ShareButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ShareButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.share_outlined, size: 18),
+      label: Text(AppStrings.shareBook.tr()),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: AppColors.primary),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        textStyle: const TextStyle(
+          fontSize: AppDimensions.fontSizeMedium,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        ),
+      ),
+    );
+  }
 }
 
 class _PersonRow extends StatelessWidget {

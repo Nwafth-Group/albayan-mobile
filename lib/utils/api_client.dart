@@ -39,15 +39,17 @@ class ApiService {
   }
 
   ApiService() {
-    _dio = Dio(BaseOptions(
-      baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -55,7 +57,6 @@ class ApiService {
           // Read per request (not baked into BaseOptions) so a language
           // change applies to services that already exist.
           options.headers['Accept-Language'] = lang;
-
 
           // ── Inject token from SharedPrefs (async, safe) ──────
           final token = await SharedPrefHelper.getToken();
@@ -82,8 +83,9 @@ class ApiService {
           developer.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
           developer.log('📥 RESPONSE', name: 'API');
           developer.log(
-              'URL: ${response.requestOptions.baseUrl}${response.requestOptions.path}',
-              name: 'API');
+            'URL: ${response.requestOptions.baseUrl}${response.requestOptions.path}',
+            name: 'API',
+          );
           developer.log('Status: ${response.statusCode}', name: 'API');
           developer.log('Data: ${response.data}', name: 'API');
           developer.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -93,8 +95,9 @@ class ApiService {
           developer.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
           developer.log('❌ ERROR', name: 'API');
           developer.log(
-              'URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}',
-              name: 'API');
+            'URL: ${error.requestOptions.baseUrl}${error.requestOptions.path}',
+            name: 'API',
+          );
           developer.log('Status: ${error.response?.statusCode}', name: 'API');
           developer.log('Message: ${error.message}', name: 'API');
           if (error.response?.data != null) {
@@ -114,10 +117,10 @@ class ApiService {
 
   // ── GET ───────────────────────────────────────────────────────
   Future<Map<String, dynamic>> get(
-      String endpoint, {
-        Map<String, dynamic>? queryParameters,
-        Map<String, dynamic>? data,
-      }) async {
+    String endpoint, {
+    Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? data,
+  }) async {
     try {
       final response = await _dio.get(
         endpoint,
@@ -131,10 +134,7 @@ class ApiService {
   }
 
   // ── POST ──────────────────────────────────────────────────────
-  Future<Map<String, dynamic>> post(
-      String endpoint, {
-        dynamic data,
-      }) async {
+  Future<Map<String, dynamic>> post(String endpoint, {dynamic data}) async {
     try {
       final response = await _dio.post(endpoint, data: data);
       return response.data as Map<String, dynamic>;
@@ -146,10 +146,7 @@ class ApiService {
   }
 
   // ── PUT ───────────────────────────────────────────────────────
-  Future<Map<String, dynamic>> put(
-      String endpoint, {
-        dynamic data,
-      }) async {
+  Future<Map<String, dynamic>> put(String endpoint, {dynamic data}) async {
     try {
       final response = await _dio.put(endpoint, data: data);
       return response.data as Map<String, dynamic>;
@@ -161,10 +158,7 @@ class ApiService {
   }
 
   // ── PATCH ─────────────────────────────────────────────────────
-  Future<Map<String, dynamic>> patch(
-      String endpoint, {
-        dynamic data,
-      }) async {
+  Future<Map<String, dynamic>> patch(String endpoint, {dynamic data}) async {
     try {
       final response = await _dio.patch(endpoint, data: data);
       return response.data as Map<String, dynamic>;
@@ -185,10 +179,10 @@ class ApiService {
 
   // ── MULTIPART POST ────────────────────────────────────────────
   Future<Response> postMultipart(
-      String endpoint, {
-        required FormData data,
-        ProgressCallback? onSendProgress,
-      }) async {
+    String endpoint, {
+    required FormData data,
+    ProgressCallback? onSendProgress,
+  }) async {
     try {
       return await _dio.post(
         endpoint,

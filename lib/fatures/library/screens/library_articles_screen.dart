@@ -144,10 +144,8 @@ class _LibraryArticlesViewState extends State<_LibraryArticlesView> {
                           if (url == null || url.isEmpty) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => WebViewScreen(
-                                url: url,
-                                title: article.title,
-                              ),
+                              builder: (_) =>
+                                  WebViewScreen(url: url, title: article.title),
                             ),
                           );
                         },

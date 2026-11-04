@@ -42,6 +42,10 @@ class ArticleModel {
   final int issueNumber;
   final DateTime? publishedAt;
   final num price;
+  final num? finalPrice;
+
+  /// `is_free` — the backend marks the article free regardless of price.
+  final bool freeFlag;
   final double rate;
   final int rateCount;
   final bool isFavorite;
@@ -65,6 +69,8 @@ class ArticleModel {
     required this.issueNumber,
     required this.publishedAt,
     required this.price,
+    this.finalPrice,
+    this.freeFlag = false,
     required this.rate,
     required this.rateCount,
     required this.isFavorite,
@@ -75,7 +81,10 @@ class ArticleModel {
     required this.languageOptions,
   });
 
-  bool get isFree => price <= 0;
+  /// Price the user actually pays.
+  num get effectivePrice => finalPrice ?? price;
+
+  bool get isFree => freeFlag || effectivePrice <= 0;
 
   /// "Eng, Arb" style label from ['en','ar'].
   String get languageLabel {
@@ -111,10 +120,17 @@ class ArticleModel {
           ? null
           : DateTime.tryParse(json['published_at'].toString()),
       price: json['price'] is num ? json['price'] as num : 0,
+      finalPrice:
+          json['final_price'] is num ? json['final_price'] as num : null,
+      freeFlag: json['is_free'] == true,
       rate: _toDouble(json['rate']),
       rateCount: _toInt(json['rate_count']),
       isFavorite: json['is_favorite'] == true,
-      isOwned: json['is_owned'] == true,
+      // Owned, or (free) added to My Library.
+      isOwned: json['is_owned'] == true ||
+          json['is_in_library'] == true ||
+          json['in_library'] == true ||
+          json['in_my_library'] == true,
       allowedRating: json['allowed_rating'] == true,
       allowedCommenting: json['allowed_commenting'] == true,
       keywords: rawKeywords is List
@@ -128,7 +144,7 @@ class ArticleModel {
     );
   }
 
-  ArticleModel copyWith({bool? isFavorite}) {
+  ArticleModel copyWith({bool? isFavorite, bool? isOwned}) {
     return ArticleModel(
       id: id,
       title: title,
@@ -141,10 +157,12 @@ class ArticleModel {
       issueNumber: issueNumber,
       publishedAt: publishedAt,
       price: price,
+      finalPrice: finalPrice,
+      freeFlag: freeFlag,
       rate: rate,
       rateCount: rateCount,
       isFavorite: isFavorite ?? this.isFavorite,
-      isOwned: isOwned,
+      isOwned: isOwned ?? this.isOwned,
       allowedRating: allowedRating,
       allowedCommenting: allowedCommenting,
       keywords: keywords,

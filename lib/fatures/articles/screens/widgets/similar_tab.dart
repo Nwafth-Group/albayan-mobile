@@ -16,6 +16,7 @@ class SimilarTab extends StatelessWidget {
   final bool loadingMore;
   final VoidCallback onLoadMore;
   final void Function(CornerArticleModel) onItemTap;
+  final void Function(CornerArticleModel)? onCartTap;
 
   const SimilarTab({
     super.key,
@@ -23,6 +24,7 @@ class SimilarTab extends StatelessWidget {
     required this.loadingMore,
     required this.onLoadMore,
     required this.onItemTap,
+    this.onCartTap,
   });
 
   @override
@@ -50,7 +52,11 @@ class SimilarTab extends StatelessWidget {
         ),
         children: [
           for (final a in items)
-            SimilarArticleCard(article: a, onTap: () => onItemTap(a)),
+            SimilarArticleCard(
+              article: a,
+              onTap: () => onItemTap(a),
+              onCartTap: onCartTap == null ? null : () => onCartTap!(a),
+            ),
           if (loadingMore)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),

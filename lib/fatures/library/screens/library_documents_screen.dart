@@ -85,9 +85,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
       title.trim(),
     );
     if (ok && mounted) {
-      AppNavigator.showSuccessSnackBar(
-        AppStrings.libraryDocumentUploaded.tr(),
-      );
+      AppNavigator.showSuccessSnackBar(AppStrings.libraryDocumentUploaded.tr());
     }
   }
 
@@ -110,8 +108,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
             child: Text(AppStrings.cancel.tr()),
           ),
           TextButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text),
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
             child: Text(AppStrings.libraryUpload.tr()),
           ),
         ],
@@ -140,9 +137,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
     if (confirmed != true || !mounted) return;
     await context.read<LibraryDocumentsCubit>().delete(document.id);
     if (mounted) {
-      AppNavigator.showSuccessSnackBar(
-        AppStrings.libraryDocumentDeleted.tr(),
-      );
+      AppNavigator.showSuccessSnackBar(AppStrings.libraryDocumentDeleted.tr());
     }
   }
 
@@ -151,26 +146,26 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: AppStrings.libraryMyDocuments.tr()),
-      floatingActionButton: BlocBuilder<LibraryDocumentsCubit,
-          LibraryDocumentsState>(
-        builder: (context, state) => FloatingActionButton(
-          onPressed: state.isUploading ? null : _addDocuments,
-          backgroundColor: AppColors.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      floatingActionButton:
+          BlocBuilder<LibraryDocumentsCubit, LibraryDocumentsState>(
+            builder: (context, state) => FloatingActionButton(
+              onPressed: state.isUploading ? null : _addDocuments,
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+              ),
+              child: state.isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : const Icon(Icons.add, color: AppColors.white),
+            ),
           ),
-          child: state.isUploading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.white,
-                  ),
-                )
-              : const Icon(Icons.add, color: AppColors.white),
-        ),
-      ),
       body: SafeArea(
         child: BlocBuilder<LibraryDocumentsCubit, LibraryDocumentsState>(
           builder: (context, state) {
@@ -181,8 +176,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
 
               case LibraryDocumentsStatus.failure:
                 return LibraryRefreshable(
-                  onRefresh: () =>
-                      context.read<LibraryDocumentsCubit>().load(),
+                  onRefresh: () => context.read<LibraryDocumentsCubit>().load(),
                   child: EmptyStateWidget(
                     icon: Icons.wifi_off_rounded,
                     message: AppStrings.somethingWentWrong.tr(),
@@ -195,8 +189,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
 
               case LibraryDocumentsStatus.empty:
                 return LibraryRefreshable(
-                  onRefresh: () =>
-                      context.read<LibraryDocumentsCubit>().load(),
+                  onRefresh: () => context.read<LibraryDocumentsCubit>().load(),
                   child: EmptyStateWidget(
                     icon: Icons.folder_copy_outlined,
                     message: AppStrings.libraryNoDocuments.tr(),
@@ -206,8 +199,7 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
               case LibraryDocumentsStatus.success:
                 return RefreshIndicator(
                   color: AppColors.primary,
-                  onRefresh: () =>
-                      context.read<LibraryDocumentsCubit>().load(),
+                  onRefresh: () => context.read<LibraryDocumentsCubit>().load(),
                   child: GridView.builder(
                     padding: const EdgeInsets.fromLTRB(
                       AppDimensions.paddingMedium,
@@ -218,11 +210,11 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: AppDimensions.paddingMedium,
-                      mainAxisSpacing: AppDimensions.paddingMedium,
-                      childAspectRatio: 0.54,
-                    ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: AppDimensions.paddingMedium,
+                          mainAxisSpacing: AppDimensions.paddingMedium,
+                          childAspectRatio: 0.54,
+                        ),
                     itemCount: state.documents.length,
                     itemBuilder: (context, index) {
                       final doc = state.documents[index];
@@ -231,9 +223,8 @@ class _LibraryDocumentsViewState extends State<_LibraryDocumentsView> {
                         isDeleting: state.deletingIds.contains(doc.id),
                         onTap: () => _openReader(doc),
                         onDelete: () => _confirmDelete(doc),
-                        onDownload: () => context
-                            .read<LibraryDocumentsCubit>()
-                            .download(doc),
+                        onDownload: () =>
+                            context.read<LibraryDocumentsCubit>().download(doc),
                       );
                     },
                   ),

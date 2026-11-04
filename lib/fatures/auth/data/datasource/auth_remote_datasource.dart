@@ -2,6 +2,10 @@
 // FILE: lib/features/auth/data/datasources/auth_remote_datasource.dart
 // ============================================
 
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+
 import '../../../../utils/api_client.dart';
 import '../../../../utils/constants.dart';
 import '../models/country_model.dart';
@@ -151,6 +155,46 @@ class AuthRemoteDataSource {
   // ── Get Profile ───────────────────────────────────────────────
   Future<Map<String, dynamic>> getProfile() async {
     return _api.get(ApiConstants.profile);
+  }
+
+  // ── Update Profile ────────────────────────────────────────────
+  Future<Map<String, dynamic>> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String mobileNumber,
+    String? countryId,
+    File? image,
+  }) async {
+    final data = FormData.fromMap({
+      'first_name':    firstName,
+      'last_name':     lastName,
+      'email':         email,
+      'mobile_number': mobileNumber,
+      if (countryId != null) 'country_id': countryId,
+      if (image != null)
+        'files': [
+          await MultipartFile.fromFile(
+            image.path,
+            filename: image.path.split(Platform.pathSeparator).last,
+          ),
+        ],
+    });
+    return _api.post(ApiConstants.profile, data: data);
+  }
+
+  // ── Verify Profile Email (after an email change) ──────────────
+  Future<Map<String, dynamic>> verifyProfileEmail({
+    required String otpCode,
+  }) async {
+    return _api.post(ApiConstants.verifyProfileEmail, data: {
+      'otp_code': otpCode,
+    });
+  }
+
+  // ── Resend Profile Email OTP ──────────────────────────────────
+  Future<Map<String, dynamic>> resendProfileEmailOtp() async {
+    return _api.post(ApiConstants.resendProfileEmailOtp);
   }
 
   // ── Change Password ───────────────────────────────────────────

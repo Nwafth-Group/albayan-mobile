@@ -13,7 +13,13 @@ import 'star_row.dart';
 class SimilarArticleCard extends StatelessWidget {
   final CornerArticleModel article;
   final VoidCallback? onTap;
-  const SimilarArticleCard({super.key, required this.article, this.onTap});
+  final VoidCallback? onCartTap;
+  const SimilarArticleCard({
+    super.key,
+    required this.article,
+    this.onTap,
+    this.onCartTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +42,17 @@ class SimilarArticleCard extends StatelessWidget {
               child: SizedBox(
                 width: 64,
                 height: 64,
-                child: _Cover(url: article.image),
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: _Cover(url: article.image)),
+                    if (!article.isFree && !article.isOwned)
+                      Positioned(
+                        top: 3,
+                        right: 3,
+                        child: _CartBadge(onTap: onCartTap),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: AppDimensions.paddingSmall),
@@ -85,6 +101,33 @@ class SimilarArticleCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _CartBadge({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 20,
+        height: 20,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.shopping_cart_outlined,
+          size: 12,
+          color: AppColors.primary,
         ),
       ),
     );

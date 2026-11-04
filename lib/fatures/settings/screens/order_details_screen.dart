@@ -12,6 +12,7 @@ import '../../../utils/constants.dart';
 import '../../articles/screens/article_screen.dart';
 import '../../books/screens/book_screen.dart';
 import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/screens/widgets/gift_order_cards.dart';
 import '../../issues/screens/issue_details_screen.dart';
 import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
@@ -145,6 +146,16 @@ class _OrderDetailsBody extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
+            // ── Gift ──
+            if (order.hasGiftCode) ...[
+              GiftCodeCard(code: order.giftCode!),
+              const SizedBox(height: 12),
+              if (order.giftMessage?.isNotEmpty ?? false) ...[
+                GiftMessageCard(message: order.giftMessage!),
+                const SizedBox(height: 12),
+              ],
+            ],
+
             // ── Summary ──
             Container(
               padding: const EdgeInsets.all(14),
@@ -259,12 +270,24 @@ class _ItemRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                item.subLabel,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textSecondary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.subLabel,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  if (item.isGift)
+                    const Icon(
+                      Icons.card_giftcard,
+                      size: 22,
+                      color: Color(0xFFE8744A),
+                    ),
+                ],
               ),
               Text(
                 item.title,

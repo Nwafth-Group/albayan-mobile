@@ -98,8 +98,10 @@ class LibraryArticleCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: AppDimensions.paddingxSmall),
-            LibraryDeleteBadge(onTap: onDelete),
+            if (onDelete != null) ...[
+              const SizedBox(width: AppDimensions.paddingxSmall),
+              LibraryDeleteBadge(onTap: onDelete),
+            ],
           ],
         ),
       ),

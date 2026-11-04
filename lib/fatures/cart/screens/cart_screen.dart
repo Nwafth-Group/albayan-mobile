@@ -189,6 +189,14 @@ class _CartViewState extends State<_CartView> {
                             AppDimensions.paddingLarge,
                           ),
                           children: [
+                            _GiftSwitchCard(
+                              value: state.cart.allGift,
+                              someGift: items.any((i) => i.isGift),
+                              busy: state.updatingGift,
+                              onChanged: (v) =>
+                                  context.read<CartCubit>().setAllGift(v),
+                            ),
+                            const SizedBox(height: AppDimensions.paddingSmall),
                             for (final item in items)
                               CartItemCard(
                                 item: item,
@@ -230,6 +238,122 @@ class _CartViewState extends State<_CartView> {
               );
           }
         },
+      ),
+    );
+  }
+}
+
+/// "Send as a gift" switch — on when every cart item is a gift; flipping it
+/// sets all items (the cart is either all gifts or none).
+class _GiftSwitchCard extends StatelessWidget {
+  final bool value;
+
+  /// At least one item is a gift (but maybe not all of them).
+  final bool someGift;
+  final bool busy;
+  final ValueChanged<bool> onChanged;
+
+  const _GiftSwitchCard({
+    required this.value,
+    required this.someGift,
+    required this.busy,
+    required this.onChanged,
+  });
+
+  /// Title + hint that describe what the cart will do right now.
+  (String, String) get _texts {
+    if (busy) {
+      return (
+        (value ? AppStrings.cartSendingAsGift : AppStrings.cartSendAsGift).tr(),
+        AppStrings.cartGiftUpdating.tr(),
+      );
+    }
+    if (value) {
+      return (
+        AppStrings.cartSendingAsGift.tr(),
+        AppStrings.cartSendAsGiftDesc.tr(),
+      );
+    }
+    return (
+      AppStrings.cartSendAsGift.tr(),
+      (someGift ? AppStrings.cartGiftMixedDesc : AppStrings.cartGiftOffDesc)
+          .tr(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, hint) = _texts;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+        vertical: AppDimensions.paddingSmall,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(
+              color: AppColors.accentPale,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.card_giftcard,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.paddingSmall),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: AppDimensions.fontSizeMedium,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  hint,
+                  style: const TextStyle(
+                    fontSize: AppDimensions.fontSizeSmall,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (busy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          Switch(
+            value: value,
+            onChanged: busy ? null : onChanged,
+            activeThumbColor: AppColors.white,
+            activeTrackColor: AppColors.primary,
+            inactiveThumbColor: AppColors.white,
+            inactiveTrackColor: AppColors.surfaceVariant,
+            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+          ),
+        ],
       ),
     );
   }

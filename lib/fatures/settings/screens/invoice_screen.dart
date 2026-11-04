@@ -9,14 +9,13 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../utils/api_client.dart';
-import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
+import '../utils/invoice_download_mixin.dart';
 import 'cubit/invoice_cubit.dart';
-import 'invoice_pdf_screen.dart';
 import 'widgets/settings_widgets.dart';
 
 /// Shared "View Invoice" screen — opened from anywhere with just an
@@ -39,9 +38,15 @@ class InvoiceScreen extends StatelessWidget {
   }
 }
 
-class _InvoiceView extends StatelessWidget {
+class _InvoiceView extends StatefulWidget {
   const _InvoiceView();
 
+  @override
+  State<_InvoiceView> createState() => _InvoiceViewState();
+}
+
+class _InvoiceViewState extends State<_InvoiceView>
+    with InvoiceDownloadStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,17 +59,25 @@ class _InvoiceView extends StatelessWidget {
               final order = state.order;
               if (order == null) return const SizedBox.shrink();
               return IconButton(
-                onPressed: () => AppNavigator.push(
-                  InvoicePdfScreen(
-                    orderId: order.id,
-                    invoiceNumber: order.invoiceNumber,
-                  ),
-                ),
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedDownload04,
-                  color: AppColors.primary,
-                  size: 22,
-                ),
+                onPressed: isDownloadingInvoice
+                    ? null
+                    : () => downloadInvoice(
+                        orderId: order.id,
+                        invoiceNumber: order.invoiceNumber,
+                      ),
+                icon: isDownloadingInvoice
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : const HugeIcon(
+                        icon: HugeIcons.strokeRoundedDownload04,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
               );
             },
           ),

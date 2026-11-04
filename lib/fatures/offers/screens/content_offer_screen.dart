@@ -7,10 +7,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
+import '../../articles/screens/article_screen.dart';
 import '../../articles/screens/widgets/star_row.dart';
+import '../../books/screens/book_screen.dart';
 import '../../cart/data/models/cart_item_model.dart';
 import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/models/offer_model.dart';
@@ -217,7 +220,24 @@ class _ContentOfferViewState extends State<_ContentOfferView>
                 ],
               ),
             ),
-            if (!offer.isCampaign)
+            if (!offer.isCampaign && offer.isFree)
+              Padding(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: AppStrings.readNow.tr(),
+                    // The detail screen adds free content to the library
+                    // and opens the reader.
+                    onPressed: () => AppNavigator.push(
+                      isBook
+                          ? BookScreen(bookId: offer.id)
+                          : ArticleScreen(articleId: offer.id),
+                    ),
+                  ),
+                ),
+              )
+            else if (!offer.isCampaign)
               Padding(
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
                 child: Row(
@@ -240,9 +260,8 @@ class _ContentOfferViewState extends State<_ContentOfferView>
                     Expanded(
                       flex: 2,
                       child: CustomButton(
-                        text: offer.isFree
-                            ? AppStrings.addToCart.tr()
-                            : '${AppStrings.addToCart.tr()} ${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
+                        text:
+                            '${AppStrings.addToCart.tr()} ${offerMoney(offer.newPrice)} ${AppStrings.currencySar.tr()}',
                         isLoading: isAddingToCart,
                         onPressed: () => addToCart(
                           type: isBook

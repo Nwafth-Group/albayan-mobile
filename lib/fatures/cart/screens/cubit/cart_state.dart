@@ -12,10 +12,14 @@ class CartState extends Equatable {
   final CartModel cart;
   final String? error;
 
+  /// The Gift switch's PATCH requests are in flight.
+  final bool updatingGift;
+
   const CartState({
     this.status = CartStatus.initial,
     this.cart = CartModel.empty,
     this.error,
+    this.updatingGift = false,
   });
 
   bool get isLoading => status == CartStatus.loading;
@@ -24,14 +28,16 @@ class CartState extends Equatable {
     CartStatus? status,
     CartModel? cart,
     String? error,
+    bool? updatingGift,
   }) {
     return CartState(
       status: status ?? this.status,
       cart: cart ?? this.cart,
       error: error,
+      updatingGift: updatingGift ?? this.updatingGift,
     );
   }
 
   @override
-  List<Object?> get props => [status, cart, error];
+  List<Object?> get props => [status, cart, error, updatingGift];
 }

@@ -158,14 +158,67 @@ class DetailCircleAction extends StatelessWidget {
   final String asset;
   final VoidCallback? onTap;
 
-  const DetailCircleAction({super.key, required this.asset, this.onTap});
+  /// Filled maroon circle with [activeIcon] instead of [asset] — e.g. the
+  /// read icon once the item is in My Library.
+  final bool isActive;
+  final IconData activeIcon;
+
+  /// Shows a small spinner (and ignores taps) while the action runs.
+  final bool isLoading;
+
+  const DetailCircleAction({
+    super.key,
+    required this.asset,
+    this.onTap,
+    this.isActive = false,
+    this.activeIcon = Icons.menu_book_rounded,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       customBorder: const CircleBorder(),
-      child: Image.asset(asset, width: 28, height: 28, fit: BoxFit.contain),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        transitionBuilder: (child, animation) =>
+            ScaleTransition(scale: animation, child: child),
+        child: isLoading
+            ? Container(
+                key: const ValueKey('loading'),
+                width: 28,
+                height: 28,
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              )
+            : isActive
+            ? Container(
+                key: const ValueKey('active'),
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(activeIcon, size: 16, color: AppColors.white),
+              )
+            : Image.asset(
+                asset,
+                key: const ValueKey('inactive'),
+                width: 28,
+                height: 28,
+                fit: BoxFit.contain,
+              ),
+      ),
     );
   }
 }

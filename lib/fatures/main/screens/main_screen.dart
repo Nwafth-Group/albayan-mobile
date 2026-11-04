@@ -4,14 +4,13 @@
 
 import 'dart:async';
 
-import 'package:albayan/fatures/cart/data/datasource/cart_remote_data_source.dart';
+import 'package:albayan/fatures/cart/data/models/cart_model.dart';
 import 'package:albayan/fatures/cart/screens/cart_screen.dart';
 import 'package:albayan/fatures/cart/utils/cart_events.dart';
 import 'package:albayan/fatures/home/screens/home_screen.dart';
 import 'package:albayan/fatures/library/screens/library_screen.dart';
 import 'package:albayan/fatures/search/screens/search_screen.dart';
 import 'package:albayan/fatures/settings/screens/settings_screen.dart';
-import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/widgets/main_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
@@ -28,33 +27,24 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   late int _selectedIndex;
 
-  final CartRemoteDataSource _cartDataSource =
-      CartRemoteDataSourceImpl(ApiService());
   int _cartItemCount = 0;
-  StreamSubscription<void>? _cartChangesSub;
+  StreamSubscription<CartModel>? _cartSub;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    _loadCartCount();
-    _cartChangesSub = CartEvents.changes.listen((_) => _loadCartCount());
+    // The Cart tab (always alive in the IndexedStack) fetches the cart on
+    // start and after every change; the badge just follows those results.
+    _cartSub = CartEvents.carts.listen((cart) {
+      if (mounted) setState(() => _cartItemCount = cart.itemsCount);
+    });
   }
 
   @override
   void dispose() {
-    _cartChangesSub?.cancel();
+    _cartSub?.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadCartCount() async {
-    try {
-      final cart = await _cartDataSource.getCart();
-      if (!mounted) return;
-      setState(() => _cartItemCount = cart.itemsCount);
-    } catch (_) {
-      // Badge just stays at its last known count on failure.
-    }
   }
 
   late final List<Widget> _screens = [

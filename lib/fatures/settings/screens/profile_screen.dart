@@ -20,6 +20,7 @@ import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
 import '../../../utils/shared_pref_helper.dart';
+import 'verification_code_screen.dart';
 import 'widgets/settings_widgets.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -128,10 +129,52 @@ class _ProfileBodyState extends State<_ProfileBody> {
   }
 
   void _save() {
-    // TODO(api): no profile-update endpoint yet — send first/last name,
-    // mobile, email, country, the picked image and the reading-hours
-    // reminder here once it exists, then refresh the cached user.
-    Helpers.showError(AppStrings.featureComingSoon.tr());
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
+    if (firstName.isEmpty) {
+      Helpers.showError(AppStrings.validationFirstNameRequired.tr());
+      return;
+    }
+    if (lastName.isEmpty) {
+      Helpers.showError(AppStrings.validationLastNameRequired.tr());
+      return;
+    }
+    final email = _email.text.trim();
+    if (email.isNotEmpty &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      Helpers.showError(AppStrings.validationEmailInvalid.tr());
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    // TODO(api): the reading-hours reminder has no field on the profile
+    // endpoint yet — send it here once the backend supports it.
+    context.read<AuthCubit>().updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      mobileNumber: _phone.text.trim(),
+      countryId: _country?.id ?? _user?.countryId,
+      image: _pickedImage,
+    );
+  }
+
+  Future<void> _onProfileUpdated(ProfileUpdated state) async {
+    // Read before `_fill` — the server may still return the old email
+    // until the new one is verified.
+    final newEmail = _email.text.trim();
+    setState(() {
+      _fill(state.user);
+      _pickedImage = null;
+    });
+    if (state.emailVerificationRequired) {
+      final verified = await AppNavigator.push<bool>(
+        VerificationCodeScreen(target: newEmail),
+      );
+      if (verified != true || !mounted) return;
+    }
+    if (!mounted) return;
+    Helpers.showSuccess(context, AppStrings.profileUpdated.tr());
+    AppNavigator.pop(true);
   }
 
   @override
@@ -148,6 +191,8 @@ class _ProfileBodyState extends State<_ProfileBody> {
           context.read<AuthCubit>().fetchCountries();
         } else if (state is ProfileError) {
           context.read<AuthCubit>().fetchCountries();
+        } else if (state is ProfileUpdated) {
+          _onProfileUpdated(state);
         } else if (state is CountriesLoaded) {
           setState(() {
             _countries = state.countries;
@@ -249,11 +294,18 @@ class _ProfileBodyState extends State<_ProfileBody> {
             ),
           ],
         ),
-        bottomNavigationBar: SettingsButtonPair(
-          secondaryText: AppStrings.cancel.tr(),
-          primaryText: AppStrings.saveChange.tr(),
-          onSecondary: () => AppNavigator.pop(),
-          onPrimary: _save,
+        bottomNavigationBar: BlocBuilder<AuthCubit, AuthState>(
+          buildWhen: (_, s) =>
+              s is ProfileUpdateLoading ||
+              s is ProfileUpdated ||
+              s is ProfileUpdateError,
+          builder: (context, state) => SettingsButtonPair(
+            secondaryText: AppStrings.cancel.tr(),
+            primaryText: AppStrings.saveChange.tr(),
+            isLoading: state is ProfileUpdateLoading,
+            onSecondary: () => AppNavigator.pop(),
+            onPrimary: state is ProfileUpdateLoading ? null : _save,
+          ),
         ),
       ),
     );

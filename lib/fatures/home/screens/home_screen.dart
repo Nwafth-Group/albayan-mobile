@@ -5,6 +5,7 @@ import 'package:albayan/fatures/auth/screens/cubit/auth_cubit.dart';
 import 'package:albayan/fatures/articles/screens/article_screen.dart';
 import 'package:albayan/fatures/articles/screens/articles_list_screen.dart';
 import 'package:albayan/fatures/auth/screens/cubit/auth_state.dart';
+import 'package:albayan/fatures/auth/screens/login_screen.dart';
 import 'package:albayan/fatures/authors/screens/author_screen.dart';
 import 'package:albayan/fatures/authors/screens/authors_list_screen.dart';
 import 'package:albayan/fatures/books/screens/book_screen.dart';
@@ -15,6 +16,7 @@ import 'package:albayan/fatures/issues/screens/issue_details_screen.dart';
 import 'package:albayan/fatures/issues/screens/issues_screen.dart';
 import 'package:albayan/fatures/notifications/screens/notifications_screen.dart';
 import 'package:albayan/fatures/offers/screens/offers_list_screen.dart';
+import 'package:albayan/fatures/settings/screens/profile_screen.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/app_navigator.dart';
 import 'package:albayan/utils/constants.dart';
@@ -24,6 +26,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../data/datasource/home_remote_data_source.dart';
 import '../data/models/home_section_model.dart';
 import 'cubit/home_cubit.dart';
@@ -38,12 +42,14 @@ class IssueModel {
   final String title;
   final String date;
   final String price;
+  final bool isPurchasable;
   IssueModel({
     required this.id,
     required this.image,
     required this.title,
     required this.date,
     required this.price,
+    this.isPurchasable = false,
   });
 }
 
@@ -56,6 +62,7 @@ class ArticleModel {
   final String price;
   final String date;
   final double rating;
+  final bool isPurchasable;
   ArticleModel({
     required this.id,
     required this.image,
@@ -65,6 +72,7 @@ class ArticleModel {
     required this.price,
     required this.date,
     required this.rating,
+    this.isPurchasable = false,
   });
 }
 
@@ -82,6 +90,7 @@ class BookModel {
   final String author;
   final String price;
   final double rating;
+  final bool isPurchasable;
   BookModel({
     required this.id,
     required this.image,
@@ -89,6 +98,7 @@ class BookModel {
     required this.author,
     required this.price,
     required this.rating,
+    this.isPurchasable = false,
   });
 }
 
@@ -116,7 +126,8 @@ String _formatDate(DateTime? date) {
   return DateFormat('MMM d, yyyy').format(date);
 }
 
-String _priceLabel(num price, {required bool isFree}) {
+String _priceLabel(num price, {required bool isFree, bool isOwned = false}) {
+  if (isOwned) return AppStrings.readNow.tr();
   if (isFree || price <= 0) return AppStrings.free.tr();
   return '${price.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}';
 }
@@ -183,7 +194,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AddToCartStateMixin {
   // ── Profile ────────────────────────────────────────────────────
   UserModel? _user;
   late final AuthCubit _authCubit;
@@ -230,6 +241,19 @@ class _HomeScreenState extends State<HomeScreen> {
     _authCubit.getProfile();
   }
 
+  /// Opens the profile screen; when back, re-reads the profile so edits
+  /// (name, photo) show in the header. A guest is sent to log in instead.
+  Future<void> _openProfile() async {
+    if (!SharedPrefHelper.isLoggedIn()) {
+      AppNavigator.push(const LoginScreen());
+      return;
+    }
+    await AppNavigator.push(const ProfileScreen());
+    if (!mounted) return;
+    setState(() => _user = SharedPrefHelper.getUser() ?? _user);
+    _authCubit.getProfile();
+  }
+
   Future<void> _onRefresh() {
     // The promo banner on other screens caches the same banners section.
     AdPromoBanner.invalidate();
@@ -263,7 +287,12 @@ class _HomeScreenState extends State<HomeScreen> {
             image: i.coverImage ?? '',
             title: i.title,
             date: _formatDate(i.publishedAt),
-            price: _priceLabel(i.effectivePrice, isFree: i.isFree),
+            price: _priceLabel(
+              i.effectivePrice,
+              isFree: i.isFree,
+              isOwned: i.isOwned,
+            ),
+            isPurchasable: !i.isFree && !i.isOwned,
           ),
         )
         .toList();
@@ -283,9 +312,14 @@ class _HomeScreenState extends State<HomeScreen> {
       category: date,
       title: a.title,
       author: a.author ?? '',
-      price: _priceLabel(a.effectivePrice, isFree: a.isFree),
+      price: _priceLabel(
+        a.effectivePrice,
+        isFree: a.isFree,
+        isOwned: a.isOwned,
+      ),
       date: date,
       rating: a.rate,
+      isPurchasable: !a.isFree && !a.isOwned,
     );
   }
 
@@ -299,8 +333,13 @@ class _HomeScreenState extends State<HomeScreen> {
             image: b.image ?? '',
             title: b.name,
             author: b.author,
-            price: _priceLabel(b.effectivePrice, isFree: b.isFree),
+            price: _priceLabel(
+              b.effectivePrice,
+              isFree: b.isFree,
+              isOwned: b.isOwned,
+            ),
             rating: b.rate,
+            isPurchasable: !b.isFree && !b.isOwned,
           ),
         )
         .toList();
@@ -485,82 +524,93 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
-          // Avatar
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceVariant,
-              border: Border.all(color: AppColors.surfaceVariant, width: 2),
-            ),
-            child: ClipOval(
-              child: (profileImage != null && profileImage.isNotEmpty)
-                  ? Image.network(
-                      profileImage,
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.person,
-                        color: AppColors.textSecondary,
-                        size: 26,
-                      ),
-                    )
-                  : Icon(
-                      Icons.person,
-                      color: AppColors.textSecondary,
-                      size: 26,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Greeting
+          // Avatar + greeting → profile (or login for a guest)
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        AppStrings.homeGreeting.tr(namedArgs: {'name': displayName}),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (_user?.haveSubscription == true) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentPale,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          _user?.subscriptionStatus ?? AppStrings.subActive.tr(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+            child: InkWell(
+              onTap: _openProfile,
+              borderRadius: BorderRadius.circular(24),
+              child: Row(
+                children: [
+                // Avatar
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surfaceVariant,
+                    border: Border.all(color: AppColors.surfaceVariant, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: (profileImage != null && profileImage.isNotEmpty)
+                        ? Image.network(
+                            profileImage,
+                            width: 42,
+                            height: 42,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.person,
+                              color: AppColors.textSecondary,
+                              size: 26,
+                            ),
+                          )
+                        : Icon(
+                            Icons.person,
+                            color: AppColors.textSecondary,
+                            size: 26,
                           ),
-                        ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Greeting
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              AppStrings.homeGreeting.tr(namedArgs: {'name': displayName}),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (_user?.haveSubscription == true) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentPale,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _user?.subscriptionStatus ?? AppStrings.subActive.tr(),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        AppStrings.homeTagline.tr(),
+                        style: TextStyle(fontSize: 11, color: AppColors.textLight),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-                Text(
-                  AppStrings.homeTagline.tr(),
-                  style: TextStyle(fontSize: 11, color: AppColors.textLight),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // Offers
@@ -740,7 +790,12 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: issues.length,
         itemBuilder: (context, i) {
           final item = issues[i];
-          return _IssueCard(item: item);
+          return _IssueCard(
+            item: item,
+            onCartTap: item.isPurchasable
+                ? () => addToCart(type: CartItemType.issue, id: item.id)
+                : null,
+          );
         },
       ),
     );
@@ -749,7 +804,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Articles ──────────────────────────────────────────────────
   Widget _buildArticlesList() {
     return Column(
-      children: _articleModels.map((a) => _ArticleRow(article: a)).toList(),
+      children: _articleModels
+          .map(
+            (a) => _ArticleRow(
+              article: a,
+              onCartTap: a.isPurchasable
+                  ? () => addToCart(type: CartItemType.article, id: a.id)
+                  : null,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -782,7 +846,12 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: books.length,
         itemBuilder: (context, i) {
           final book = books[i];
-          return _BookCard(book: book);
+          return _BookCard(
+            book: book,
+            onCartTap: book.isPurchasable
+                ? () => addToCart(type: CartItemType.book, id: book.id)
+                : null,
+          );
         },
       ),
     );
@@ -807,7 +876,12 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: books.length,
         itemBuilder: (context, i) {
           final book = books[i];
-          return _RecommendationCard(book: book);
+          return _RecommendationCard(
+            book: book,
+            onCartTap: book.isPurchasable
+                ? () => addToCart(type: CartItemType.book, id: book.id)
+                : null,
+          );
         },
       ),
     );
@@ -820,7 +894,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _IssueCard extends StatelessWidget {
   final IssueModel item;
-  const _IssueCard({required this.item});
+  final VoidCallback? onCartTap;
+  const _IssueCard({required this.item, this.onCartTap});
 
   @override
   Widget build(BuildContext context) {
@@ -833,12 +908,28 @@ class _IssueCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _homeImage(
-                item.image,
+              child: SizedBox(
                 width: 130,
                 height: 200,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.book_outlined,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _homeImage(
+                        item.image,
+                        width: 130,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.book_outlined,
+                      ),
+                    ),
+                    if (item.isPurchasable)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: _CartBadge(onTap: onCartTap),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -872,7 +963,8 @@ class _IssueCard extends StatelessWidget {
 
 class _ArticleRow extends StatelessWidget {
   final ArticleModel article;
-  const _ArticleRow({required this.article});
+  final VoidCallback? onCartTap;
+  const _ArticleRow({required this.article, this.onCartTap});
 
   @override
   Widget build(BuildContext context) {
@@ -888,12 +980,28 @@ class _ArticleRow extends StatelessWidget {
             // Image
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: _homeImage(
-                article.image,
+              child: SizedBox(
                 width: 96,
                 height: 110,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.image_outlined,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _homeImage(
+                        article.image,
+                        width: 96,
+                        height: 110,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.image_outlined,
+                      ),
+                    ),
+                    if (article.isPurchasable)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: _CartBadge(onTap: onCartTap, size: 24),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -1024,7 +1132,8 @@ class _AuthorChip extends StatelessWidget {
 
 class _BookCard extends StatelessWidget {
   final BookModel book;
-  const _BookCard({required this.book});
+  final VoidCallback? onCartTap;
+  const _BookCard({required this.book, this.onCartTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1037,12 +1146,28 @@ class _BookCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _homeImage(
-                book.image,
+              child: SizedBox(
                 width: 130,
                 height: 200,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.book_outlined,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _homeImage(
+                        book.image,
+                        width: 130,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.book_outlined,
+                      ),
+                    ),
+                    if (book.isPurchasable)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: _CartBadge(onTap: onCartTap),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1159,7 +1284,8 @@ class _NewsCard extends StatelessWidget {
 
 class _RecommendationCard extends StatelessWidget {
   final BookModel book;
-  const _RecommendationCard({required this.book});
+  final VoidCallback? onCartTap;
+  const _RecommendationCard({required this.book, this.onCartTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1172,12 +1298,28 @@ class _RecommendationCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _homeImage(
-                book.image,
+              child: SizedBox(
                 width: 130,
                 height: 200,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.book_outlined,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _homeImage(
+                        book.image,
+                        width: 130,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.book_outlined,
+                      ),
+                    ),
+                    if (book.isPurchasable)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: _CartBadge(onTap: onCartTap),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -1240,6 +1382,38 @@ class _HeaderIconButton extends StatelessWidget {
           colorBlendMode: BlendMode.srcIn,
           errorBuilder: (_, __, ___) =>
               Icon(fallbackIcon, color: AppColors.primary, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================
+// CART BADGE (corner "add to cart" button over a cover image)
+// ============================================
+
+class _CartBadge extends StatelessWidget {
+  final VoidCallback? onTap;
+  final double size;
+  const _CartBadge({this.onTap, this.size = 30});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.shopping_cart_outlined,
+          size: size * 0.53,
+          color: AppColors.primary,
         ),
       ),
     );

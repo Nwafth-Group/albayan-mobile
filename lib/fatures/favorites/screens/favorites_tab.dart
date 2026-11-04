@@ -18,6 +18,8 @@ import '../../../widgets/loading_widget.dart';
 import '../../articles/screens/article_screen.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../books/screens/book_screen.dart';
+import '../../cart/data/models/cart_item_model.dart';
+import '../../cart/utils/add_to_cart_mixin.dart';
 import '../../issues/screens/issue_details_screen.dart';
 import '../data/datasource/favorites_remote_data_source.dart';
 import '../data/models/favorite_item_model.dart';
@@ -56,7 +58,8 @@ class _FavoritesView extends StatefulWidget {
   State<_FavoritesView> createState() => _FavoritesViewState();
 }
 
-class _FavoritesViewState extends State<_FavoritesView> {
+class _FavoritesViewState extends State<_FavoritesView>
+    with AddToCartStateMixin {
   final _scrollController = ScrollController();
 
   @override
@@ -91,6 +94,17 @@ class _FavoritesViewState extends State<_FavoritesView> {
       case FavoriteType.article:
         AppNavigator.push(ArticleScreen(articleId: item.itemId));
         break;
+    }
+  }
+
+  CartItemType _cartType(FavoriteType type) {
+    switch (type) {
+      case FavoriteType.book:
+        return CartItemType.book;
+      case FavoriteType.issue:
+        return CartItemType.issue;
+      case FavoriteType.article:
+        return CartItemType.article;
     }
   }
 
@@ -169,6 +183,10 @@ class _FavoritesViewState extends State<_FavoritesView> {
                     item: item,
                     onTap: () => _open(item),
                     onUnfavorite: () => cubit.unfavorite(item),
+                    onCartTap: () => addToCart(
+                      type: _cartType(item.type),
+                      id: item.itemId,
+                    ),
                   );
                 },
               ),

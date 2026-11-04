@@ -161,6 +161,49 @@ class ProfileError extends AuthState {
   List<Object?> get props => [message];
 }
 
+// ── Update Profile ────────────────────────────────────────────
+class ProfileUpdateLoading extends AuthState {
+  const ProfileUpdateLoading();
+}
+
+class ProfileUpdated extends AuthState {
+  final UserModel user;
+
+  /// The email was changed and must be confirmed with an OTP
+  /// (`/reader/profile/verify-email`) before it takes effect.
+  final bool emailVerificationRequired;
+
+  const ProfileUpdated(this.user, {this.emailVerificationRequired = false});
+
+  @override
+  List<Object?> get props => [user, emailVerificationRequired];
+}
+
+class ProfileUpdateError extends AuthState {
+  final String message;
+  const ProfileUpdateError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ── Verify Profile Email ──────────────────────────────────────
+class ProfileEmailVerifyLoading extends AuthState {
+  const ProfileEmailVerifyLoading();
+}
+
+class ProfileEmailVerified extends AuthState {
+  const ProfileEmailVerified();
+}
+
+class ProfileEmailVerifyError extends AuthState {
+  final String message;
+  const ProfileEmailVerifyError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 // ── Forgot Password: Request OTP ─────────────────────────────
 class ForgotPasswordLoading extends AuthState {
   const ForgotPasswordLoading();

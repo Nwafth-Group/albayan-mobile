@@ -328,6 +328,8 @@ class _ResultsTabState extends State<_ResultsTab>
                   item: item,
                   onTap: () =>
                       AppNavigator.push(IssueDetailsScreen(issueId: item.id)),
+                  onCartTap: () =>
+                      addToCart(type: CartItemType.issue, id: item.id),
                 );
               },
               childCount: state.items.length,
@@ -354,6 +356,7 @@ class _ResultsTabState extends State<_ResultsTab>
       publishedAt: item.publishedAt,
       rate: item.rate,
       isFavorite: item.isFavorite,
+      isOwned: item.isOwned,
     );
   }
 
@@ -370,6 +373,7 @@ class _ResultsTabState extends State<_ResultsTab>
       rate: item.rate,
       rateCount: 0,
       isFavorite: item.isFavorite,
+      isOwned: item.isOwned,
     );
   }
 }
@@ -399,14 +403,16 @@ class _LoadMoreSpinner extends StatelessWidget {
 class _IssueResultCard extends StatelessWidget {
   final SearchResultItemModel item;
   final VoidCallback? onTap;
+  final VoidCallback? onCartTap;
 
-  const _IssueResultCard({required this.item, this.onTap});
+  const _IssueResultCard({required this.item, this.onTap, this.onCartTap});
 
   @override
   Widget build(BuildContext context) {
     final date = item.publishedAt == null
         ? ''
         : DateFormat('MMM d, yyyy', 'en').format(item.publishedAt!);
+    final isFree = item.isFree || item.effectivePrice <= 0;
 
     return InkWell(
       onTap: onTap,
@@ -417,9 +423,21 @@ class _IssueResultCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-              child: SizedBox(
-                width: double.infinity,
-                child: _Cover(url: item.image),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: _Cover(url: item.image),
+                    ),
+                  ),
+                  if (!isFree && !item.isOwned)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: _CartBadge(onTap: onCartTap),
+                    ),
+                ],
               ),
             ),
           ),
@@ -445,7 +463,16 @@ class _IssueResultCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 3),
-          if (item.isFree || item.effectivePrice <= 0)
+          if (item.isOwned)
+            Text(
+              AppStrings.readNow.tr(),
+              style: const TextStyle(
+                fontSize: AppDimensions.fontSizeMedium,
+                fontWeight: FontWeight.w700,
+                color: AppColors.success,
+              ),
+            )
+          else if (isFree)
             Text(
               AppStrings.free.tr(),
               style: const TextStyle(
@@ -466,6 +493,33 @@ class _IssueResultCard extends StatelessWidget {
           const SizedBox(height: 3),
           StarRow(rating: item.rate, size: 13),
         ],
+      ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  final VoidCallback? onTap;
+  const _CartBadge({this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.shopping_cart_outlined,
+          size: 16,
+          color: AppColors.primary,
+        ),
       ),
     );
   }

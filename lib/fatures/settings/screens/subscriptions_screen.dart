@@ -2,83 +2,194 @@
 // FILE: lib/fatures/settings/screens/subscriptions_screen.dart
 // ============================================
 
-import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
+import 'dart:io';
 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../utils/api_client.dart';
+import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
-import '../../../utils/shared_pref_helper.dart';
+import '../../../widgets/custom_button.dart';
 import '../../../widgets/empty_state.dart';
+import '../../../widgets/loading_widget.dart';
+import '../data/datasource/subscription_remote_data_source.dart';
 import '../data/models/subscription_model.dart';
+import 'cubit/subscriptions_cubit.dart';
+import 'subscription_history_screen.dart';
 import 'widgets/settings_widgets.dart';
+import 'widgets/subscription_widgets.dart';
 
+/// My Subscriptions — `GET /reader/subscriptions/current`, with the
+/// Upgrade Plan sheet (`/public/subscriptions/plans` + `purchase`).
 class SubscriptionsScreen extends StatelessWidget {
   const SubscriptionsScreen({super.key});
 
-  void _comingSoon() => Helpers.showError(AppStrings.featureComingSoon.tr());
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => SubscriptionsCubit(
+        SubscriptionRemoteDataSourceImpl(ApiService()),
+        languageCode: context.locale.languageCode,
+      )..load(),
+      child: const _SubscriptionsView(),
+    );
+  }
+}
+
+class _SubscriptionsView extends StatelessWidget {
+  const _SubscriptionsView();
+
+  /// Store subscriptions are cancelled / changed from the store's own
+  /// account page.
+  Future<void> _manage() async {
+    final Uri? url;
+    if (!kIsWeb && Platform.isIOS) {
+      url = Uri.parse('https://apps.apple.com/account/subscriptions');
+    } else if (!kIsWeb && Platform.isAndroid) {
+      url = Uri.parse('https://play.google.com/store/account/subscriptions');
+    } else {
+      url = null;
+    }
+    if (url == null ||
+        !await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      Helpers.showError(AppStrings.featureComingSoon.tr());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = SharedPrefHelper.getUser();
-    // TODO(api): replace the sample with the real subscription once an
-    // endpoint exists; the profile only says whether one is active.
-    final SubscriptionModel? subscription = user?.haveSubscription == true
-        ? SubscriptionModel.sample
-        : null;
+    return BlocBuilder<SubscriptionsCubit, SubscriptionsState>(
+      builder: (context, state) {
+        final cubit = context.read<SubscriptionsCubit>();
+        final current = state.current;
+        final loaded = state.status == SubscriptionsStatus.success;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: SettingsAppBar(
-        title: AppStrings.mySubscriptions.tr(),
-        actions: [
-          IconButton(
-            onPressed: _comingSoon,
-            icon: const HugeIcon(
-              icon: HugeIcons.strokeRoundedShield01,
-              color: AppColors.primary,
-              size: 20,
-            ),
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: SettingsAppBar(
+            title: AppStrings.mySubscriptions.tr(),
+            actions: [
+              IconButton(
+                onPressed: () => showUpgradePlanSheet(context),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedShield01,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              IconButton(
+                onPressed: () =>
+                    AppNavigator.push(const SubscriptionHistoryScreen()),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedWorkHistory,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: _comingSoon,
-            icon: const HugeIcon(
-              icon: HugeIcons.strokeRoundedWorkHistory,
+          body: switch (state.status) {
+            SubscriptionsStatus.initial ||
+            SubscriptionsStatus.loading => const LoadingIndicator(),
+            SubscriptionsStatus.failure => _Refreshable(
+              onRefresh: cubit.refresh,
+              child: EmptyState(
+                icon: Icons.error_outline,
+                title: AppStrings.somethingWentWrong.tr(),
+                subtitle: state.error ?? AppStrings.pleaseTryAgain.tr(),
+                action: CustomButton(
+                  text: AppStrings.retry.tr(),
+                  onPressed: cubit.load,
+                ),
+              ),
+            ),
+            SubscriptionsStatus.success when current == null => _Refreshable(
+              onRefresh: cubit.refresh,
+              child: EmptyState(
+                icon: Icons.workspace_premium_outlined,
+                title: AppStrings.noSubscriptionTitle.tr(),
+                subtitle: AppStrings.noSubscriptionDesc.tr(),
+              ),
+            ),
+            SubscriptionsStatus.success => RefreshIndicator(
               color: AppColors.primary,
-              size: 20,
+              onRefresh: cubit.refresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  _SubscriptionCard(
+                    subscription: current!,
+                    plan: state.currentPlan,
+                  ),
+                ],
+              ),
             ),
+          },
+          bottomNavigationBar: !loaded
+              ? null
+              : current?.isActive == true
+              ? SettingsButtonPair(
+                  secondaryText: AppStrings.subUpgrade.tr(),
+                  primaryText: AppStrings.manageSubscription.tr(),
+                  onSecondary: () => showUpgradePlanSheet(context),
+                  onPrimary: _manage,
+                )
+              : SettingsBottomButton(
+                  text: AppStrings.subscribeNow.tr(),
+                  onPressed: () => showUpgradePlanSheet(context),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _Refreshable extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+  final Widget child;
+
+  const _Refreshable({required this.onRefresh, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
           ),
-        ],
-      ),
-      body: subscription == null
-          ? EmptyState(
-              icon: Icons.workspace_premium_outlined,
-              title: AppStrings.noSubscriptionTitle.tr(),
-              subtitle: AppStrings.noSubscriptionDesc.tr(),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [_SubscriptionCard(subscription: subscription)],
-            ),
-      bottomNavigationBar: SettingsButtonPair(
-        secondaryText: AppStrings.subUpgrade.tr(),
-        primaryText: AppStrings.manageSubscription.tr(),
-        // TODO(api): upgrade / manage flows (store subscriptions).
-        onSecondary: _comingSoon,
-        onPrimary: _comingSoon,
+        ),
       ),
     );
   }
 }
 
 class _SubscriptionCard extends StatelessWidget {
-  final SubscriptionModel subscription;
-  const _SubscriptionCard({required this.subscription});
+  final UserSubscriptionModel subscription;
+  final SubscriptionPlanModel? plan;
+
+  const _SubscriptionCard({required this.subscription, this.plan});
 
   @override
   Widget build(BuildContext context) {
     final date = DateFormat('dd/MM/yyyy');
+    String fmt(DateTime? d) => d == null ? '-' : date.format(d);
     final s = subscription;
+
+    final (statusFg, statusBg) = s.isActive
+        ? (const Color(0xFF3FA564), const Color(0xFFDDF3E4))
+        : (AppColors.primary, AppColors.accentPale);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -90,7 +201,7 @@ class _SubscriptionCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  s.planName,
+                  plan?.name ?? s.planName,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -98,24 +209,20 @@ class _SubscriptionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (s.isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDDF3E4),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    AppStrings.subActive.tr(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF3FA564),
-                    ),
-                  ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
                 ),
+                decoration: BoxDecoration(
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  subscriptionStatusLabel(s.status),
+                  style: TextStyle(fontSize: 10, color: statusFg),
+                ),
+              ),
             ],
           ),
           Text(
@@ -125,19 +232,28 @@ class _SubscriptionCard extends StatelessWidget {
             style: const TextStyle(fontSize: 10, color: AppColors.primary),
           ),
           const SizedBox(height: 10),
-          _InfoRow(AppStrings.startDate.tr(), date.format(s.startDate)),
-          _InfoRow(AppStrings.endDate.tr(), date.format(s.endDate)),
-          if (s.autoRenewalDate != null)
-            _InfoRow(
-              AppStrings.autoRenewal.tr(),
-              date.format(s.autoRenewalDate!),
-            ),
+          _InfoRow(AppStrings.startDate.tr(), fmt(s.startDate)),
+          _InfoRow(AppStrings.endDate.tr(), fmt(s.endDate)),
+          if (s.isAutoRenew && s.renewalDate != null)
+            _InfoRow(AppStrings.autoRenewal.tr(), fmt(s.renewalDate)),
           _InfoRow(
             AppStrings.renewsOn.tr(),
-            (s.renews ? AppStrings.toggleOn : AppStrings.toggleOff).tr(),
+            (s.isAutoRenew ? AppStrings.toggleOn : AppStrings.toggleOff).tr(),
           ),
+          const SizedBox(height: 4),
+          const Divider(height: 1, color: settingsBorder),
           const SizedBox(height: 14),
-          _PlanCard(subscription: s),
+          SubscriptionPlanCard(
+            price: s.price ?? plan?.price,
+            currency: s.currency ?? plan?.currency,
+            title: s.planName,
+            period: subscriptionDurationLabel(s.duration, s.durationMonths),
+            features: plan != null
+                ? planFeatures(plan!)
+                : subscriptionFeatures(s),
+            badge: AppStrings.subCurrentPlan.tr(),
+            highlighted: true,
+          ),
         ],
       ),
     );
@@ -158,114 +274,6 @@ class _InfoRow extends StatelessWidget {
         children: [
           Expanded(child: Text('$label :', style: style)),
           Text(value, style: style),
-        ],
-      ),
-    );
-  }
-}
-
-class _PlanCard extends StatelessWidget {
-  final SubscriptionModel subscription;
-  const _PlanCard({required this.subscription});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = subscription;
-    final amount = NumberFormat('#,##0.##');
-    final currency = AppStrings.currencySar.tr();
-
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary, width: 1.5),
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    if (s.hasDiscount) ...[
-                      Text(
-                        amount.format(s.oldPrice),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Text(
-                      '$currency ${amount.format(s.price)}',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  AppStrings.planAnnual.tr(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (final feature in s.features)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.check,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            feature,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          PositionedDirectional(
-            top: 0,
-            end: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadiusDirectional.only(
-                  bottomStart: Radius.circular(10),
-                ),
-              ),
-              child: Text(
-                AppStrings.planPremium.tr(),
-                style: const TextStyle(fontSize: 10, color: AppColors.white),
-              ),
-            ),
-          ),
         ],
       ),
     );

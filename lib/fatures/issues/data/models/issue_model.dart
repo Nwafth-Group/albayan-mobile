@@ -17,6 +17,10 @@ class IssueModel {
   final String accessState; // e.g. "Paid" / "Free"
   final bool individualPurchaseAllowed;
 
+  /// The reader already owns this issue (`is_owned`) — purchase should be
+  /// disabled and "Read Now" shown instead.
+  final bool isOwned;
+
   // Hijri date
   final int hYear;
   final int hMonthNumber;
@@ -42,6 +46,7 @@ class IssueModel {
     required this.isFree,
     required this.accessState,
     required this.individualPurchaseAllowed,
+    this.isOwned = false,
     required this.hYear,
     required this.hMonthNumber,
     required this.hMonthNameAr,
@@ -72,6 +77,7 @@ class IssueModel {
       isFree: json['is_free'] == true,
       accessState: json['access_state']?.toString() ?? '',
       individualPurchaseAllowed: json['individual_purchase_allowed'] == true,
+      isOwned: json['is_owned'] == true,
       hYear: _toInt(json['h_year']),
       hMonthNumber: _toInt(json['h_month_number']),
       hMonthNameAr: json['h_month_name_ar']?.toString() ?? '',
