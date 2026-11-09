@@ -24,6 +24,15 @@ class CartEvents {
 
   static void notifyChanged() => _controller.add(null);
 
+  static final StreamController<void> _addedController =
+      StreamController<void>.broadcast();
+
+  /// Fires after an item is added to the cart (from any screen) — the Cart
+  /// screen uses it to reset its promo-code field.
+  static Stream<void> get itemAdded => _addedController.stream;
+
+  static void notifyItemAdded() => _addedController.add(null);
+
   static final StreamController<CartModel> _cartsController =
       StreamController<CartModel>.broadcast();
 

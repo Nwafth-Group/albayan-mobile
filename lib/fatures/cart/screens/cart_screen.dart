@@ -2,6 +2,8 @@
 // FILE: lib/fatures/cart/screens/cart_screen.dart
 // ============================================
 
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +17,7 @@ import '../../../widgets/empty_state.dart';
 import '../../../widgets/loading_widget.dart';
 import '../data/datasource/cart_remote_data_source.dart';
 import '../data/models/cart_item_model.dart';
+import '../utils/cart_events.dart';
 import 'confirm_order_screen.dart';
 import 'cubit/cart_cubit.dart';
 import 'widgets/cart_item_card.dart';
@@ -52,8 +55,23 @@ class _CartViewState extends State<_CartView> {
   bool _promoBusy = false;
   String? _promoError;
 
+  StreamSubscription<void>? _itemAddedSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // New item added (from any screen) → start with an empty promo field.
+    // An applied coupon is still re-filled from the cart on the next build.
+    _itemAddedSub = CartEvents.itemAdded.listen((_) {
+      if (!mounted) return;
+      _promoController.clear();
+      setState(() => _promoError = null);
+    });
+  }
+
   @override
   void dispose() {
+    _itemAddedSub?.cancel();
     _promoController.dispose();
     super.dispose();
   }

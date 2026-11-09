@@ -85,6 +85,7 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
     } catch (_) {
       // The item itself was added; ApiService already showed the error.
     }
+    CartEvents.notifyItemAdded();
     CartEvents.notifyChanged();
   }
 
