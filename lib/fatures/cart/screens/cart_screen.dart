@@ -74,6 +74,8 @@ class _CartViewState extends State<_CartView> {
     setState(() {
       _promoBusy = false;
       _promoError = error;
+      // Rejected code → empty the field (the error stays shown below it).
+      if (error != null) _promoController.clear();
     });
   }
 

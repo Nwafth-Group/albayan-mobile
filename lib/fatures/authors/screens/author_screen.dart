@@ -19,6 +19,7 @@ import '../data/datasource/authors_remote_data_source.dart';
 import '../data/models/author_details_model.dart';
 import 'cubit/author_cubit.dart';
 import 'widgets/author_articles_tab.dart';
+import 'widgets/author_placeholder.dart';
 import 'widgets/books_tab.dart';
 import 'widgets/overview_tab.dart';
 
@@ -206,15 +207,15 @@ class _AuthorViewState extends State<_AuthorView>
         background: Stack(
           fit: StackFit.expand,
           children: [
-            if (author.image != null)
+            if (author.image != null && author.image!.isNotEmpty)
               Image.network(
                 author.image!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
-                const ColoredBox(color: _kHeaderDark),
+                    const AuthorHeaderPlaceholder(background: _kHeaderDark),
               )
             else
-              const ColoredBox(color: _kHeaderDark),
+              const AuthorHeaderPlaceholder(background: _kHeaderDark),
             // Gradient for legibility
             DecoratedBox(
               decoration: BoxDecoration(

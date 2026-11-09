@@ -97,6 +97,7 @@ class BookVersionModel {
 
 class BookDetailModel {
   final String id;
+  final String bookId;
   final AuthorModel? author;
   final PublisherModel? publisher;
   final CountryModel? country;
@@ -120,6 +121,7 @@ class BookDetailModel {
 
   const BookDetailModel({
     required this.id,
+    required this.bookId,
     required this.author,
     required this.publisher,
     required this.country,
@@ -159,6 +161,7 @@ class BookDetailModel {
     final rawLangs = json['language_options'];
     return BookDetailModel(
       id: json['id']?.toString() ?? '',
+      bookId: json['book_id']?.toString() ?? '',
       author: json['author'] is Map<String, dynamic>
           ? AuthorModel.fromJson(json['author'])
           : null,
@@ -218,6 +221,7 @@ class BookDetailModel {
   BookDetailModel copyWith({bool? isFavorite, bool? isOwned}) {
     return BookDetailModel(
       id: id,
+      bookId: bookId,
       author: author,
       publisher: publisher,
       country: country,

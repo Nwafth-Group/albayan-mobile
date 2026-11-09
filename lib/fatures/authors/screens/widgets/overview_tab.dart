@@ -10,6 +10,7 @@ import 'package:hugeicons/hugeicons.dart';
 import '../../../../utils/constants.dart';
 import '../../../../utils/link_launcher.dart';
 import '../../data/models/author_details_model.dart';
+import 'author_placeholder.dart';
 
 class OverviewTab extends StatelessWidget {
   final AuthorDetailsModel author;
@@ -80,22 +81,22 @@ class OverviewTab extends StatelessWidget {
                   ],
                 ),
               ),
-              if (author.image != null && author.image!.isNotEmpty) ...[
-                const SizedBox(width: AppDimensions.paddingSmall),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                  child: Image.network(
-                    author.image!,
-                    width: 90,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(
-                      width: 90,
-                      height: 90,
-                    ),
-                  ),
+              const SizedBox(width: AppDimensions.paddingSmall),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                child: SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: author.image != null && author.image!.isNotEmpty
+                      ? Image.network(
+                          author.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const AuthorPlaceholder(),
+                        )
+                      : const AuthorPlaceholder(),
                 ),
-              ],
+              ),
             ],
           ),
         ),

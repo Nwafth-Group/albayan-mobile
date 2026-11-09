@@ -17,7 +17,7 @@ import '../../issues/screens/issue_details_screen.dart';
 import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
 import 'cubit/order_details_cubit.dart';
-import 'invoice_pdf_screen.dart';
+import '../utils/invoice_download.dart';
 import 'invoice_screen.dart';
 import 'widgets/settings_widgets.dart';
 
@@ -225,11 +225,10 @@ class _OrderDetailsBody extends StatelessWidget {
       bottomNavigationBar: SettingsButtonPair(
         secondaryText: AppStrings.downloadInvoice.tr(),
         primaryText: AppStrings.viewInvoice.tr(),
-        onSecondary: () => AppNavigator.push(
-          InvoicePdfScreen(
-            orderId: order.id,
-            invoiceNumber: order.invoiceNumber,
-          ),
+        onSecondary: () => openInvoicePdf(
+          context,
+          orderId: order.id,
+          invoiceNumber: order.invoiceNumber,
         ),
         onPrimary: () => AppNavigator.push(InvoiceScreen(orderId: order.id)),
       ),

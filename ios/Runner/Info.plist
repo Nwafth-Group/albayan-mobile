@@ -77,6 +77,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Albayan needs access to your photos so you can choose a profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Albayan needs access to your camera so you can take a profile picture.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Albayan uses the microphone so you can search inside a book by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

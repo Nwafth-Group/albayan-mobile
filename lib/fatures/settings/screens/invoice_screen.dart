@@ -14,7 +14,7 @@ import '../../../widgets/empty_state_widget.dart';
 import '../../../widgets/loading_widget.dart';
 import '../data/datasource/settings_remote_data_source.dart';
 import '../data/models/order_model.dart';
-import '../utils/invoice_download_mixin.dart';
+import '../utils/invoice_download.dart';
 import 'cubit/invoice_cubit.dart';
 import 'widgets/settings_widgets.dart';
 
@@ -38,15 +38,9 @@ class InvoiceScreen extends StatelessWidget {
   }
 }
 
-class _InvoiceView extends StatefulWidget {
+class _InvoiceView extends StatelessWidget {
   const _InvoiceView();
 
-  @override
-  State<_InvoiceView> createState() => _InvoiceViewState();
-}
-
-class _InvoiceViewState extends State<_InvoiceView>
-    with InvoiceDownloadStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,26 +52,18 @@ class _InvoiceViewState extends State<_InvoiceView>
             builder: (context, state) {
               final order = state.order;
               if (order == null) return const SizedBox.shrink();
+              // Same download as Order Details' "Download Invoice".
               return IconButton(
-                onPressed: isDownloadingInvoice
-                    ? null
-                    : () => downloadInvoice(
-                        orderId: order.id,
-                        invoiceNumber: order.invoiceNumber,
-                      ),
-                icon: isDownloadingInvoice
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : const HugeIcon(
-                        icon: HugeIcons.strokeRoundedDownload04,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
+                onPressed: () => openInvoicePdf(
+                  context,
+                  orderId: order.id,
+                  invoiceNumber: order.invoiceNumber,
+                ),
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedDownload04,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
               );
             },
           ),

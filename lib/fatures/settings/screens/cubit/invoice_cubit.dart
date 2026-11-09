@@ -58,7 +58,9 @@ class InvoiceCubit extends Cubit<InvoiceState> {
       final invoice = await dataSource.getInvoice(orderId);
       final order = OrderModel.fromCheckout(
         CheckoutOrderModel(
-          id: invoice.id.isNotEmpty ? invoice.id : orderId,
+          // The order id, not `invoice.id` — order-scoped endpoints (e.g.
+          // the invoice PDF) need it.
+          id: orderId,
           orderNumber: invoice.invoiceNumber,
           summary: CartSummaryModel(
             subtotal: invoice.subtotal,

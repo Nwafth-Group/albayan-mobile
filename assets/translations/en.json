@@ -519,6 +519,7 @@
   "invoice_download_failed": "Couldn't download the invoice. Please try again.",
   "invoice_downloaded": "Invoice downloaded successfully. Use Share to save it to Files.",
   "invoice_saved": "Invoice saved to your device.",
+  "no_app_to_open_pdf": "No app found to open PDF files",
   "category_no_books": "No books in this category yet",
   "category_no_issues": "No issues in this category yet",
   "category_no_articles": "No articles in this category yet",

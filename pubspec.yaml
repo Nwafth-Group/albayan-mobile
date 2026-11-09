@@ -2,7 +2,7 @@ name: albayan
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.11.4
@@ -43,6 +43,7 @@ dependencies:
   webview_flutter: ^4.14.1
   share_plus: ^12.0.2
   file_picker: ^8.1.6
+  open_filex: ^5.0.0
 
 dev_dependencies:
   flutter_test:

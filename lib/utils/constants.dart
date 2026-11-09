@@ -17,6 +17,14 @@ class SocialAuthConfig {
       '842051961964-ss054l47e13g9tu2tql9rs52l45li3jn.apps.googleusercontent.com';
 }
 
+// Feature switches
+class FeatureFlags {
+  /// "Manage Subscription" on My Subscriptions (opens the App Store /
+  /// Play subscriptions page). Hidden until subscriptions are sold through
+  /// Apple in-app purchases — set to true to show it again.
+  static const bool manageSubscriptionEnabled = false;
+}
+
 // API Constants
 class ApiConstants {
   static String get baseUrl => 'http://3.70.168.206/api/v1';
@@ -394,6 +402,7 @@ class AppStrings {
   static const String invoiceDownloadFailed = 'invoice_download_failed';
   static const String invoiceDownloaded = 'invoice_downloaded';
   static const String invoiceSaved = 'invoice_saved';
+  static const String noAppToOpenPdf = 'no_app_to_open_pdf';
   static const String addedToLibrary = 'added_to_library';
   static const String removedFromLibrary = 'removed_from_library';
   static const String gift = 'gift';

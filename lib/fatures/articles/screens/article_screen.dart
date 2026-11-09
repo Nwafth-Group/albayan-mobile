@@ -10,6 +10,7 @@ import '../../../utils/api_client.dart';
 import '../../../utils/constants.dart';
 import '../../../utils/helpers.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../utils/share_helper.dart';
 import '../../../widgets/detail_hero.dart';
 import '../../../widgets/detail_tabs.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -173,6 +174,40 @@ class _ArticleViewState extends State<_ArticleView>
     );
   }
 
+  /// Title, author, corner, issue, price and the summary.
+  void _shareArticle(BuildContext buttonContext, ArticleModel article) {
+    String? nonEmpty(String? v) =>
+        (v == null || v.trim().isEmpty) ? null : v.trim();
+
+    final text = nonEmpty(article.summary) ?? nonEmpty(article.subtitle);
+    final summary = (text != null && text.length > 300)
+        ? '${text.substring(0, 300).trimRight()}…'
+        : text;
+    final author = nonEmpty(article.author?.name);
+    final corner = nonEmpty(article.corner?.name);
+    final price = article.isFree
+        ? AppStrings.free.tr()
+        : '${article.effectivePrice.toStringAsFixed(2)} '
+              '${AppStrings.currencySar.tr()}';
+
+    final lines = [
+      '📰 ${article.title}',
+      if (author != null) '${AppStrings.author.tr()}: $author',
+      if (corner != null) corner,
+      if (article.issueNumber > 0)
+        AppStrings.issueLabel.tr(
+          namedArgs: {'number': '${article.issueNumber}'},
+        ),
+      '${AppStrings.price.tr()}: $price',
+      if (summary != null) ...['', summary],
+    ];
+    ShareHelper.share(
+      lines.join('\n'),
+      subject: article.title,
+      context: buttonContext,
+    );
+  }
+
   // ---- Header: blurred-cover hero, with the sheet's rounded top ----
   Widget _buildHeader(BuildContext context, ArticleState state) {
     final article = state.article!;
@@ -235,6 +270,10 @@ class _ArticleViewState extends State<_ArticleView>
         DetailFavoriteAction(
           isFavorite: article.isFavorite,
           onTap: () => context.read<ArticleCubit>().toggleFavorite(),
+        ),
+        const SizedBox(width: AppDimensions.paddingSmall),
+        DetailShareAction(
+          onTap: (buttonContext) => _shareArticle(buttonContext, article),
         ),
         const SizedBox(width: AppDimensions.paddingMedium),
       ],

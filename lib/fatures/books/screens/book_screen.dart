@@ -39,13 +39,14 @@ class BookScreen extends StatelessWidget {
         BooksRemoteDataSourceImpl(ApiService()),
         bookId: bookId,
       )..load(),
-      child: const _BookView(),
+      child: _BookView(bookId:bookId),
     );
   }
 }
 
 class _BookView extends StatefulWidget {
-  const _BookView();
+  const _BookView({required this.bookId});
+  final String bookId;
 
   @override
   State<_BookView> createState() => _BookViewState();
@@ -113,7 +114,7 @@ class _BookViewState extends State<_BookView>
           final book = state.book!;
           return NestedScrollView(
             headerSliverBuilder: (context, _) => [
-              _buildHeader(context, state),
+              _buildHeader(context, state, widget.bookId),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(
@@ -176,12 +177,12 @@ class _BookViewState extends State<_BookView>
           );
         },
       ),
-      bottomNavigationBar: _buildBottomBar(context),
+      bottomNavigationBar: _buildBottomBar(context, widget.bookId),
     );
   }
 
   // ---- Header (image + title) ----
-  Widget _buildHeader(BuildContext context, BookState state) {
+  Widget _buildHeader(BuildContext context, BookState state, String bookId) {
     final book = state.book!;
     return SliverAppBar(
       pinned: true,
@@ -202,12 +203,17 @@ class _BookViewState extends State<_BookView>
         _circleAction(
           isActive: isInLibrary(
             type: LibraryItemType.book,
-            id: book.id,
+            id: bookId,
             owned: book.isOwned,
           ),
           isLoading: isAddingToLibrary,
           child: ImageAsset(AppImages.openBook, width: 20, height: 20),
-          onTap: () => book.isFree ? _readFree(book) : _openReader(book),
+          // Adds to / removes from My Library (`POST /reader/my-library/toggle`).
+          onTap: () => toggleLibrary(
+            type: LibraryItemType.book,
+            id: bookId,
+            inLibrary: book.isOwned,
+          ),
         ),
         _circleAction(
           child: book.isFavorite
@@ -286,10 +292,10 @@ class _BookViewState extends State<_BookView>
       book.version.fileType == 'free' && !book.isOwned;
 
   /// Free book → "Read Now": add it to My Library (no checkout), then read.
-  Future<void> _readFree(BookDetailModel book) async {
+  Future<void> _readFree(BookDetailModel book, String bookId) async {
     final added = await addFreeToLibrary(
       type: LibraryItemType.book,
-      id: book.id,
+      id: bookId,
       alreadyInLibrary: book.isOwned,
     );
     if (!mounted) return;
@@ -360,7 +366,7 @@ class _BookViewState extends State<_BookView>
   }
 
   // ---- Bottom bar (switches by tab) ----
-  Widget? _buildBottomBar(BuildContext context) {
+  Widget? _buildBottomBar(BuildContext context, String bookId) {
     final state = context.watch<BookCubit>().state;
     final book = state.book;
     if (book == null) return null;
@@ -385,7 +391,7 @@ class _BookViewState extends State<_BookView>
                 child: CustomButton(
                   text: AppStrings.readNow.tr(),
                   isLoading: isAddingToLibrary,
-                  onPressed: () => _readFree(book),
+                  onPressed: () => _readFree(book, widget.bookId),
                 ),
               )
             : book.isOwned
@@ -421,7 +427,7 @@ class _BookViewState extends State<_BookView>
                           isLoading: isAddingToCart,
                           onPressed: () => addToCart(
                             type: CartItemType.book,
-                            id: book.id,
+                            id: bookId,
                           ),
                         ),
                       ),

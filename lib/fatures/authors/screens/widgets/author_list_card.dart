@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../utils/constants.dart';
 import '../../data/models/author_list_model.dart';
+import 'author_placeholder.dart';
 
 class AuthorListCard extends StatelessWidget {
   final AuthorListModel author;
@@ -113,12 +114,5 @@ class _AuthorAvatar extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() {
-    return Container(
-      color: AppColors.accentPale,
-      child: const Center(
-        child: Icon(Icons.person, color: AppColors.primary, size: 48),
-      ),
-    );
-  }
+  Widget _placeholder() => const AuthorPlaceholder(iconSize: 44);
 }

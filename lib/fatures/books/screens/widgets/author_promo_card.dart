@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../utils/constants.dart';
+import '../../../authors/screens/widgets/author_placeholder.dart';
 
 /// "Discover the author behind this book" promo banner shown under the
 /// About Book tab — cover thumbnail + author avatar with a Buy Now action.
@@ -83,7 +84,12 @@ class AuthorPromoCard extends StatelessWidget {
                   right: 0,
                   bottom: 0,
                   child: ClipOval(
-                    child: _thumb(authorImage, width: 44, height: 44),
+                    child: _thumb(
+                      authorImage,
+                      width: 44,
+                      height: 44,
+                      placeholder: const AuthorPlaceholder(iconSize: 22),
+                    ),
                   ),
                 ),
               ],
@@ -94,7 +100,12 @@ class AuthorPromoCard extends StatelessWidget {
     );
   }
 
-  Widget _thumb(String? url, {required double width, required double height}) {
+  Widget _thumb(
+    String? url, {
+    required double width,
+    required double height,
+    Widget placeholder = const ColoredBox(color: AppColors.surfaceVariant),
+  }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
       child: SizedBox(
@@ -104,10 +115,9 @@ class AuthorPromoCard extends StatelessWidget {
             ? Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const ColoredBox(color: AppColors.surfaceVariant),
+                errorBuilder: (_, __, ___) => placeholder,
               )
-            : const ColoredBox(color: AppColors.surfaceVariant),
+            : placeholder,
       ),
     );
   }

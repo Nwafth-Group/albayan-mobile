@@ -9,7 +9,7 @@ import '../../../utils/app_navigator.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/custom_button.dart';
 import '../../settings/data/models/order_model.dart';
-import '../../settings/screens/invoice_pdf_screen.dart';
+import '../../settings/utils/invoice_download.dart';
 import '../../settings/screens/order_details_screen.dart';
 import '../../settings/screens/orders_screen.dart';
 import '../../settings/screens/widgets/settings_widgets.dart';
@@ -171,11 +171,10 @@ class PaymentSuccessScreen extends StatelessWidget {
                   // Only reachable after a paid checkout; needs the order id.
                   onPressed: order.id.isEmpty
                       ? null
-                      : () => AppNavigator.push(
-                          InvoicePdfScreen(
-                            orderId: order.id,
-                            invoiceNumber: order.invoice?.invoiceNumber ?? '',
-                          ),
+                      : () => openInvoicePdf(
+                          context,
+                          orderId: order.id,
+                          invoiceNumber: order.invoice?.invoiceNumber ?? '',
                         ),
                 ),
               ),

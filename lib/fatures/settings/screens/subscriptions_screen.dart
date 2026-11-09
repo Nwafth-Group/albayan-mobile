@@ -134,12 +134,19 @@ class _SubscriptionsView extends StatelessWidget {
           },
           bottomNavigationBar: !loaded
               ? null
-              : current?.isActive == true
+              : current?.isActive == true &&
+                    FeatureFlags.manageSubscriptionEnabled
               ? SettingsButtonPair(
                   secondaryText: AppStrings.subUpgrade.tr(),
                   primaryText: AppStrings.manageSubscription.tr(),
                   onSecondary: () => showUpgradePlanSheet(context),
                   onPrimary: _manage,
+                )
+              : current?.isActive == true
+              // Manage is hidden → Upgrade on its own.
+              ? SettingsBottomButton(
+                  text: AppStrings.subUpgrade.tr(),
+                  onPressed: () => showUpgradePlanSheet(context),
                 )
               : SettingsBottomButton(
                   text: AppStrings.subscribeNow.tr(),

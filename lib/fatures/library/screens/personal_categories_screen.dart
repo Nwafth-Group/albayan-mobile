@@ -36,10 +36,9 @@ class PersonalCategoriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PersonalCategoriesCubit(
-        LibraryRemoteDataSourceImpl(ApiService()),
-        type: type,
-      )..load(),
+      create: (_) =>
+          PersonalCategoriesCubit(LibraryRemoteDataSourceImpl(ApiService()))
+            ..load(),
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: CustomAppBar(title: personalCategoryTitleKey(type).tr()),

@@ -15,6 +15,7 @@ import '../../../utils/constants.dart';
 import '../../../utils/shared_pref_helper.dart';
 import '../../../widgets/custom_app_bar.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../utils/share_helper.dart';
 import '../../../widgets/detail_hero.dart';
 import '../../../widgets/detail_tabs.dart';
 import '../../../widgets/empty_state_widget.dart';
@@ -163,6 +164,10 @@ class _DetailsViewState extends State<_DetailsView>
                     isFavorite: detail.isFavorite,
                     onTap: () =>
                         context.read<IssueDetailsCubit>().toggleFavorite(),
+                  ),
+                  DetailShareAction(
+                    onTap: (buttonContext) =>
+                        _shareIssue(buttonContext, detail),
                   ),
                 ],
               ),
@@ -354,6 +359,35 @@ class _DetailsViewState extends State<_DetailsView>
   }
 
   // ── Date line: "May 7, 2026 | Dhu al-Hijjah 1447 AH" ────
+  /// Title, issue number, date, article count, price and the intro.
+  void _shareIssue(BuildContext buttonContext, IssueDetailModel d) {
+    final intro = d.shortIntroduction?.summary.trim() ?? '';
+    final summary = intro.length > 300
+        ? '${intro.substring(0, 300).trimRight()}…'
+        : intro;
+    final price = d.isFree
+        ? AppStrings.free.tr()
+        : '${d.price.toStringAsFixed(2)} ${AppStrings.currencySar.tr()}';
+
+    final lines = [
+      '📚 ${d.title}',
+      if (d.issueNumber > 0)
+        AppStrings.issueLabel.tr(namedArgs: {'number': '${d.issueNumber}'}),
+      _headerDate(context, d),
+      if (d.articlesCount > 0)
+        AppStrings.articlesCountLabel.tr(
+          namedArgs: {'count': '${d.articlesCount}'},
+        ),
+      '${AppStrings.price.tr()}: $price',
+      if (summary.isNotEmpty) ...['', summary],
+    ];
+    ShareHelper.share(
+      lines.join('\n'),
+      subject: d.title,
+      context: buttonContext,
+    );
+  }
+
   String _headerDate(BuildContext context, IssueDetailModel d) {
     final greg = d.publishedAt != null
         ? DateFormat('MMM d, yyyy', 'en').format(d.publishedAt!)

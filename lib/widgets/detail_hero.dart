@@ -223,6 +223,37 @@ class DetailCircleAction extends StatelessWidget {
   }
 }
 
+/// The header share button: a cream circle (same as the favorite one) with
+/// a share icon. [onTap] gets the button's context to anchor the iPad
+/// share popover.
+class DetailShareAction extends StatelessWidget {
+  final ValueChanged<BuildContext> onTap;
+
+  const DetailShareAction({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onTap(context),
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          color: AppColors.cardColor,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.share_outlined,
+          size: 16,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
 /// The header heart: the outlined-heart asset when not a favorite, the same
 /// cream circle with a filled maroon heart when it is.
 class DetailFavoriteAction extends StatelessWidget {
