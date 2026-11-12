@@ -12,6 +12,7 @@ import 'package:albayan/fatures/auth/screens/register_screen.dart';
 import 'package:albayan/fatures/main/screens/main_screen.dart';
 import 'package:albayan/utils/api_client.dart';
 import 'package:albayan/utils/app_navigator.dart';
+import 'package:albayan/utils/apple_auth_helper.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -234,23 +235,34 @@ class _LoginBodyState extends State<_LoginBody>
                     buildWhen: (_, s) =>
                         s is GoogleLoginLoading ||
                         s is GoogleLoginCancelled ||
+                        s is AppleLoginLoading ||
+                        s is AppleLoginCancelled ||
                         s is LoginSuccess ||
                         s is LoginError,
                     builder: (context, state) {
                       final isGoogleLoading = state is GoogleLoginLoading;
+                      final isAppleLoading = state is AppleLoginLoading;
+                      final isBusy = isGoogleLoading || isAppleLoading;
                       return Row(
                         children: [
-                          Expanded(
-                            child: _SocialButton(
-                              icon: Image.asset(AppImages.appleIcon,
-                                  height: 22, fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.apple, size: 22)),
-                              label: AppStrings.continueWithApple.tr(),
-                              onTap: () {},
+                          if (AppleAuthHelper.isAvailable) ...[
+                            Expanded(
+                              child: _SocialButton(
+                                icon: Image.asset(AppImages.appleIcon,
+                                    height: 22, fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) =>
+                                    const Icon(Icons.apple, size: 22)),
+                                label: AppStrings.continueWithApple.tr(),
+                                isLoading: isAppleLoading,
+                                onTap: isBusy
+                                    ? null
+                                    : () => context
+                                        .read<AuthCubit>()
+                                        .loginWithApple(),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
+                            const SizedBox(width: 8),
+                          ],
                           Expanded(
                             child: _SocialButton(
                               icon: Image.asset(AppImages.googleIcon,
@@ -259,7 +271,7 @@ class _LoginBodyState extends State<_LoginBody>
                                   const Icon(Icons.g_mobiledata, size: 22)),
                               label: AppStrings.continueWithGoogle.tr(),
                               isLoading: isGoogleLoading,
-                              onTap: isGoogleLoading
+                              onTap: isBusy
                                   ? null
                                   : () => context
                                       .read<AuthCubit>()

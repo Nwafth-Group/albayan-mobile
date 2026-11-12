@@ -54,6 +54,7 @@ class ApiConstants {
 
   // Social Auth
   static const String googleAuth = '/reader/auth/google';
+  static const String appleAuth = '/reader/auth/apple';
 
   // Issues Endpoints
   static const String issues = '/public/issues';

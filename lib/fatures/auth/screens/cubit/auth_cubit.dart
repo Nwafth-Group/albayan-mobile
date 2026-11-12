@@ -8,6 +8,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:albayan/utils/constants.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/data/models/user_model.dart';
+import 'package:albayan/utils/apple_auth_helper.dart';
 import 'package:albayan/utils/google_auth_helper.dart';
 import 'package:albayan/utils/shared_pref_helper.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -68,6 +69,24 @@ class AuthCubit extends Cubit<AuthState> {
       await _handleAuthResponse(response);
     } on GoogleSignInCancelledException {
       emit(const GoogleLoginCancelled());
+    } catch (e) {
+      emit(LoginError(e.toString()));
+    }
+  }
+
+  // ── Login (Apple, iOS only) ───────────────────────────────────
+  Future<void> loginWithApple() async {
+    emit(const AppleLoginLoading());
+    try {
+      final result = await AppleAuthHelper.signIn();
+      final response = await _dataSource.loginWithApple(
+        idToken:   result.idToken,
+        firstName: result.firstName,
+        lastName:  result.lastName,
+      );
+      await _handleAuthResponse(response);
+    } on AppleSignInCancelledException {
+      emit(const AppleLoginCancelled());
     } catch (e) {
       emit(LoginError(e.toString()));
     }

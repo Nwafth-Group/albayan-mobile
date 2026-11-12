@@ -152,6 +152,21 @@ class AuthRemoteDataSource {
     });
   }
 
+  // ── Login (Apple) ─────────────────────────────────────────────
+  /// [firstName]/[lastName] are only available on the user's first Apple
+  /// sign-in (Apple never sends them again), so they're optional.
+  Future<Map<String, dynamic>> loginWithApple({
+    required String idToken,
+    String? firstName,
+    String? lastName,
+  }) async {
+    return _api.post(ApiConstants.appleAuth, data: {
+      'id_token': idToken,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+    });
+  }
+
   // ── Get Profile ───────────────────────────────────────────────
   Future<Map<String, dynamic>> getProfile() async {
     return _api.get(ApiConstants.profile);

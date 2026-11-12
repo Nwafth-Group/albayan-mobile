@@ -80,6 +80,16 @@ class GoogleLoginCancelled extends AuthState {
   const GoogleLoginCancelled();
 }
 
+// ── Apple Login (iOS only) ────────────────────────────────────
+class AppleLoginLoading extends AuthState {
+  const AppleLoginLoading();
+}
+
+/// User closed the Apple sign-in sheet — not a real error.
+class AppleLoginCancelled extends AuthState {
+  const AppleLoginCancelled();
+}
+
 // ── Register ──────────────────────────────────────────────────
 class RegisterLoading extends AuthState {
   const RegisterLoading();
