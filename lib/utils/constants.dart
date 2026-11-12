@@ -27,7 +27,7 @@ class FeatureFlags {
 
 // API Constants
 class ApiConstants {
-  static String get baseUrl => 'http://3.70.168.206/api/v1';
+  static String get baseUrl => 'https://3.70.168.206.nip.io/api/v1';
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   // Public
@@ -799,6 +799,11 @@ class AppStrings {
   static const String errorUnexpected = 'error_unexpected';
   static const String sessionExpired = 'session_expired';
   static const String errorInvalidResponse = 'error_invalid_response';
+  static const String authErrorAppleUnavailable = 'auth_error_apple_unavailable';
+  static const String authErrorSocialFailed = 'auth_error_social_failed';
+  static const String authErrorAccountDisabled = 'auth_error_account_disabled';
+  static const String authErrorAccountExists = 'auth_error_account_exists';
+  static const String authErrorTooManyRequests = 'auth_error_too_many_requests';
 
   // ── Book reader ───────────────────────────────────────────
   static const String readerDownloading = 'reader_downloading';

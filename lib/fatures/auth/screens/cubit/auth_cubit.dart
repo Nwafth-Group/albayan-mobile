@@ -9,6 +9,7 @@ import 'package:albayan/utils/constants.dart';
 import 'package:albayan/fatures/auth/data/datasource/auth_remote_datasource.dart';
 import 'package:albayan/fatures/auth/data/models/user_model.dart';
 import 'package:albayan/utils/apple_auth_helper.dart';
+import 'package:albayan/utils/auth_error_mapper.dart';
 import 'package:albayan/utils/google_auth_helper.dart';
 import 'package:albayan/utils/shared_pref_helper.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,7 +27,7 @@ class AuthCubit extends Cubit<AuthState> {
       final countries = await _dataSource.getCountries(search: search);
       emit(CountriesLoaded(countries));
     } catch (e) {
-      emit(CountriesError(e.toString()));
+      emit(CountriesError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -43,7 +44,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       await _handleAuthResponse(response);
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(LoginError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -56,7 +57,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       await _handleAuthResponse(response, mobileNumber: mobileNumber);
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(LoginError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -70,7 +71,7 @@ class AuthCubit extends Cubit<AuthState> {
     } on GoogleSignInCancelledException {
       emit(const GoogleLoginCancelled());
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(LoginError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -88,7 +89,7 @@ class AuthCubit extends Cubit<AuthState> {
     } on AppleSignInCancelledException {
       emit(const AppleLoginCancelled());
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(LoginError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -117,7 +118,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(RegisterSuccess(recipient: email, isEmail: true));
     } catch (e) {
-      emit(RegisterError(e.toString()));
+      emit(RegisterError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -142,7 +143,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(RegisterSuccess(recipient: mobileNumber, isEmail: false));
     } catch (e) {
-      emit(RegisterError(e.toString()));
+      emit(RegisterError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -172,7 +173,7 @@ class AuthCubit extends Cubit<AuthState> {
       await SharedPrefHelper.saveUser(user);
       emit(OtpVerified(user));
     } catch (e) {
-      emit(OtpError(e.toString()));
+      emit(OtpError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -189,7 +190,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(const OtpResendSuccess());
     } catch (e) {
-      emit(OtpResendError(e.toString()));
+      emit(OtpResendError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -200,7 +201,7 @@ class AuthCubit extends Cubit<AuthState> {
       await _dataSource.forgotPassword(email: email);
       emit(ForgotPasswordOtpSent(email));
     } catch (e) {
-      emit(ForgotPasswordError(e.toString()));
+      emit(ForgotPasswordError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -224,7 +225,7 @@ class AuthCubit extends Cubit<AuthState> {
       }
       emit(ForgotPasswordOtpVerified(resetToken));
     } catch (e) {
-      emit(ForgotPasswordOtpError(e.toString()));
+      emit(ForgotPasswordOtpError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -245,7 +246,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(const ResetPasswordSuccess());
     } catch (e) {
-      emit(ResetPasswordError(e.toString()));
+      emit(ResetPasswordError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -263,7 +264,7 @@ class AuthCubit extends Cubit<AuthState> {
       await SharedPrefHelper.saveUser(user);
       emit(ProfileLoaded(user));
     } catch (e) {
-      emit(ProfileError(e.toString()));
+      emit(ProfileError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -319,7 +320,7 @@ class AuthCubit extends Cubit<AuthState> {
         ProfileUpdated(user, emailVerificationRequired: verificationRequired),
       );
     } catch (e) {
-      emit(ProfileUpdateError(e.toString()));
+      emit(ProfileUpdateError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -338,7 +339,7 @@ class AuthCubit extends Cubit<AuthState> {
       } catch (_) {}
       emit(const ProfileEmailVerified());
     } catch (e) {
-      emit(ProfileEmailVerifyError(e.toString()));
+      emit(ProfileEmailVerifyError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -349,7 +350,7 @@ class AuthCubit extends Cubit<AuthState> {
       await _dataSource.resendProfileEmailOtp();
       emit(const OtpResendSuccess());
     } catch (e) {
-      emit(OtpResendError(e.toString()));
+      emit(OtpResendError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -368,7 +369,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(const ChangePasswordSuccess());
     } catch (e) {
-      emit(ChangePasswordError(e.toString()));
+      emit(ChangePasswordError(AuthErrorMapper.message(e)));
     }
   }
 
@@ -418,7 +419,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       emit(LoginSuccess(user));
     } catch (e) {
-      emit(LoginError(e.toString()));
+      emit(LoginError(AuthErrorMapper.message(e)));
     }
   }
 }
